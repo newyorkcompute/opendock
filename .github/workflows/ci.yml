@@ -13,23 +13,28 @@ concurrency:
 permissions:
   contents: read
 
-# Runner choice: `macos-26` is pinned explicitly instead of `macos-latest` so an
-# image rollover can't silently change the SDK. It is the newest GitHub-hosted
-# macOS image and the only one shipping the macOS 26 SDK as default (needed for
-# the `#available(macOS 26, *)` Liquid Glass code). It does not ship Xcode 27,
-# so "Select Xcode" picks the newest stable Xcode on the image (26.6 / Swift
-# 6.3 at the time of writing), which satisfies swift-tools-version 6.2.
-# Set XCODE_VERSION (e.g. "26.6") to pin a specific installed Xcode instead.
+# Toolchain choice:
+# - Runner: `macos-26` (pinned rather than `macos-latest`, which currently maps
+#   to the same image) is the newest GitHub-hosted macOS image and the only one
+#   whose Xcodes ship the macOS 26 SDK the `#available(macOS 26, *)` Liquid
+#   Glass code compiles against. "Select Xcode" picks the newest stable Xcode
+#   on it (26.6 at the time of writing) for the SDK; set XCODE_VERSION to pin.
+# - Compiler: the image has no Xcode 27, and Xcode 26.6's Swift 6.3.3 crashes
+#   (signal 11 in the SIL performance inliner) on `-O` builds of DockShell, so
+#   release builds fail. CI therefore installs the swift.org Swift 6.4.0 release
+#   toolchain (the one in Xcode 27) and uses it via TOOLCHAINS. Once the runner
+#   image ships Xcode 27, drop SWIFT_VERSION and the install step.
 env:
   XCODE_VERSION: ""
+  SWIFT_VERSION: "6.4.0"
 
 jobs:
   build-and-test:
     name: Build & test
     runs-on: macos-26
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           # build-app.sh derives the bundle build number from the commit count.
           fetch-depth: 0
@@ -38,14 +43,23 @@ jobs:
         id: xcode
         run: ./.github/scripts/select-xcode.sh
 
+      - name: Cache Swift toolchain
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Developer/Toolchains/swift-${{ env.SWIFT_VERSION }}-RELEASE.xctoolchain
+          key: swift-toolchain-${{ runner.os }}-${{ env.SWIFT_VERSION }}
+
+      - name: Install Swift ${{ env.SWIFT_VERSION }}
+        run: ./.github/scripts/install-swift-toolchain.sh
+
       - name: Cache SwiftPM build
         uses: actions/cache@v4
         with:
           path: .build
-          # Build products are only reusable with the exact same toolchain.
-          key: spm-${{ runner.os }}-${{ runner.arch }}-xcode${{ steps.xcode.outputs.version }}-${{ hashFiles('Package.swift', 'Package.resolved') }}-${{ hashFiles('Sources/**', 'App/**', 'Tests/**') }}
+          # Build products are only reusable with the exact same toolchain + SDK.
+          key: spm-${{ runner.os }}-${{ runner.arch }}-swift${{ env.SWIFT_VERSION }}-xcode${{ steps.xcode.outputs.version }}-${{ hashFiles('Package.swift', 'Package.resolved') }}-${{ hashFiles('Sources/**', 'App/**', 'Tests/**') }}
           restore-keys: |
-            spm-${{ runner.os }}-${{ runner.arch }}-xcode${{ steps.xcode.outputs.version }}-${{ hashFiles('Package.swift', 'Package.resolved') }}-
+            spm-${{ runner.os }}-${{ runner.arch }}-swift${{ env.SWIFT_VERSION }}-xcode${{ steps.xcode.outputs.version }}-${{ hashFiles('Package.swift', 'Package.resolved') }}-
 
       - name: swift build
         run: swift build
@@ -71,12 +85,21 @@ jobs:
   universal:
     name: Universal release build
     runs-on: macos-26
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Select Xcode
         run: ./.github/scripts/select-xcode.sh
+
+      - name: Cache Swift toolchain
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Developer/Toolchains/swift-${{ env.SWIFT_VERSION }}-RELEASE.xctoolchain
+          key: swift-toolchain-${{ runner.os }}-${{ env.SWIFT_VERSION }}
+
+      - name: Install Swift ${{ env.SWIFT_VERSION }}
+        run: ./.github/scripts/install-swift-toolchain.sh
 
       - name: Build arm64 + x86_64
         run: swift build -c release --arch arm64 --arch x86_64 --product OpenDock
