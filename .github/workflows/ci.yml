@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+# Runner choice: `macos-26` is pinned explicitly instead of `macos-latest` so an
+# image rollover can't silently change the SDK. It is the newest GitHub-hosted
+# macOS image and the only one shipping the macOS 26 SDK as default (needed for
+# the `#available(macOS 26, *)` Liquid Glass code). It does not ship Xcode 27,
+# so "Select Xcode" picks the newest stable Xcode on the image (26.6 / Swift
+# 6.3 at the time of writing), which satisfies swift-tools-version 6.2.
+# Set XCODE_VERSION (e.g. "26.6") to pin a specific installed Xcode instead.
+env:
+  XCODE_VERSION: ""
+
+jobs:
+  build-and-test:
+    name: Build & test
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # build-app.sh derives the bundle build number from the commit count.
+          fetch-depth: 0
+
+      - name: Select Xcode
+        id: xcode
+        run: ./.github/scripts/select-xcode.sh
+
+      - name: Cache SwiftPM build
+        uses: actions/cache@v4
+        with:
+          path: .build
+          # Build products are only reusable with the exact same toolchain.
+          key: spm-${{ runner.os }}-${{ runner.arch }}-xcode${{ steps.xcode.outputs.version }}-${{ hashFiles('Package.swift', 'Package.resolved') }}-${{ hashFiles('Sources/**', 'App/**', 'Tests/**') }}
+          restore-keys: |
+            spm-${{ runner.os }}-${{ runner.arch }}-xcode${{ steps.xcode.outputs.version }}-${{ hashFiles('Package.swift', 'Package.resolved') }}-
+
+      - name: swift build
+        run: swift build
+
+      - name: swift test
+        run: swift test
+
+      - name: Assemble app bundle
+        run: |
+          # build-app.sh tolerates `swift build` failures and only checks that
+          # the binary exists, so drop any copy restored from the cache.
+          rm -f "$(swift build -c release --show-bin-path)/OpenDock"
+          scripts/build-app.sh
+
+      - name: Verify app bundle
+        run: |
+          APP=build/OpenDock.app
+          test -x "$APP/Contents/MacOS/OpenDock"
+          plutil -lint "$APP/Contents/Info.plist"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          lipo -info "$APP/Contents/MacOS/OpenDock"
+
+  universal:
+    name: Universal release build
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: ./.github/scripts/select-xcode.sh
+
+      - name: Build arm64 + x86_64
+        run: swift build -c release --arch arm64 --arch x86_64 --product OpenDock
+
+      - name: Verify architectures
+        run: |
+          BIN="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/OpenDock"
+          lipo -info "$BIN"
+          lipo "$BIN" -verify_arch arm64 x86_64
