@@ -1,0 +1,68 @@
+import DockCore
+import SwiftUI
+
+// Environment values the shell injects so widgets can adapt without knowing about it.
+
+public extension EnvironmentValues {
+    /// Height, in points, that dock items (and therefore widget tiles) should be.
+    @Entry var dockIconSize: Double = 48
+
+    /// False while the dock is hidden off-screen. Widgets should pause expensive
+    /// polling and animations when this is false.
+    @Entry var dockIsVisible: Bool = true
+
+    /// Call to persist changed settings for the current widget instance.
+    @Entry var widgetUpdateSettings = WidgetSettingsUpdater.noop
+}
+
+/// Persists a widget instance's settings. Equatable by item ID so SwiftUI doesn't
+/// invalidate every widget whenever the environment is rebuilt.
+public struct WidgetSettingsUpdater: Equatable {
+    public let id: UUID
+    private let handler: @MainActor (WidgetInstance) -> Void
+
+    public init(id: UUID, handler: @escaping @MainActor (WidgetInstance) -> Void) {
+        self.id = id
+        self.handler = handler
+    }
+
+    public static let noop = WidgetSettingsUpdater(id: UUID(uuid: UUID_NULL)) { _ in }
+
+    public func callAsFunction(_ instance: WidgetInstance) {
+        handler(instance)
+    }
+
+    /// Convenience: copy `instance`, set one key, persist.
+    public func set(_ key: String, to value: String?, in instance: WidgetInstance) {
+        var copy = instance
+        copy.settings[key] = value
+        handler(copy)
+    }
+
+    public static func == (lhs: WidgetSettingsUpdater, rhs: WidgetSettingsUpdater) -> Bool {
+        lhs.id == rhs.id
+    }
+}
+
+/// Standard sizing helpers so all widgets agree on proportions.
+public enum WidgetMetrics {
+    /// Corner radius for a tile at the given icon size.
+    public static func cornerRadius(for iconSize: Double) -> Double {
+        max(10, iconSize * 0.26)
+    }
+
+    /// Horizontal padding inside a tile.
+    public static func horizontalPadding(for iconSize: Double) -> Double {
+        max(8, iconSize * 0.22)
+    }
+
+    /// Primary text size for a tile at the given icon size.
+    public static func primaryFontSize(for iconSize: Double) -> Double {
+        max(12, iconSize * 0.34)
+    }
+
+    /// Secondary/caption text size.
+    public static func secondaryFontSize(for iconSize: Double) -> Double {
+        max(9, iconSize * 0.2)
+    }
+}
