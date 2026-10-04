@@ -16,7 +16,9 @@ final class DockPanel: NSPanel {
         )
         isFloatingPanel = true
         level = .floating
-        collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]
+        // No `.fullScreenAuxiliary`: the dock stays off full-screen Spaces so it never
+        // covers a video or presentation. Edge-reveal in full screen can come later.
+        collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
         isOpaque = false
         backgroundColor = .clear
         hasShadow = false // the content draws its own shadow so it follows the rounded shape

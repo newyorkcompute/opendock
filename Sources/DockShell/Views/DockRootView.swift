@@ -64,6 +64,9 @@ struct DockSurfaceView: View {
                 .allowsHitTesting(false)
         }
         .shadow(color: .black.opacity(0.28), radius: 14, y: 6)
+        // The glass fill isn't hit-testable on its own; make the whole surface a target
+        // so right-click and drops land on the padding, not just on items.
+        .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         .contextMenu { DockBackgroundMenu(controller: controller) }
         .dropDestination(for: URL.self) { urls, _ in
             controller.handleDroppedURLs(urls)

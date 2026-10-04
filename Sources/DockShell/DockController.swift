@@ -30,6 +30,8 @@ public final class DockController {
     private var localMouseMonitor: Any?
     private var hideTask: Task<Void, Never>?
     private var trackingProxy: TrackingProxy?
+    /// Set by `revealAndHold()`; cleared when the pointer enters the dock.
+    fileprivate var holdUntilPointerEnters = false
 
     private let log = Logger(subsystem: "org.opendock", category: "DockController")
 
@@ -180,8 +182,17 @@ public final class DockController {
         }
     }
 
+    /// Reveal and keep the dock on screen until the pointer has entered it once.
+    /// Used by explicit "Show Dock" commands, where hiding again after the delay
+    /// (because the pointer happens to be elsewhere) would feel broken.
+    public func revealAndHold() {
+        holdUntilPointerEnters = true
+        reveal()
+    }
+
     /// Slide the dock off screen (only meaningful with auto-hide on).
     public func hide() {
+        holdUntilPointerEnters = false
         guard let panel, let screen = targetScreen, shellState.isVisible else { return }
         guard !shellState.isInteracting else { return }
         shellState.isVisible = false
@@ -200,7 +211,7 @@ public final class DockController {
 
     /// Start the countdown to hide. Cancelled if the pointer comes back.
     func scheduleHide() {
-        guard store.settings.autoHide else { return }
+        guard store.settings.autoHide, !holdUntilPointerEnters else { return }
         hideTask?.cancel()
         let delay = store.settings.autoHideDelay
         hideTask = Task { [weak self] in
@@ -222,13 +233,23 @@ public final class DockController {
         }
     }
 
+    /// True when the pointer is over the dock *or* in the strip between the dock and
+    /// the screen edge. Without the strip, a pointer resting at the very bottom of the
+    /// screen (where it revealed the dock) would count as "outside" and hide it again.
     private var pointerIsOverDock: Bool {
-        guard let panel, panel.isVisible else { return false }
-        return panel.frame.insetBy(dx: -4, dy: -4).contains(NSEvent.mouseLocation)
+        guard let panel, panel.isVisible, let screen = targetScreen else { return false }
+        var zone = panel.frame.insetBy(dx: -4, dy: -4)
+        let extension_ = zone.minY - screen.frame.minY
+        if extension_ > 0 {
+            zone.origin.y = screen.frame.minY
+            zone.size.height += extension_
+        }
+        return zone.contains(NSEvent.mouseLocation)
     }
 
     private func installEdgeMonitors() {
         removeEdgeMonitors()
+        log.debug("installing edge monitors")
         let handler: @Sendable (NSEvent) -> Void = { [weak self] _ in
             MainActor.assumeIsolated { self?.pointerMoved() }
         }
@@ -289,7 +310,10 @@ public final class DockController {
         required init?(coder: NSCoder) { fatalError("unsupported") }
 
         override func mouseEntered(with event: NSEvent) {
-            MainActor.assumeIsolated { controller.cancelScheduledHide() }
+            MainActor.assumeIsolated {
+                controller.holdUntilPointerEnters = false
+                controller.cancelScheduledHide()
+            }
         }
 
         override func mouseExited(with event: NSEvent) {

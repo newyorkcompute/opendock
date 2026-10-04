@@ -193,8 +193,10 @@ struct SpacerItemView: View {
                     updated.kind = .spacer(SpacerItem(size: spacer.size == .small ? .regular : .small))
                     store.updateItem(updated)
                 }
-                Divider()
                 Button("Remove from Dock", role: .destructive) { store.remove(id: item.id) }
+                Divider()
+                // Spacers are the easiest empty area to hit, so expose the dock menu here too.
+                DockBackgroundMenu(controller: controller)
             }
     }
 }

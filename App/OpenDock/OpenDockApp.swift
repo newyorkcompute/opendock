@@ -13,16 +13,11 @@ struct OpenDockApp: App {
 
     var body: some Scene {
         MenuBarExtra("OpenDock", systemImage: "dock.rectangle") {
-            MenuBarMenu()
+            MenuBarMenu(app: appDelegate)
                 .environment(appDelegate.store)
                 .environment(appDelegate.registry)
         }
-
-        Settings {
-            SettingsView()
-                .environment(appDelegate.store)
-                .environment(appDelegate.registry)
-        }
+        .menuBarExtraStyle(.menu)
     }
 }
 
@@ -32,7 +27,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let store = DockStore.load()
     let registry = WidgetRegistry()
     let running = RunningAppsMonitor()
-    private(set) var dock: DockController!
+    let launchAtLogin = LaunchAtLogin()
+    private(set) var dock: DockController?
+
+    private lazy var settingsWindow = SettingsWindowController(
+        store: store,
+        registry: registry,
+        launchAtLogin: launchAtLogin
+    )
 
     override init() {
         super.init()
@@ -40,15 +42,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        dock = DockController(
+        let dock = DockController(
             store: store,
             registry: registry,
             running: running,
             actions: DockActions(
-                openSettings: { AppDelegate.openSettings() },
+                openSettings: { [weak self] in self?.showSettings() },
                 quit: { NSApp.terminate(nil) }
             )
         )
+        self.dock = dock
         dock.start()
     }
 
@@ -58,9 +61,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
 
-    static func openSettings() {
-        NSApp.activate()
-        // SwiftUI's Settings scene responds to this selector on macOS 14+.
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+    /// Brings the Settings window to the front, optionally switching to `tab`.
+    func showSettings(_ tab: SettingsTab? = nil) {
+        settingsWindow.show(tab)
     }
 }
