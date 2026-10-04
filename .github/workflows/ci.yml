@@ -34,7 +34,7 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           # build-app.sh derives the bundle build number from the commit count.
           fetch-depth: 0
@@ -44,7 +44,7 @@ jobs:
         run: ./.github/scripts/select-xcode.sh
 
       - name: Cache Swift toolchain
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/Library/Developer/Toolchains/swift-${{ env.SWIFT_VERSION }}-RELEASE.xctoolchain
           key: swift-toolchain-${{ runner.os }}-${{ env.SWIFT_VERSION }}
@@ -53,7 +53,7 @@ jobs:
         run: ./.github/scripts/install-swift-toolchain.sh
 
       - name: Cache SwiftPM build
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .build
           # Build products are only reusable with the exact same toolchain + SDK.
@@ -87,13 +87,13 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Select Xcode
         run: ./.github/scripts/select-xcode.sh
 
       - name: Cache Swift toolchain
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/Library/Developer/Toolchains/swift-${{ env.SWIFT_VERSION }}-RELEASE.xctoolchain
           key: swift-toolchain-${{ runner.os }}-${{ env.SWIFT_VERSION }}
