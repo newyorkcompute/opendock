@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, cursor/ci-workflow-11c4]
   pull_request:
   workflow_dispatch:
 
