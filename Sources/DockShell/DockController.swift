@@ -25,7 +25,16 @@ public final class DockController {
     private(set) var hostingView: NSView?
     private var contentSize: CGSize = .zero
 
-    private var screenObserver: (any NSObjectProtocol)?
+    /// The screen the dock is on. Resolved from the display setting by `updateScreen`
+    /// whenever displays or the setting change, rather than on every pointer move.
+    private var targetScreen: NSScreen?
+    private var screenObservers: [any NSObjectProtocol] = []
+    private var workspaceObservers: [any NSObjectProtocol] = []
+    /// While the dock follows the active display: notices focus moving to a window on
+    /// another display, which doesn't activate a different app.
+    private var activeDisplayMonitor: Any?
+    /// Re-checks the screen once a burst of display changes (wake, hot-plug) has settled.
+    private var settleTask: Task<Void, Never>?
     private var menuObservers: [any NSObjectProtocol] = []
     private var globalMouseMonitor: Any?
     private var localMouseMonitor: Any?
@@ -74,7 +83,9 @@ public final class DockController {
         hostingView = hosting
 
         installTrackingArea()
+        targetScreen = resolveScreen()
         observeScreens()
+        updateActiveDisplayMonitor()
         observeMenus()
 
         // Initial frame is placed once SwiftUI reports its size (see contentSizeChanged).
@@ -88,11 +99,15 @@ public final class DockController {
 
     public func stop() {
         hideTask?.cancel()
+        settleTask?.cancel()
         removeEdgeMonitors()
         removeHoverMonitor()
-        if let screenObserver {
-            NotificationCenter.default.removeObserver(screenObserver)
-        }
+        screenObservers.forEach(NotificationCenter.default.removeObserver)
+        screenObservers = []
+        workspaceObservers.forEach(NSWorkspace.shared.notificationCenter.removeObserver)
+        workspaceObservers = []
+        if let activeDisplayMonitor { NSEvent.removeMonitor(activeDisplayMonitor) }
+        activeDisplayMonitor = nil
         menuObservers.forEach(NotificationCenter.default.removeObserver)
         menuObservers = []
         panel?.orderOut(nil)
@@ -109,25 +124,15 @@ public final class DockController {
         applyFrame(animated: false)
     }
 
-    private var targetScreen: NSScreen? {
-        // The screen with the menu bar. A per-screen setting can come later.
-        NSScreen.screens.first
-    }
-
     /// Frame for the panel when fully shown. The window reaches down to the edge so the
     /// strip under the dock still counts as "over the dock"; the layout insets the surface.
     private func shownFrame(on screen: NSScreen) -> NSRect {
-        let visible = screen.visibleFrame
-        let width = min(contentSize.width, visible.width)
-        let x = visible.midX - width / 2
-        return NSRect(x: x, y: visible.minY, width: width, height: contentSize.height)
+        DockPlacement.shownFrame(contentSize: contentSize, visibleFrame: screen.visibleFrame)
     }
 
     /// Frame for the panel when hidden: just below the bottom edge of the screen.
     private func hiddenFrame(on screen: NSScreen) -> NSRect {
-        var frame = shownFrame(on: screen)
-        frame.origin.y = screen.frame.minY - frame.height - 1
-        return frame
+        DockPlacement.hiddenFrame(contentSize: contentSize, on: screen.placementScreen)
     }
 
     private func applyFrame(animated: Bool) {
@@ -144,13 +149,105 @@ public final class DockController {
         }
     }
 
+    // MARK: - Displays
+
+    /// The screen the display setting picks right now.
+    private func resolveScreen() -> NSScreen? {
+        let screens = NSScreen.screens
+        let activeIndex = NSScreen.main.flatMap { main in screens.firstIndex { $0 == main } }
+        let index = DockPlacement.screenIndex(
+            for: store.settings.display,
+            in: screens.map(\.placementScreen),
+            activeIndex: activeIndex
+        )
+        return index.map { screens[$0] }
+    }
+
+    /// Re-resolve the dock's screen and move the dock there. With `force` false the
+    /// frame is only reapplied if the screen changed, so frequent checks (clicks, app
+    /// switches) don't disturb a running slide animation.
+    private func updateScreen(force: Bool) {
+        guard panel != nil else { return }
+        let old = targetScreen
+        let new = resolveScreen()
+        targetScreen = new
+        let moved = old?.frame != new?.frame || old?.visibleFrame != new?.visibleFrame
+        guard moved || force else { return }
+        if moved {
+            log.debug("dock screen: \(new?.localizedName ?? "none", privacy: .public) \(String(describing: new?.frame), privacy: .public)")
+            // Hover state refers to where the dock used to be.
+            resetMagnification()
+        }
+        applyFrame(animated: false)
+        if moved, shellState.isVisible, store.settings.autoHide {
+            scheduleHide()
+        }
+    }
+
+    /// Update now, and again once things settle: after wake or hot-plug the display list
+    /// and visible frames can arrive in several steps.
+    private func screensMayHaveChanged(force: Bool) {
+        updateScreen(force: force)
+        settleTask?.cancel()
+        settleTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(400))
+            guard !Task.isCancelled else { return }
+            self?.updateScreen(force: force)
+        }
+    }
+
+    /// Called by the root view's `onChange(of: settings.display)`.
+    func displaySettingChanged() {
+        updateActiveDisplayMonitor()
+        updateScreen(force: true)
+    }
+
     private func observeScreens() {
-        screenObserver = NotificationCenter.default.addObserver(
-            forName: NSApplication.didChangeScreenParametersNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.applyFrame(animated: false) }
+        // Resolution, arrangement, main display, and displays being added or removed.
+        screenObservers = [
+            NotificationCenter.default.addObserver(
+                forName: NSApplication.didChangeScreenParametersNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                MainActor.assumeIsolated { self?.screensMayHaveChanged(force: true) }
+            },
+        ]
+
+        let workspace = NSWorkspace.shared.notificationCenter
+        let forced: [Notification.Name] = [
+            NSWorkspace.didWakeNotification,
+            NSWorkspace.screensDidWakeNotification,
+        ]
+        // These move the active menu bar to another display.
+        let focus: [Notification.Name] = [
+            NSWorkspace.didActivateApplicationNotification,
+            NSWorkspace.activeSpaceDidChangeNotification,
+        ]
+        workspaceObservers = forced.map { name in
+            workspace.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.screensMayHaveChanged(force: true) }
+            }
+        } + focus.map { name in
+            workspace.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated {
+                    guard let self, self.store.settings.display == .active else { return }
+                    self.screensMayHaveChanged(force: false)
+                }
+            }
+        }
+    }
+
+    private func updateActiveDisplayMonitor() {
+        let wanted = store.settings.display == .active
+        if wanted, activeDisplayMonitor == nil {
+            let handler: @Sendable (NSEvent) -> Void = { [weak self] _ in
+                MainActor.assumeIsolated { self?.screensMayHaveChanged(force: false) }
+            }
+            activeDisplayMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseUp], handler: handler)
+        } else if !wanted, let monitor = activeDisplayMonitor {
+            NSEvent.removeMonitor(monitor)
+            activeDisplayMonitor = nil
         }
     }
 
@@ -315,10 +412,7 @@ public final class DockController {
             return
         }
         // Hidden: reveal when the pointer touches the bottom edge of the dock's screen.
-        let atEdge = location.y <= screen.frame.minY + 1
-            && location.x >= screen.frame.minX
-            && location.x <= screen.frame.maxX
-        if atEdge { reveal() }
+        if DockPlacement.isAtRevealEdge(location, of: screen.frame) { reveal() }
     }
 
     // MARK: - Tracking

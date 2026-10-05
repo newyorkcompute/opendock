@@ -62,6 +62,8 @@ struct GeneralSettingsTab: View {
             LabeledContent("Position") {
                 Text("Bottom")
             }
+
+            DisplayPicker()
         } header: {
             Text("Appearance")
         } footer: {
