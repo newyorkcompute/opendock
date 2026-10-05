@@ -48,8 +48,9 @@ final class DockHostingView<Content: View>: NSHostingView<Content> {
     /// then fail to load them, depending on exactly where the drop lands.
     weak var dropHandler: DockController?
 
-    // Must stay explicit (and not `isolated`): Swift 6.3.3 (Xcode 26) segfaults in the
-    // SIL inliner when optimizing this generic class's implicit deinit with `-O`.
+    // Must stay explicit and nonisolated. Under main-actor default isolation the implicit
+    // deinit of a generic class is an isolated deinit, and Swift 6.3.3 (Xcode 26)
+    // segfaults in the SIL inliner on that with `-O`.
     deinit {}
 
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
