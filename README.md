@@ -1,14 +1,48 @@
+<div align="center">
+
+<img src="docs/assets/app-icon.png" width="128" height="128" alt="OpenDock app icon">
+
 # OpenDock
 
-An open-source custom Dock for macOS with widgets. Inspired by [Dockset](https://dockset.app).
+**An open-source custom Dock for macOS, with live widgets.**
 
-**Status: early MVP. Requires macOS 15 or later.**
+[![CI](https://github.com/newyorkcompute/opendock/actions/workflows/ci.yml/badge.svg)](https://github.com/newyorkcompute/opendock/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+![macOS 15+](https://img.shields.io/badge/macOS-15%2B-black?logo=apple)
+![Swift 6.2+](https://img.shields.io/badge/Swift-6.2%2B-F05138?logo=swift&logoColor=white)
+
+[Features](#features) · [Widgets](#widgets) · [Build and run](#build-and-run) ·
+[Writing a widget](#writing-a-widget) · [Contributing](#contributing)
+
+</div>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-reduced-motion: reduce)" srcset="docs/assets/dock-magnification.png">
+    <img src="docs/assets/dock-magnification.gif" alt="The OpenDock dock on a macOS desktop. As the pointer moves along it, icons magnify with a smooth falloff, push their neighbors aside, and show a name label above the hovered item. The dock holds Finder, Mail, Messages, Calendar, Notes, Music, and System Settings, then the Calendar, Clock, and Battery widgets, Safari, and a Downloads folder.">
+  </picture>
+</p>
+
+> [!NOTE]
+> OpenDock is an early MVP. It requires macOS 15 or later, and there are no prebuilt
+> releases yet, so for now you [build it from source](#build-and-run).
 
 OpenDock is a floating dock panel at the bottom of your screen. It holds apps, folders,
 spacers, and small live widgets. It runs as a menu bar app and does not replace or modify
-Apple's Dock. You can keep both, or hide Apple's.
+Apple's Dock. You can keep both, or hide Apple's. Inspired by [Dockset](https://dockset.app).
 
 ## Features
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/assets/dock-hover-mail.png" alt="The pointer over Mail: Mail and its neighbors are magnified, and a Mail label floats above it."></td>
+    <td width="50%"><img src="docs/assets/dock-hover-end.png" alt="The pointer over the Downloads folder at the end of the dock: Downloads and Safari are magnified, with a Downloads label above. The Clock and Battery widgets beside them keep their size."></td>
+  </tr>
+  <tr>
+    <td>Icons near the pointer grow with a smooth falloff and push their neighbors aside.</td>
+    <td>Widgets keep their size and slide out of the way.</td>
+  </tr>
+</table>
 
 - Floating dock with Liquid Glass on macOS 26, and Frosted or Solid materials as alternatives
 - Apps, folders and files, and small or regular spacers
@@ -22,6 +56,25 @@ Apple's Dock. You can keep both, or hide Apple's.
 - Export and import your layout as JSON
 - Launch at login
 - Menu bar menu for showing and hiding the dock, adding items, and backups
+
+## Widgets
+
+<p align="center">
+  <img src="docs/assets/dock-widgets.png" width="340" alt="The Calendar, Clock, and Battery tiles in the dock: Sun 4 with Oct 4 and Tap to allow, 8:17 PM with Sun 4, and 100% with Charging.">
+</p>
+
+Widgets are small live tiles that sit in the dock next to your apps. Click one to open a
+popover with more detail. Each widget has its own options in Settings > Dock Items.
+
+| Widget | In the dock | Click for | Options |
+| --- | --- | --- | --- |
+| Calendar | Today's date and your next event | Today's events, with a Join button for meetings that have a link | Show next event |
+| Clock | The time, with the date or your own label below | The full date, time zone, and a month calendar | Seconds, date, time zone, label |
+| Battery | Charge level and power source | Each battery, including connected accessories, and a shortcut to Battery Settings | Percentage, accessory batteries |
+
+The Calendar widget asks for calendar access when it first appears. Without access it
+shows "Tap to allow", and its popover has a button to allow access or open Privacy
+Settings. To build your own widget, see [Writing a widget](#writing-a-widget).
 
 ## Build and run
 
@@ -130,7 +183,9 @@ labeled `good first issue` are self-contained. Highlights:
 
 Issues and pull requests are welcome. Please keep changes focused, match the existing
 style, and run `swift build` and `swift test` before opening a PR. New widgets are a
-great place to start.
+great place to start. See [CONTRIBUTING.md](CONTRIBUTING.md) for the conventions and how
+to test, and the [Code of Conduct](CODE_OF_CONDUCT.md). Report security issues as described
+in [SECURITY.md](SECURITY.md).
 
 ## License
 
