@@ -80,12 +80,34 @@ jobs:
       - name: Select Xcode
         run: ./.github/scripts/select-xcode.sh
 
+      - name: "TEMP: self-signed test identity"
+        run: |
+          cd "$RUNNER_TEMP"
+          cat > cs.cnf <<'EOF'
+          [req]
+          distinguished_name = dn
+          prompt = no
+          x509_extensions = ext
+          [dn]
+          CN = Developer ID Application: OpenDock CI Test (TEST000000)
+          OU = TEST000000
+          [ext]
+          basicConstraints = critical,CA:false
+          keyUsage = critical,digitalSignature
+          extendedKeyUsage = critical,codeSigning
+          EOF
+          /usr/bin/openssl req -x509 -newkey rsa:2048 -nodes -days 2 -config cs.cnf -keyout key.pem -out cert.pem
+          /usr/bin/openssl pkcs12 -export -inkey key.pem -in cert.pem -out test.p12 -passout pass:testpass
+          sudo security add-trusted-cert -d -r trustRoot -p codeSign -k /Library/Keychains/System.keychain cert.pem
+          echo "TEST_P12=$(base64 -i test.p12 | tr -d '\n')" >> "$GITHUB_ENV"
+          rm -f key.pem test.p12
+
       - name: Import Developer ID certificate
         id: signing
-        if: env.HAS_SIGNING_CERT == 'true'
+        if: env.HAS_SIGNING_CERT == 'true' || env.TEST_P12 != ''
         env:
-          DEVELOPER_ID_CERT_P12: ${{ secrets.DEVELOPER_ID_CERT_P12 }}
-          DEVELOPER_ID_CERT_PASSWORD: ${{ secrets.DEVELOPER_ID_CERT_PASSWORD }}
+          DEVELOPER_ID_CERT_P12: ${{ secrets.DEVELOPER_ID_CERT_P12 || env.TEST_P12 }}
+          DEVELOPER_ID_CERT_PASSWORD: ${{ secrets.DEVELOPER_ID_CERT_PASSWORD || 'testpass' }}
         run: ./.github/scripts/import-signing-cert.sh
 
       - name: Build app
