@@ -1,0 +1,31 @@
+name: probe (temporary)
+
+on:
+  push:
+    branches: [cursor/stock-xcode-release-build-a47a]
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    name: ${{ matrix.variant }}
+    runs-on: macos-26
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [baseline, explicit-deinit, isolated-deinit, nonfinal, no-stored-prop, strong-box, anyview, concrete-root]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Select Xcode
+        run: ./.github/scripts/select-xcode.sh
+      - name: Apply variant
+        run: python3 .github/probe/apply.py ${{ matrix.variant }} && git diff
+      - name: Release build (stock toolchain)
+        run: |
+          set -o pipefail
+          swift build -c release --product OpenDock 2>&1 | tee build.log
+      - name: Warnings
+        if: always()
+        run: grep -E 'warning:' build.log | sort -u || echo "no warnings"
