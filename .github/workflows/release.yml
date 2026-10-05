@@ -1,0 +1,246 @@
+name: Release
+
+# Pushing a `v*` tag (e.g. v0.1.0, or v0.2.0-beta.1 for a pre-release) builds the
+# universal app, zips it, and publishes a GitHub Release with the zip, its SHA-256,
+# and auto-generated notes. Pull requests that touch the release tooling, and manual
+# runs (Actions > Release > Run workflow), do the same build as a dry run: the zip
+# is uploaded as a workflow artifact and no release is created.
+#
+# Signing and notarization run only when their secrets exist (see RELEASING.md);
+# without them the app is ad-hoc signed.
+
+on:
+  push:
+    tags: ["v*"]
+  pull_request:
+    paths:
+      - .github/workflows/release.yml
+      - .github/scripts/**
+      - scripts/**
+      - Makefile
+      - App/Resources/**
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to stamp into the dry-run build (no release is created)
+        default: 0.0.0
+        required: true
+
+concurrency:
+  group: release-${{ github.ref }}
+  # Never cancel a tag build halfway through publishing.
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
+
+permissions:
+  contents: read
+
+env:
+  XCODE_VERSION: ""
+
+jobs:
+  build:
+    name: Build universal app
+    runs-on: macos-26
+    timeout-minutes: 60
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+      notarized: ${{ steps.notarize.outcome == 'success' }}
+    env:
+      HAS_SIGNING_CERT: ${{ secrets.DEVELOPER_ID_CERT_P12 != '' && secrets.DEVELOPER_ID_CERT_PASSWORD != '' }}
+      HAS_NOTARY_CREDS: ${{ (secrets.APPLE_ID != '' && secrets.APPLE_TEAM_ID != '' && secrets.APPLE_APP_PASSWORD != '') || (secrets.NOTARY_API_KEY != '' && secrets.NOTARY_API_KEY_ID != '' && secrets.NOTARY_API_ISSUER_ID != '') }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # build-app.sh derives the bundle build number (CFBundleVersion) from the commit count.
+          fetch-depth: 0
+
+      - name: Determine version
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            RAW="${GITHUB_REF_NAME#v}"
+          else
+            RAW="${INPUT_VERSION:-0.0.0}"
+          fi
+          # CFBundleShortVersionString must be plain integers, so a pre-release
+          # suffix only goes into the zip name and the release title.
+          if [[ ! "$RAW" =~ ^([0-9]+\.[0-9]+\.[0-9]+)(-[0-9A-Za-z.]+)?$ ]]; then
+            echo "::error::'$RAW' is not a version like 1.2.3 or 1.2.3-beta.1"
+            exit 1
+          fi
+          {
+            echo "version=$RAW"
+            echo "bundle_version=${BASH_REMATCH[1]}"
+            echo "prerelease=$([[ -n "${BASH_REMATCH[2]}" ]] && echo true || echo false)"
+          } | tee -a "$GITHUB_OUTPUT"
+
+      - name: Select Xcode
+        run: ./.github/scripts/select-xcode.sh
+
+      - name: Import Developer ID certificate
+        id: signing
+        if: env.HAS_SIGNING_CERT == 'true'
+        env:
+          DEVELOPER_ID_CERT_P12: ${{ secrets.DEVELOPER_ID_CERT_P12 }}
+          DEVELOPER_ID_CERT_PASSWORD: ${{ secrets.DEVELOPER_ID_CERT_PASSWORD }}
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(uuidgen)"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          printf '%s' "$DEVELOPER_ID_CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KEYCHAIN" \
+            -P "$DEVELOPER_ID_CERT_PASSWORD" -T /usr/bin/codesign
+          rm -f "$RUNNER_TEMP/cert.p12"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" > /dev/null
+          # Prepend to the search list so codesign finds the identity.
+          # shellcheck disable=SC2046
+          security list-keychains -d user -s "$KEYCHAIN" \
+            $(security list-keychains -d user | tr -d '"')
+          IDENTITY="$(security find-identity -v -p codesigning "$KEYCHAIN" \
+            | awk '/"Developer ID Application: / { print $2; exit }')"
+          if [[ -z "$IDENTITY" ]]; then
+            echo "::error::DEVELOPER_ID_CERT_P12 has no valid 'Developer ID Application' identity"
+            security find-identity -v -p codesigning "$KEYCHAIN"
+            exit 1
+          fi
+          echo "keychain=$KEYCHAIN" >> "$GITHUB_OUTPUT"
+          echo "identity=$IDENTITY" >> "$GITHUB_OUTPUT"
+
+      - name: Build app
+        env:
+          OPENDOCK_VERSION: ${{ steps.version.outputs.bundle_version }}
+          OPENDOCK_SIGN_IDENTITY: ${{ steps.signing.outputs.identity || '-' }}
+        run: scripts/build-app.sh
+
+      - name: Verify app
+        env:
+          BUNDLE_VERSION: ${{ steps.version.outputs.bundle_version }}
+        run: |
+          APP=build/OpenDock.app
+          lipo "$APP/Contents/MacOS/OpenDock" -verify_arch arm64 x86_64
+          lipo -info "$APP/Contents/MacOS/OpenDock"
+          ACTUAL="$(plutil -extract CFBundleShortVersionString raw -o - "$APP/Contents/Info.plist")"
+          [[ "$ACTUAL" == "$BUNDLE_VERSION" ]] \
+            || { echo "::error::CFBundleShortVersionString is '$ACTUAL', expected '$BUNDLE_VERSION'"; exit 1; }
+          echo "CFBundleShortVersionString=$ACTUAL"
+          echo "CFBundleVersion=$(plutil -extract CFBundleVersion raw -o - "$APP/Contents/Info.plist")"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          codesign -dvv "$APP" 2>&1 | grep -E '^(Identifier|Authority|Signature|TeamIdentifier|Timestamp|Runtime)'
+
+      - name: Notarize and staple
+        id: notarize
+        # Notarizing takes minutes and uses Apple's service, so PR dry runs skip it.
+        if: steps.signing.outcome == 'success' && env.HAS_NOTARY_CREDS == 'true' && github.event_name != 'pull_request'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          NOTARY_API_KEY: ${{ secrets.NOTARY_API_KEY }}
+          NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
+          NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
+        run: |
+          if [[ -n "$NOTARY_API_KEY" ]]; then
+            export NOTARY_API_KEY_PATH="$RUNNER_TEMP/notary-key.p8"
+            printf '%s\n' "$NOTARY_API_KEY" > "$NOTARY_API_KEY_PATH"
+          fi
+          scripts/notarize.sh build/OpenDock.app
+
+      - name: Package zip and checksum
+        env:
+          OPENDOCK_RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: scripts/package-app.sh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: OpenDock-${{ steps.version.outputs.version }}
+          path: build/dist/
+          if-no-files-found: error
+          # The payload is already a zip.
+          compression-level: 0
+
+      - name: Summary
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          SIGNED: ${{ steps.signing.outcome == 'success' }}
+          NOTARIZED: ${{ steps.notarize.outcome == 'success' }}
+        run: |
+          {
+            echo "### OpenDock $VERSION"
+            echo
+            echo "| | |"
+            echo "| --- | --- |"
+            echo "| Architectures | $(lipo -archs build/OpenDock.app/Contents/MacOS/OpenDock) |"
+            echo "| CFBundleVersion | $(plutil -extract CFBundleVersion raw -o - build/OpenDock.app/Contents/Info.plist) |"
+            echo "| Developer ID signed | $SIGNED |"
+            echo "| Notarized | $NOTARIZED |"
+            echo "| SHA-256 | \`$(cut -d' ' -f1 build/dist/*.sha256)\` |"
+            echo
+            if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+              echo "Publishing release $GITHUB_REF_NAME."
+            else
+              echo "Dry run: the zip is attached to this run as an artifact; no release was created."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove signing keychain
+        if: always() && steps.signing.outputs.keychain != ''
+        env:
+          KEYCHAIN: ${{ steps.signing.outputs.keychain }}
+        run: security delete-keychain "$KEYCHAIN"
+
+  publish:
+    name: Publish GitHub Release
+    needs: build
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: OpenDock-${{ needs.build.outputs.version }}
+          path: dist
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build.outputs.version }}
+          PRERELEASE: ${{ needs.build.outputs.prerelease }}
+          NOTARIZED: ${{ needs.build.outputs.notarized }}
+        run: |
+          ZIP="OpenDock-$VERSION.zip"
+          SHA="$(cut -d' ' -f1 "dist/$ZIP.sha256")"
+          {
+            echo "Download \`$ZIP\`, unzip it, and move \`OpenDock.app\` to \`/Applications\`."
+            echo "Requires macOS 15 or later; universal (Apple silicon and Intel)."
+            echo
+            if [[ "$NOTARIZED" != true ]]; then
+              echo "> [!IMPORTANT]"
+              echo "> This build is not notarized by Apple, so macOS blocks it on first launch."
+              echo "> Right-click \`OpenDock.app\` and choose **Open**, then confirm (on macOS 15+, if"
+              echo "> there's no Open button, allow it in **System Settings > Privacy & Security**), or run:"
+              echo ">"
+              echo "> \`\`\`sh"
+              echo "> xattr -dr com.apple.quarantine /Applications/OpenDock.app"
+              echo "> \`\`\`"
+              echo
+            fi
+            echo "SHA-256: \`$SHA\`"
+          } > notes.md
+          FLAGS=()
+          if [[ "$PRERELEASE" == true ]]; then FLAGS+=(--prerelease); fi
+          gh release create "$GITHUB_REF_NAME" "dist/$ZIP" "dist/$ZIP.sha256" \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --title "OpenDock $VERSION" \
+            --notes-file notes.md \
+            --generate-notes \
+            "${FLAGS[@]}"
