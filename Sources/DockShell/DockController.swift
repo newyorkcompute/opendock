@@ -37,7 +37,7 @@ public final class DockController {
     /// Set by `revealAndHold()`; cleared when the pointer enters the dock.
     var holdUntilPointerEnters = false
 
-    private let log = Logger(subsystem: "org.opendock", category: "DockController")
+    private let log = Logger(subsystem: "com.newyorkcompute.opendock", category: "DockController")
 
     public init(
         store: DockStore,

@@ -15,7 +15,7 @@ public final class DockStore {
     @ObservationIgnored private let storage: DockStorage
     @ObservationIgnored private var saveTask: Task<Void, Never>?
     @ObservationIgnored private let saveDelay: Duration
-    @ObservationIgnored private let log = Logger(subsystem: "org.opendock", category: "DockStore")
+    @ObservationIgnored private let log = Logger(subsystem: "com.newyorkcompute.opendock", category: "DockStore")
 
     public init(storage: DockStorage, document: DockDocument, saveDelay: Duration = .milliseconds(250)) {
         self.storage = storage
@@ -31,7 +31,7 @@ public final class DockStore {
                 let document = try storage.load()
                 return DockStore(storage: storage, document: document)
             } catch {
-                Logger(subsystem: "org.opendock", category: "DockStore")
+                Logger(subsystem: "com.newyorkcompute.opendock", category: "DockStore")
                     .error("Failed to read \(storage.fileURL.path): \(error.localizedDescription). Backing up and starting fresh.")
                 storage.backupCorruptFile()
             }

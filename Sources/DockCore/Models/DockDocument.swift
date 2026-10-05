@@ -3,7 +3,11 @@ import Foundation
 /// Everything OpenDock persists, in one JSON file. Also the export/import format.
 public struct DockDocument: Hashable, Codable, Sendable {
     /// Bumped when the on-disk shape changes incompatibly. Readers migrate forward.
-    public static let currentVersion = 1
+    ///
+    /// - 1: initial format.
+    /// - 2: built-in widget type IDs moved from `org.opendock.widget.*` to
+    ///   `com.newyorkcompute.opendock.widget.*`.
+    public static let currentVersion = 2
 
     public var version: Int
     public var profiles: [DockProfile]
@@ -74,8 +78,10 @@ public extension DockDocument {
 
 /// Type IDs of the widgets that ship with OpenDock. Kept in DockCore so the
 /// default layout can reference them without depending on the widget targets.
+///
+/// These are persisted in `dock.json`; never rename them without a `DockStorage` migration.
 public enum BuiltInWidgetID {
-    public static let clock = "org.opendock.widget.clock"
-    public static let battery = "org.opendock.widget.battery"
-    public static let calendar = "org.opendock.widget.calendar"
+    public static let clock = "com.newyorkcompute.opendock.widget.clock"
+    public static let battery = "com.newyorkcompute.opendock.widget.battery"
+    public static let calendar = "com.newyorkcompute.opendock.widget.calendar"
 }

@@ -7,4 +7,4 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 pkill -x OpenDock 2>/dev/null || true
 sleep 0.3
 open "$ROOT/build/OpenDock.app"
-echo "▸ launched. Logs: log stream --predicate 'subsystem == \"org.opendock\"' --level debug"
+echo "▸ launched. Logs: log stream --predicate 'subsystem == \"com.newyorkcompute.opendock\"' --level debug"
