@@ -31,8 +31,11 @@ icon, ad-hoc signature). You can still edit in Xcode by opening `Package.swift`.
 | `make build` | Debug build and `.app` bundle |
 | `make run` | Debug build, then (re)launch the app |
 | `make test` | Run the unit tests (`swift test`) |
-| `make release` | Optimized build and `.app` bundle |
+| `make release` | Optimized universal (Apple silicon + Intel) build and `.app` bundle |
+| `make release-native` | Optimized build for your Mac's architecture only (faster) |
 | `make clean` | Delete `.build` and `build` |
+
+Releases are cut by pushing a `v*` tag; see [RELEASING.md](RELEASING.md).
 
 To watch the app's logs while it runs:
 
