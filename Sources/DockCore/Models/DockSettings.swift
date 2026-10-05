@@ -28,8 +28,11 @@ public struct DockSettings: Hashable, Codable, Sendable {
     public var showRunningIndicators: Bool
     /// Show apps that are running but not pinned, after a divider.
     public var showRunningApps: Bool
-    /// Gentle scale-up of the item under the pointer.
+    /// Magnify items near the pointer, like the Dock's Magnification setting.
+    /// (Persisted under its original name, from when it was a simple hover scale.)
     public var hoverEffect: Bool
+    /// How large the item directly under the pointer grows, as a multiple of `iconSize`.
+    public var magnification: Double
 
     public init(
         edge: Edge = .bottom,
@@ -39,7 +42,8 @@ public struct DockSettings: Hashable, Codable, Sendable {
         material: Material = .glass,
         showRunningIndicators: Bool = true,
         showRunningApps: Bool = false,
-        hoverEffect: Bool = true
+        hoverEffect: Bool = true,
+        magnification: Double = 1.5
     ) {
         self.edge = edge
         self.iconSize = iconSize
@@ -49,11 +53,18 @@ public struct DockSettings: Hashable, Codable, Sendable {
         self.showRunningIndicators = showRunningIndicators
         self.showRunningApps = showRunningApps
         self.hoverEffect = hoverEffect
+        self.magnification = magnification
     }
 
     public static let `default` = DockSettings()
 
     public static let iconSizeRange: ClosedRange<Double> = 32 ... 96
+    public static let magnificationRange: ClosedRange<Double> = 1.2 ... 2.0
+
+    /// Scale of the item under the pointer: 1 when magnification is off.
+    public var peakMagnification: Double {
+        hoverEffect ? magnification.clamped(to: Self.magnificationRange) : 1
+    }
 }
 
 // MARK: - Tolerant decoding
@@ -72,5 +83,13 @@ extension DockSettings {
         showRunningIndicators = try c.decodeIfPresent(Bool.self, forKey: .showRunningIndicators) ?? d.showRunningIndicators
         showRunningApps = try c.decodeIfPresent(Bool.self, forKey: .showRunningApps) ?? d.showRunningApps
         hoverEffect = try c.decodeIfPresent(Bool.self, forKey: .hoverEffect) ?? d.hoverEffect
+        magnification = ((try? c.decodeIfPresent(Double.self, forKey: .magnification)) ?? d.magnification)
+            .clamped(to: Self.magnificationRange)
+    }
+}
+
+extension Comparable {
+    func clamped(to range: ClosedRange<Self>) -> Self {
+        min(max(self, range.lowerBound), range.upperBound)
     }
 }
