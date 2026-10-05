@@ -21,24 +21,23 @@ public final class DockController {
     public let shellState = DockShellState()
     public var actions: DockActions
 
-    private var panel: DockPanel?
-    private var hostingView: NSView?
+    private(set) var panel: DockPanel?
+    private(set) var hostingView: NSView?
     private var contentSize: CGSize = .zero
 
     private var screenObserver: (any NSObjectProtocol)?
+    private var menuObservers: [any NSObjectProtocol] = []
     private var globalMouseMonitor: Any?
     private var localMouseMonitor: Any?
+    /// Watches the pointer while it's over the dock, to notice it leaving through a
+    /// transparent part of the window (where the window itself gets no events).
+    var hoverMonitor: Any?
     private var hideTask: Task<Void, Never>?
     private var trackingProxy: TrackingProxy?
     /// Set by `revealAndHold()`; cleared when the pointer enters the dock.
-    fileprivate var holdUntilPointerEnters = false
+    var holdUntilPointerEnters = false
 
     private let log = Logger(subsystem: "org.opendock", category: "DockController")
-
-    /// Distance from the screen edge to the dock, in points.
-    private let edgeMargin: CGFloat = 6
-    /// Extra room above the content so hover-scaled icons don't clip.
-    static let hoverHeadroom: CGFloat = 18
 
     public init(
         store: DockStore,
@@ -67,6 +66,8 @@ public final class DockController {
         hosting.sizingOptions = []
         hosting.translatesAutoresizingMaskIntoConstraints = true
         hosting.autoresizingMask = [.width, .height]
+        hosting.dropHandler = self
+        hosting.registerForDraggedTypes([.fileURL, .string])
         panel.contentView = hosting
 
         self.panel = panel
@@ -74,6 +75,7 @@ public final class DockController {
 
         installTrackingArea()
         observeScreens()
+        observeMenus()
 
         // Initial frame is placed once SwiftUI reports its size (see contentSizeChanged).
         if store.settings.autoHide {
@@ -87,9 +89,12 @@ public final class DockController {
     public func stop() {
         hideTask?.cancel()
         removeEdgeMonitors()
+        removeHoverMonitor()
         if let screenObserver {
             NotificationCenter.default.removeObserver(screenObserver)
         }
+        menuObservers.forEach(NotificationCenter.default.removeObserver)
+        menuObservers = []
         panel?.orderOut(nil)
         panel = nil
         hostingView = nil
@@ -109,13 +114,13 @@ public final class DockController {
         NSScreen.screens.first
     }
 
-    /// Frame for the panel when fully shown.
+    /// Frame for the panel when fully shown. The window reaches down to the edge so the
+    /// strip under the dock still counts as "over the dock"; the layout insets the surface.
     private func shownFrame(on screen: NSScreen) -> NSRect {
         let visible = screen.visibleFrame
         let width = min(contentSize.width, visible.width)
         let x = visible.midX - width / 2
-        let y = visible.minY + edgeMargin
-        return NSRect(x: x, y: y, width: width, height: contentSize.height)
+        return NSRect(x: x, y: visible.minY, width: width, height: contentSize.height)
     }
 
     /// Frame for the panel when hidden: just below the bottom edge of the screen.
@@ -149,6 +154,24 @@ public final class DockController {
         }
     }
 
+    /// An open menu (an item's context menu, or the menu bar menu) counts as an
+    /// interaction: the dock holds its magnification and stays up until it closes, and
+    /// the label gets out of the menu's way, as in Apple's Dock.
+    private func observeMenus() {
+        let center = NotificationCenter.default
+        menuObservers = [
+            center.addObserver(forName: NSMenu.didBeginTrackingNotification, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated {
+                    self?.shellState.hoveredItemID = nil
+                    self?.shellState.beginInteraction()
+                }
+            },
+            center.addObserver(forName: NSMenu.didEndTrackingNotification, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.shellState.endInteraction() }
+            },
+        ]
+    }
+
     // MARK: - Auto-hide
 
     /// Called by the root view's `onChange(of: settings.autoHide)`.
@@ -174,12 +197,19 @@ public final class DockController {
         panel.alphaValue = 0
         panel.orderFrontRegardless()
         shellState.isVisible = true
-        NSAnimationContext.runAnimationGroup { context in
+        NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.22
             context.timingFunction = CAMediaTimingFunction(name: .easeOut)
             panel.animator().setFrame(shownFrame(on: screen), display: true)
             panel.animator().alphaValue = 1
-        }
+        }, completionHandler: {
+            // The dock slid in under a pointer that may not move again for a while
+            // (it's resting on the edge that revealed it); magnify without waiting.
+            MainActor.assumeIsolated {
+                guard self.shellState.isVisible else { return }
+                self.pointerMoved(to: self.layoutPoint(fromScreen: NSEvent.mouseLocation))
+            }
+        })
     }
 
     /// Reveal and keep the dock on screen until the pointer has entered it once.
@@ -196,7 +226,7 @@ public final class DockController {
         guard let panel, let screen = targetScreen, shellState.isVisible else { return }
         guard !shellState.isInteracting else { return }
         shellState.isVisible = false
-        shellState.hoveredItemID = nil
+        resetMagnification()
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.2
             context.timingFunction = CAMediaTimingFunction(name: .easeIn)
@@ -228,7 +258,13 @@ public final class DockController {
 
     /// Called when an interaction (popover/menu) ends; re-arm hiding if the pointer left.
     func interactionEnded() {
-        if store.settings.autoHide, !pointerIsOverDock {
+        guard !pointerIsOverDock else {
+            // Hover events stopped while the menu or popover was open; pick up from here.
+            pointerMoved(to: layoutPoint(fromScreen: NSEvent.mouseLocation))
+            return
+        }
+        pointerLeftDock()
+        if store.settings.autoHide {
             scheduleHide()
         }
     }
@@ -236,9 +272,11 @@ public final class DockController {
     /// True when the pointer is over the dock *or* in the strip between the dock and
     /// the screen edge. Without the strip, a pointer resting at the very bottom of the
     /// screen (where it revealed the dock) would count as "outside" and hide it again.
-    private var pointerIsOverDock: Bool {
+    var pointerIsOverDock: Bool {
         guard let panel, panel.isVisible, let screen = targetScreen else { return false }
-        var zone = panel.frame.insetBy(dx: -4, dy: -4)
+        // The window is larger than the dock (room for magnification), so use the
+        // dock's own hit zone once the layout has produced one.
+        var zone = (hitZoneOnScreen ?? panel.frame).insetBy(dx: -4, dy: -4)
         let extension_ = zone.minY - screen.frame.minY
         if extension_ > 0 {
             zone.origin.y = screen.frame.minY
@@ -311,6 +349,7 @@ public final class DockController {
 
         override func mouseEntered(with event: NSEvent) {
             MainActor.assumeIsolated {
+                guard controller.pointerIsOverDock else { return }
                 controller.holdUntilPointerEnters = false
                 controller.cancelScheduledHide()
             }

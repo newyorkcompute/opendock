@@ -16,8 +16,20 @@ public final class DockShellState {
     /// Item currently being dragged for reordering, if any.
     var draggingItemID: DockItem.ID?
 
-    /// The item under the pointer, for the hover effect.
+    /// The item under the pointer, for its label.
     var hoveredItemID: DockItem.ID?
+
+    /// Pointer x in the dock layout's coordinates. Kept after the pointer leaves so the
+    /// row settles back around where it was, like Apple's Dock.
+    var pointerX: CGFloat?
+
+    /// 0 ... 1, animated: how much of the configured magnification is applied.
+    var magnification: CGFloat = 0
+
+    /// True while the pointer is inside the dock's hit zone.
+    var isPointerInside = false
+
+    let geometry = DockGeometry()
 
     var isInteracting: Bool { interactionDepth > 0 }
 

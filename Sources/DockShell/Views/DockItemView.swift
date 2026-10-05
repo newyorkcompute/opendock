@@ -3,31 +3,21 @@ import DockWidgetKit
 import SwiftUI
 import SystemServices
 
-/// Dispatches a `DockItem` to the right view and adds the behaviour every item
-/// shares: hover scaling, drag-to-reorder, and drop-target handling.
+/// Dispatches a `DockItem` to the right view and makes it draggable for reordering
+/// (drops are handled by `DockHostingView`). Magnification is done by
+/// `DockMagnifyingLayout`, which proposes a larger size; item views fill it.
 struct DockItemView: View {
     let item: DockItem
     let controller: DockController
 
-    @Environment(DockStore.self) private var store
     @Environment(DockShellState.self) private var shellState
     @Environment(\.dockIconSize) private var iconSize
 
     var body: some View {
         content
-            .scaleEffect(hoverScale, anchor: .bottom)
-            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: hoverScale)
-            .onHover { inside in
-                shellState.hoveredItemID = inside ? item.id : (shellState.hoveredItemID == item.id ? nil : shellState.hoveredItemID)
-            }
             .opacity(shellState.draggingItemID == item.id ? 0.35 : 1)
             .draggable(item.id.uuidString) {
                 dragPreview
-            }
-            .dropDestination(for: String.self) { payloads, _ in
-                controller.handleReorderDrop(payloads, onto: item.id)
-            } isTargeted: { targeted in
-                if targeted { controller.cancelScheduledHide() }
             }
     }
 
@@ -43,11 +33,6 @@ struct DockItemView: View {
         case let .widget(instance):
             WidgetItemView(item: item, instance: instance, controller: controller)
         }
-    }
-
-    private var hoverScale: CGFloat {
-        guard store.settings.hoverEffect, shellState.hoveredItemID == item.id, !item.isSpacer else { return 1 }
-        return item.isWidget ? 1.04 : 1.12
     }
 
     @ViewBuilder
@@ -66,6 +51,17 @@ struct DockItemView: View {
                 .fill(.secondary.opacity(0.3))
                 .frame(width: iconSize, height: iconSize)
         }
+    }
+}
+
+extension Image {
+    /// A square icon that is `restingSize` when nothing is magnified and fills
+    /// whatever larger square the layout proposes when it is.
+    func dockIcon(restingSize: Double) -> some View {
+        resizable()
+            .interpolation(.high)
+            .aspectRatio(1, contentMode: .fit)
+            .frame(idealWidth: restingSize, idealHeight: restingSize)
     }
 }
 
@@ -88,9 +84,7 @@ struct AppItemView: View {
     var body: some View {
         VStack(spacing: 2) {
             Image(nsImage: AppIconProvider.shared.icon(for: app.url))
-                .resizable()
-                .interpolation(.high)
-                .frame(width: iconSize, height: iconSize)
+                .dockIcon(restingSize: iconSize)
                 .opacity(exists ? 1 : 0.4)
                 .overlay(alignment: .bottomTrailing) {
                     if !exists {
@@ -105,7 +99,7 @@ struct AppItemView: View {
         .onTapGesture {
             AppLauncher.open(app, running: running)
         }
-        .help(app.displayName)
+        .accessibilityLabel(app.displayName)
         .contextMenu { menu }
     }
 
@@ -152,14 +146,12 @@ struct FolderItemView: View {
     var body: some View {
         VStack(spacing: 2) {
             Image(nsImage: AppIconProvider.shared.icon(for: folder.url))
-                .resizable()
-                .interpolation(.high)
-                .frame(width: iconSize, height: iconSize)
+                .dockIcon(restingSize: iconSize)
             Color.clear.frame(width: 4, height: 4) // keep baseline aligned with apps
         }
         .contentShape(Rectangle())
         .onTapGesture { AppLauncher.open(folder) }
-        .help(folder.displayName)
+        .accessibilityLabel(folder.displayName)
         .contextMenu {
             Text(folder.displayName)
             Divider()
@@ -183,7 +175,8 @@ struct SpacerItemView: View {
 
     var body: some View {
         Color.clear
-            .frame(width: spacer.size == .small ? iconSize * 0.3 : iconSize * 0.7, height: iconSize)
+            .frame(minWidth: 0, idealWidth: spacer.size == .small ? iconSize * 0.3 : iconSize * 0.7, maxWidth: .infinity)
+            .frame(height: iconSize)
             .contentShape(Rectangle())
             .contextMenu {
                 Text("Spacer")
@@ -244,7 +237,7 @@ struct WidgetItemView: View {
         .onChange(of: showingPopout) { _, shown in
             if shown { shellState.beginInteraction() } else { shellState.endInteraction() }
         }
-        .help(registry.displayName(for: instance))
+        .accessibilityLabel(registry.displayName(for: instance))
         .contextMenu {
             Text(registry.displayName(for: instance))
             Divider()

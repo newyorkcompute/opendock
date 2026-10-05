@@ -13,6 +13,8 @@ Apple's Dock. You can keep both, or hide Apple's.
 - Floating dock with Liquid Glass on macOS 26, and Frosted or Solid materials as alternatives
 - Apps, folders and files, and small or regular spacers
 - Running-app indicators, with an option to show running apps that aren't pinned
+- Magnification like the Dock's: icons near the pointer grow with a smooth falloff and
+  push their neighbors aside, with an adjustable size and a name label above the hovered item
 - Auto-hide with a configurable delay
 - Drag items in the dock to reorder them, and drop apps or folders from Finder to add them
 - Widgets: Clock, Battery, and Calendar
@@ -113,7 +115,6 @@ labeled `good first issue` are self-contained. Highlights:
 - More widgets: Now Playing, Weather, Reminders, System Activity, Network, Timer, Sticky
   Note, Stocks
 - Left and right screen edges
-- Magnification
 - Notification badges
 - Minimized windows in the dock
 - Automatic updates with Sparkle
