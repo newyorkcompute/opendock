@@ -13,8 +13,8 @@ nonisolated struct DockRowMetrics: Equatable {
     var bottomInset: CGFloat { 10 }
     /// Room around the surface for its shadow.
     var shadowMargin: CGFloat { 24 }
-    /// Pointer distance at which magnification fades to nothing: three resting items.
-    var radius: CGFloat { 3 * (iconSize + spacing) }
+    /// Pointer distance at which magnification fades to nothing, as in Apple's Dock.
+    var radius: CGFloat { DockMagnification.dockRadiusInSlots * (iconSize + spacing) }
     var cornerRadius: CGFloat { max(16, iconSize * 0.42) }
 
     static let labelHeight: CGFloat = 24
@@ -218,8 +218,8 @@ nonisolated struct DockMagnifyingLayout: Layout {
 }
 
 extension Animation {
-    /// Growing as the pointer arrives: quick, with a hint of overshoot.
-    static let dockMagnify = Animation.spring(response: 0.24, dampingFraction: 0.82)
-    /// Settling back when it leaves: a touch slower and fully damped.
-    static let dockDemagnify = Animation.spring(response: 0.3, dampingFraction: 0.92)
+    /// Apple's Dock grows and settles back along an ease-in-out curve of about 130 ms in
+    /// both directions, with no overshoot (sampled from its accessibility frames).
+    static let dockMagnify = Animation.easeInOut(duration: 0.13)
+    static let dockDemagnify = Animation.easeInOut(duration: 0.13)
 }

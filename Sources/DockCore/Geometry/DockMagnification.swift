@@ -44,12 +44,19 @@ public enum DockMagnification {
         }
     }
 
-    /// 1 at distance 0, easing to 0 at `radius` with zero slope at both ends.
+    /// Radius that matches Apple's Dock, in resting slot widths. Measured through the
+    /// Dock's accessibility frames (macOS 26): the curve depends only on resting slots,
+    /// not on the magnified size.
+    public static let dockRadiusInSlots = 3.2
+
+    /// 1 at distance 0, easing to 0 at `radius` with zero slope at both ends. A raised
+    /// cosine to the power 0.6, fitted to Apple's Dock: at 1, 2 and 3 slots of a 3.2-slot
+    /// radius it gives 0.86, 0.50 and 0.07 (Dock: 0.87, 0.50, 0.07).
     public static func falloff(distance: Double, radius: Double) -> Double {
         guard radius > 0 else { return 0 }
         let d = abs(distance)
         guard d < radius else { return 0 }
-        return (1 + cos(Double.pi * d / radius)) / 2
+        return pow((1 + cos(Double.pi * d / radius)) / 2, 0.6)
     }
 
     /// Lay out `slots` magnified around `pointer`.

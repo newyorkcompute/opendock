@@ -14,14 +14,25 @@ struct MagnificationTests {
 
     private func center(of index: Int) -> Double { (Double(index) + 0.5) * pitch }
 
+    @Test func falloffMatchesAppleDock() {
+        // Measured from the Dock's accessibility frames, in resting slots from the pointer.
+        let measured: [(slots: Double, value: Double)] = [
+            (0.5, 0.965), (1, 0.866), (1.5, 0.708), (2, 0.50), (2.5, 0.26), (3, 0.067), (3.5, 0),
+        ]
+        for point in measured {
+            let value = DockMagnification.falloff(distance: point.slots, radius: DockMagnification.dockRadiusInSlots)
+            #expect(abs(value - point.value) < 0.03, "at \(point.slots) slots: \(value) vs \(point.value)")
+        }
+    }
+
     @Test func falloffIsSmoothBell() {
         #expect(DockMagnification.falloff(distance: 0, radius: 100) == 1)
-        #expect(abs(DockMagnification.falloff(distance: 50, radius: 100) - 0.5) < 1e-12)
+        #expect(DockMagnification.falloff(distance: 20, radius: 100) > DockMagnification.falloff(distance: 40, radius: 100))
         #expect(DockMagnification.falloff(distance: -50, radius: 100) == DockMagnification.falloff(distance: 50, radius: 100))
         #expect(DockMagnification.falloff(distance: 100, radius: 100) == 0)
         #expect(DockMagnification.falloff(distance: 250, radius: 100) == 0)
         // Zero slope at the edge: no visible "pop" as an item enters the range.
-        #expect(DockMagnification.falloff(distance: 99, radius: 100) < 0.001)
+        #expect(DockMagnification.falloff(distance: 99, radius: 100) < 0.01)
     }
 
     @Test func noPointerMeansRestingLayout() {
