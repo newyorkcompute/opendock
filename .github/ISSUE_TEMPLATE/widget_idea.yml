@@ -1,0 +1,57 @@
+name: Widget idea
+description: Suggest a new widget for the dock.
+labels: ["widget", "enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Widgets are small live tiles in the dock. Please check the
+        [open widget issues](https://github.com/newyorkcompute/opendock/issues?q=is%3Aissue+is%3Aopen+label%3Awidget)
+        first, since your idea may already be on the roadmap.
+
+  - type: input
+    id: name
+    attributes:
+      label: Widget name
+      placeholder: Weather
+    validations:
+      required: true
+
+  - type: textarea
+    id: tile
+    attributes:
+      label: What does the tile show?
+      description: What you'd see at a glance in the dock, and how often it should update.
+    validations:
+      required: true
+
+  - type: textarea
+    id: interaction
+    attributes:
+      label: What happens when you click it?
+      description: For example, a popover with more detail, or opening an app.
+
+  - type: textarea
+    id: settings
+    attributes:
+      label: Settings
+      description: Options you'd want for it, such as units, location, or which calendar to show.
+
+  - type: textarea
+    id: data-source
+    attributes:
+      label: Data source and permissions
+      description: |
+        Where the data would come from (a macOS framework, a public API, a local file), and any
+        privacy permission it would need, such as Location or Reminders. Free APIs that don't
+        need a key are strongly preferred.
+
+  - type: dropdown
+    id: contribute
+    attributes:
+      label: Would you like to build it?
+      description: The README has a guide to writing a widget.
+      options:
+        - "Yes"
+        - "Maybe, with some guidance"
+        - "No"

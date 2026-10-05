@@ -1,0 +1,99 @@
+name: Bug report
+description: Something in OpenDock doesn't work the way it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please check that it hasn't
+        already been reported. For security problems, follow
+        [SECURITY.md](https://github.com/newyorkcompute/opendock/blob/main/SECURITY.md) instead.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: What went wrong, and what did you expect to happen instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Turn on auto-hide in Settings > General
+        2. Move the pointer to the bottom of the screen
+        3. ...
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: OpenDock version or commit
+      description: Shown in Settings > About. If you built from source, the commit hash.
+      placeholder: 0.1.0 (42) or 35c3fb4
+    validations:
+      required: true
+
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      description: Apple menu > About This Mac.
+      placeholder: macOS 26.1 (25B78)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: chip
+    attributes:
+      label: Mac
+      options:
+        - Apple silicon
+        - Intel
+    validations:
+      required: true
+
+  - type: dropdown
+    id: displays
+    attributes:
+      label: Display setup
+      options:
+        - Built-in display only
+        - One external display (lid closed or no built-in display)
+        - Multiple displays
+    validations:
+      required: true
+
+  - type: textarea
+    id: display-details
+    attributes:
+      label: Display details
+      description: |
+        If you use more than one display: how are they arranged, which one is the main
+        display, and which one shows the dock? Mention resolution or scaling if it seems relevant.
+
+  - type: dropdown
+    id: apple-dock
+    attributes:
+      label: Is Apple's Dock visible?
+      description: Apple's own Dock, not OpenDock.
+      options:
+        - "Yes, always visible"
+        - "Auto-hidden (System Settings > Desktop & Dock)"
+        - "Hidden by another tool"
+        - "Not sure"
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs, screenshots, or recordings
+      description: |
+        A screenshot or short screen recording helps a lot for visual bugs. For logs, run
+        `log stream --predicate 'subsystem == "org.opendock"' --level debug` in Terminal
+        while reproducing the bug, then paste the output here.
+      render: text
