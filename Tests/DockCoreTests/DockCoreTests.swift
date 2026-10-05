@@ -87,6 +87,17 @@ struct DockDocumentCodecTests {
         #expect(settings.material == DockSettings.default.material)
     }
 
+    @Test func hideAppleDockDecodesTolerantly() throws {
+        let decoder = JSONDecoder()
+        #expect(try decoder.decode(DockSettings.self, from: Data("{}".utf8)).hideAppleDock == false)
+        #expect(try decoder.decode(DockSettings.self, from: Data(#"{"hideAppleDock": "yes"}"#.utf8)).hideAppleDock == false)
+
+        var settings = DockSettings.default
+        settings.hideAppleDock = true
+        let decoded = try decoder.decode(DockSettings.self, from: JSONEncoder().encode(settings))
+        #expect(decoded.hideAppleDock)
+    }
+
     @Test func rejectsNewerVersions() throws {
         let profile = DockProfile(name: "X")
         let doc = DockDocument(version: DockDocument.currentVersion + 1, profiles: [profile], activeProfileID: profile.id)

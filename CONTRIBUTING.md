@@ -66,7 +66,9 @@ change, open an issue to discuss it.
 
 - The deployment target is macOS 15. Liquid Glass APIs must sit behind
   `if #available(macOS 26, *)`, with a frosted-material fallback.
-- OpenDock is a menu bar app (`LSUIElement`). It never modifies Apple's Dock.
+- OpenDock is a menu bar app (`LSUIElement`). It only changes Apple's Dock when the
+  user turns on "Hide Apple's Dock", and then always restores the user's Dock settings
+  (`AppleDockHider`).
 - The app can't be sandboxed, so it won't ship on the Mac App Store.
 
 **Concurrency and state**

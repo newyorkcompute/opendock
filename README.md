@@ -28,8 +28,8 @@
 > releases yet, so for now you [build it from source](#build-and-run).
 
 OpenDock is a floating dock panel at the bottom of your screen. It holds apps, folders,
-spacers, and small live widgets. It runs as a menu bar app and does not replace or modify
-Apple's Dock. You can keep both, or hide Apple's. Inspired by [Dockset](https://dockset.app).
+spacers, and small live widgets. It runs as a menu bar app and does not replace Apple's
+Dock. You can keep both, or have OpenDock hide Apple's while it runs. Inspired by [Dockset](https://dockset.app).
 
 ## Features
 
@@ -51,6 +51,7 @@ Apple's Dock. You can keep both, or hide Apple's. Inspired by [Dockset](https://
 - Magnification like the Dock's: icons near the pointer grow with a smooth falloff and
   push their neighbors aside, with an adjustable size and a name label above the hovered item
 - Auto-hide with a configurable delay
+- Optionally hides Apple's Dock while it runs, and puts your Dock settings back when it quits
 - Drag items in the dock to reorder them, and drop apps or folders from Finder to add them
 - Widgets: Clock, Battery, and Calendar
 - Settings window with General, Dock Items, Widgets, and About tabs
@@ -113,7 +114,7 @@ built binary in a signed `.app` bundle.
 | --- | --- |
 | `DockCore` | Models (`DockItem`, `DockProfile`, `DockSettings`) and JSON persistence (`DockStore`). No UI, fully unit-tested. |
 | `DockWidgetKit` | The widget contract (`DockWidget`), the `WidgetRegistry`, shared tile views, and environment values. |
-| `SystemServices` | Thin wrappers over macOS APIs: running apps, power sources, EventKit, icons, launching. |
+| `SystemServices` | Thin wrappers over macOS APIs: running apps, power sources, EventKit, icons, launching, hiding Apple's Dock. |
 | `Widgets/*` | One target per built-in widget (`ClockWidget`, `BatteryWidget`, `CalendarWidget`). |
 | `DockShell` | The dock panel: window, positioning, auto-hide, item views, drag and drop. |
 | `OpenDock` (`App/`) | The menu bar app: wires everything together, plus the menu, Settings window, and launch at login. |
