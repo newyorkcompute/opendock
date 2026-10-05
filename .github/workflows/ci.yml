@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+# Toolchain choice:
+# - Runner: `macos-26` (pinned rather than `macos-latest`, which currently maps
+#   to the same image) is the newest GitHub-hosted macOS image and the only one
+#   whose Xcodes ship the macOS 26 SDK the `#available(macOS 26, *)` Liquid
+#   Glass code compiles against. "Select Xcode" picks the newest stable Xcode
+#   on it (26.6 at the time of writing) for the SDK; set XCODE_VERSION to pin.
+# - Compiler: the image has no Xcode 27, and Xcode 26.6's Swift 6.3.3 crashes
+#   (signal 11 in the SIL performance inliner) on `-O` builds of DockShell, so
+#   release builds fail. CI therefore installs the swift.org Swift 6.4.0 release
+#   toolchain (the one in Xcode 27) and uses it via TOOLCHAINS. Once the runner
+#   image ships Xcode 27, drop SWIFT_VERSION and the install step.
+env:
+  XCODE_VERSION: ""
+  SWIFT_VERSION: "6.4.0"
+
+jobs:
+  build-and-test:
+    name: Build & test
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # build-app.sh derives the bundle build number from the commit count.
+          fetch-depth: 0
+
+      - name: Select Xcode
+        id: xcode
+        run: ./.github/scripts/select-xcode.sh
+
+      - name: Cache Swift toolchain
+        uses: actions/cache@v6
+        with:
+          path: ~/Library/Developer/Toolchains/swift-${{ env.SWIFT_VERSION }}-RELEASE.xctoolchain
+          key: swift-toolchain-${{ runner.os }}-${{ env.SWIFT_VERSION }}
+
+      - name: Install Swift ${{ env.SWIFT_VERSION }}
+        run: ./.github/scripts/install-swift-toolchain.sh
+
+      - name: Cache SwiftPM build
+        uses: actions/cache@v6
+        with:
+          path: .build
+          # Build products are only reusable with the exact same toolchain + SDK.
+          key: spm-${{ runner.os }}-${{ runner.arch }}-swift${{ env.SWIFT_VERSION }}-xcode${{ steps.xcode.outputs.version }}-${{ hashFiles('Package.swift', 'Package.resolved') }}-${{ hashFiles('Sources/**', 'App/**', 'Tests/**') }}
+          restore-keys: |
+            spm-${{ runner.os }}-${{ runner.arch }}-swift${{ env.SWIFT_VERSION }}-xcode${{ steps.xcode.outputs.version }}-${{ hashFiles('Package.swift', 'Package.resolved') }}-
+
+      - name: swift build
+        run: swift build
+
+      - name: swift test
+        run: swift test
+
+      - name: Assemble app bundle
+        run: |
+          # build-app.sh tolerates `swift build` failures and only checks that
+          # the binary exists, so drop any copy restored from the cache.
+          rm -f "$(swift build -c release --show-bin-path)/OpenDock"
+          scripts/build-app.sh
+
+      - name: Verify app bundle
+        run: |
+          APP=build/OpenDock.app
+          test -x "$APP/Contents/MacOS/OpenDock"
+          plutil -lint "$APP/Contents/Info.plist"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          lipo -info "$APP/Contents/MacOS/OpenDock"
+
+  universal:
+    name: Universal release build
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Select Xcode
+        run: ./.github/scripts/select-xcode.sh
+
+      - name: Cache Swift toolchain
+        uses: actions/cache@v6
+        with:
+          path: ~/Library/Developer/Toolchains/swift-${{ env.SWIFT_VERSION }}-RELEASE.xctoolchain
+          key: swift-toolchain-${{ runner.os }}-${{ env.SWIFT_VERSION }}
+
+      - name: Install Swift ${{ env.SWIFT_VERSION }}
+        run: ./.github/scripts/install-swift-toolchain.sh
+
+      - name: Build arm64 + x86_64
+        run: swift build -c release --arch arm64 --arch x86_64 --product OpenDock
+
+      - name: Verify architectures
+        run: |
+          BIN="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/OpenDock"
+          lipo -info "$BIN"
+          lipo "$BIN" -verify_arch arm64 x86_64
