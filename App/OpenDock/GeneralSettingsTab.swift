@@ -91,7 +91,26 @@ struct GeneralSettingsTab: View {
 
             Toggle("Show indicators for running apps", isOn: setting(\.showRunningIndicators))
             Toggle("Show running apps that aren’t in the dock", isOn: setting(\.showRunningApps))
-            Toggle("Enlarge items on hover", isOn: setting(\.hoverEffect))
+            Toggle("Magnification", isOn: setting(\.hoverEffect))
+
+            if store.settings.hoverEffect {
+                LabeledContent("Magnified size") {
+                    HStack(spacing: 10) {
+                        Slider(value: setting(\.magnification), in: DockSettings.magnificationRange, step: 0.05) {
+                            Text("Magnified size")
+                        } minimumValueLabel: {
+                            Text("Small").font(.caption)
+                        } maximumValueLabel: {
+                            Text("Large").font(.caption)
+                        }
+                        .labelsHidden()
+                        Text("\(Int((store.settings.iconSize * store.settings.magnification).rounded())) pt")
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                            .frame(width: 44, alignment: .trailing)
+                    }
+                }
+            }
         }
     }
 

@@ -21,24 +21,22 @@ public final class DockController {
     public let shellState = DockShellState()
     public var actions: DockActions
 
-    private var panel: DockPanel?
-    private var hostingView: NSView?
+    private(set) var panel: DockPanel?
+    private(set) var hostingView: NSView?
     private var contentSize: CGSize = .zero
 
     private var screenObserver: (any NSObjectProtocol)?
     private var globalMouseMonitor: Any?
     private var localMouseMonitor: Any?
+    /// Watches the pointer while it's over the dock, to notice it leaving through a
+    /// transparent part of the window (where the window itself gets no events).
+    var hoverMonitor: Any?
     private var hideTask: Task<Void, Never>?
     private var trackingProxy: TrackingProxy?
     /// Set by `revealAndHold()`; cleared when the pointer enters the dock.
-    fileprivate var holdUntilPointerEnters = false
+    var holdUntilPointerEnters = false
 
     private let log = Logger(subsystem: "org.opendock", category: "DockController")
-
-    /// Distance from the screen edge to the dock, in points.
-    private let edgeMargin: CGFloat = 6
-    /// Extra room above the content so hover-scaled icons don't clip.
-    static let hoverHeadroom: CGFloat = 18
 
     public init(
         store: DockStore,
@@ -87,6 +85,7 @@ public final class DockController {
     public func stop() {
         hideTask?.cancel()
         removeEdgeMonitors()
+        removeHoverMonitor()
         if let screenObserver {
             NotificationCenter.default.removeObserver(screenObserver)
         }
@@ -109,13 +108,13 @@ public final class DockController {
         NSScreen.screens.first
     }
 
-    /// Frame for the panel when fully shown.
+    /// Frame for the panel when fully shown. The window reaches down to the edge so the
+    /// strip under the dock still counts as "over the dock"; the layout insets the surface.
     private func shownFrame(on screen: NSScreen) -> NSRect {
         let visible = screen.visibleFrame
         let width = min(contentSize.width, visible.width)
         let x = visible.midX - width / 2
-        let y = visible.minY + edgeMargin
-        return NSRect(x: x, y: y, width: width, height: contentSize.height)
+        return NSRect(x: x, y: visible.minY, width: width, height: contentSize.height)
     }
 
     /// Frame for the panel when hidden: just below the bottom edge of the screen.
@@ -196,7 +195,7 @@ public final class DockController {
         guard let panel, let screen = targetScreen, shellState.isVisible else { return }
         guard !shellState.isInteracting else { return }
         shellState.isVisible = false
-        shellState.hoveredItemID = nil
+        resetMagnification()
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.2
             context.timingFunction = CAMediaTimingFunction(name: .easeIn)
@@ -228,7 +227,9 @@ public final class DockController {
 
     /// Called when an interaction (popover/menu) ends; re-arm hiding if the pointer left.
     func interactionEnded() {
-        if store.settings.autoHide, !pointerIsOverDock {
+        guard !pointerIsOverDock else { return }
+        pointerLeftDock()
+        if store.settings.autoHide {
             scheduleHide()
         }
     }
@@ -236,9 +237,11 @@ public final class DockController {
     /// True when the pointer is over the dock *or* in the strip between the dock and
     /// the screen edge. Without the strip, a pointer resting at the very bottom of the
     /// screen (where it revealed the dock) would count as "outside" and hide it again.
-    private var pointerIsOverDock: Bool {
+    var pointerIsOverDock: Bool {
         guard let panel, panel.isVisible, let screen = targetScreen else { return false }
-        var zone = panel.frame.insetBy(dx: -4, dy: -4)
+        // The window is larger than the dock (room for magnification), so use the
+        // dock's own hit zone once the layout has produced one.
+        var zone = (hitZoneOnScreen ?? panel.frame).insetBy(dx: -4, dy: -4)
         let extension_ = zone.minY - screen.frame.minY
         if extension_ > 0 {
             zone.origin.y = screen.frame.minY
@@ -311,6 +314,7 @@ public final class DockController {
 
         override func mouseEntered(with event: NSEvent) {
             MainActor.assumeIsolated {
+                guard controller.pointerIsOverDock else { return }
                 controller.holdUntilPointerEnters = false
                 controller.cancelScheduledHide()
             }
