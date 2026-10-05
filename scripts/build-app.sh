@@ -53,8 +53,9 @@ APP_DIR="$OUT_DIR/$APP_NAME.app"
 CONTENTS="$APP_DIR/Contents"
 
 echo "▸ swift build ($CONFIG, ${ARCHS[*]:-native})"
-# sed (unlike grep) never fails, so pipefail still reports a failed build.
-swift build "${BUILD_FLAGS[@]}" --product "$APP_NAME" 2>&1 | sed '/^\[/d'
+# Drop progress lines ("[12/80] Compiling…", "42%: …"). sed (unlike grep) never
+# fails, so pipefail still reports a failed build.
+swift build "${BUILD_FLAGS[@]}" --product "$APP_NAME" 2>&1 | sed -E '/^(\[[0-9]+\/[0-9]+\]|[0-9]+%: )/d'
 BIN_DIR="$(swift build "${BUILD_FLAGS[@]}" --show-bin-path)"
 BINARY="$BIN_DIR/$APP_NAME"
 [[ -x "$BINARY" ]] || { echo "build failed: $BINARY not found" >&2; exit 1; }
