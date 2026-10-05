@@ -19,11 +19,13 @@ permissions:
 #   whose Xcodes ship the macOS 26 SDK the `#available(macOS 26, *)` Liquid
 #   Glass code compiles against. "Select Xcode" picks the newest stable Xcode
 #   on it (26.6 at the time of writing) for the SDK; set XCODE_VERSION to pin.
-# - Compiler: the image has no Xcode 27, and Xcode 26.6's Swift 6.3.3 crashes
-#   (signal 11 in the SIL performance inliner) on `-O` builds of DockShell, so
-#   release builds fail. CI therefore installs the swift.org Swift 6.4.0 release
-#   toolchain (the one in Xcode 27) and uses it via TOOLCHAINS. Once the runner
-#   image ships Xcode 27, drop SWIFT_VERSION and the install step.
+# - Compiler: `build-and-test` and `universal` use the swift.org Swift 6.4.0
+#   release toolchain (the one in Xcode 27) via TOOLCHAINS, layered on the
+#   Xcode 26 SDK. They were added when Xcode 26.6's Swift 6.3.3 crashed
+#   (signal 11 in the SIL inliner) on `-O` builds of DockShell; that crash now
+#   has a source workaround (see `DockHostingView`), so 6.4 is no longer
+#   required. `stock-xcode` builds with the selected Xcode's own compiler, as a
+#   contributor on stock Xcode 26 would, so the crash can't come back unnoticed.
 env:
   XCODE_VERSION: ""
   SWIFT_VERSION: "6.4.0"
@@ -109,3 +111,29 @@ jobs:
           BIN="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/OpenDock"
           lipo -info "$BIN"
           lipo "$BIN" -verify_arch arm64 x86_64
+
+  stock-xcode:
+    name: Stock Xcode release build
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # No swift.org toolchain and no build cache: exactly what a contributor
+      # gets from `make release` and `make test` on a fresh stock Xcode.
+      - name: Select Xcode
+        run: ./.github/scripts/select-xcode.sh
+
+      - name: Release build
+        run: swift build -c release --product OpenDock
+
+      - name: make release
+        run: |
+          make release
+          test -x build/OpenDock.app/Contents/MacOS/OpenDock
+          codesign --verify --deep --strict build/OpenDock.app
+
+      - name: make test
+        run: make test
