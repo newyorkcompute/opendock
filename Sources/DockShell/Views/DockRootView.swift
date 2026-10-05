@@ -78,11 +78,6 @@ struct DockSurfaceView: View {
         .onContinuousHover { phase in
             controller.pointerHoverChanged(phase)
         }
-        .dropDestination(for: URL.self) { urls, _ in
-            controller.handleDroppedURLs(urls)
-        } isTargeted: { targeted in
-            if targeted { controller.cancelScheduledHide() }
-        }
     }
 
     private func surface(cornerRadius: CGFloat) -> some View {
@@ -94,7 +89,7 @@ struct DockSurfaceView: View {
             }
             .shadow(color: .black.opacity(0.28), radius: 14, y: 6)
             // The glass fill isn't hit-testable on its own; make the whole surface a target
-            // so right-click and drops land on the padding, not just on items.
+            // so right-click lands on the padding, not just on items.
             .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             .contextMenu { DockBackgroundMenu(controller: controller) }
     }

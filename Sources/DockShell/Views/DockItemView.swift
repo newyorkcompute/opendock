@@ -3,8 +3,8 @@ import DockWidgetKit
 import SwiftUI
 import SystemServices
 
-/// Dispatches a `DockItem` to the right view and adds the behaviour every item
-/// shares: drag-to-reorder and drop-target handling. Magnification is done by
+/// Dispatches a `DockItem` to the right view and makes it draggable for reordering
+/// (drops are handled by `DockHostingView`). Magnification is done by
 /// `DockMagnifyingLayout`, which proposes a larger size; item views fill it.
 struct DockItemView: View {
     let item: DockItem
@@ -18,11 +18,6 @@ struct DockItemView: View {
             .opacity(shellState.draggingItemID == item.id ? 0.35 : 1)
             .draggable(item.id.uuidString) {
                 dragPreview
-            }
-            .dropDestination(for: String.self) { payloads, _ in
-                controller.handleReorderDrop(payloads, onto: item.id)
-            } isTargeted: { targeted in
-                if targeted { controller.cancelScheduledHide() }
             }
     }
 

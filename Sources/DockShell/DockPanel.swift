@@ -42,5 +42,33 @@ final class DockPanel: NSPanel {
 
 /// Hosting view that reacts to the first click even when the panel isn't key.
 final class DockHostingView<Content: View>: NSHostingView<Content> {
+    /// Receives every drop on the dock: reordering and files from Finder. Done here
+    /// rather than with SwiftUI drop destinations because those claim drags of the other
+    /// type (a `String` target takes file drags, a `URL` target takes reorder drags) and
+    /// then fail to load them, depending on exactly where the drop lands.
+    weak var dropHandler: DockController?
+
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+    override func draggingEntered(_ sender: any NSDraggingInfo) -> NSDragOperation {
+        dropHandler?.dragUpdated(sender) ?? []
+    }
+
+    override func draggingUpdated(_ sender: any NSDraggingInfo) -> NSDragOperation {
+        dropHandler?.dragUpdated(sender) ?? []
+    }
+
+    override func draggingExited(_ sender: (any NSDraggingInfo)?) {
+        dropHandler?.dragExited()
+    }
+
+    override func prepareForDragOperation(_ sender: any NSDraggingInfo) -> Bool { true }
+
+    override func performDragOperation(_ sender: any NSDraggingInfo) -> Bool {
+        dropHandler?.performDrop(sender) ?? false
+    }
+
+    override func draggingEnded(_ sender: any NSDraggingInfo) {
+        dropHandler?.dragEnded()
+    }
 }

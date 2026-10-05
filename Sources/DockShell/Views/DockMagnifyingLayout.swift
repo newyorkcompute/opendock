@@ -54,12 +54,19 @@ extension View {
 final class DockGeometry {
     var hitZone: CGRect = .zero
     var hoverTargets: [(id: DockItem.ID, frame: CGRect)] = []
+    /// Every item with an ID (spacers included), for drop targeting.
+    var itemFrames: [(id: DockItem.ID, frame: CGRect)] = []
     var halfGap: CGFloat = 0
     /// Origin of the layout in the hosting view (top-left origin).
     var containerOrigin: CGPoint = .zero
 
     func item(atX x: CGFloat) -> DockItem.ID? {
         hoverTargets.first { x >= $0.frame.minX - halfGap && x < $0.frame.maxX + halfGap }?.id
+    }
+
+    /// The item a drop at `x` lands on: the one under it, else the nearest.
+    func dropTarget(atX x: CGFloat) -> DockItem.ID? {
+        itemFrames.min { abs($0.frame.midX - x) < abs($1.frame.midX - x) }?.id
     }
 }
 
@@ -87,6 +94,7 @@ nonisolated struct DockMagnifyingLayout: Layout {
         var sizes: [CGSize] = []
         var slots: [DockMagnification.Slot] = []
         var hoverIDs: [DockItem.ID?] = []
+        var ids: [DockItem.ID?] = []
         var height: CGFloat = 0
         var restingWidth: CGFloat = 0
     }
@@ -95,6 +103,7 @@ nonisolated struct DockMagnifyingLayout: Layout {
         var row = Row()
         for index in subviews.indices {
             guard case let .item(id, magnifies, hoverable) = subviews[index][DockLayoutRoleKey.self] else { continue }
+            row.ids.append(id)
             let size = subviews[index].sizeThatFits(.unspecified)
             row.itemIndices.append(index)
             row.sizes.append(size)
@@ -194,12 +203,16 @@ nonisolated struct DockMagnifyingLayout: Layout {
         let targets = zip(row.hoverIDs, frames).compactMap { id, frame in
             id.map { (id: $0, frame: frame.applying(local)) }
         }
+        let allFrames = zip(row.ids, frames).compactMap { id, frame in
+            id.map { (id: $0, frame: frame.applying(local)) }
+        }
         let halfGap = metrics.spacing / 2
         // SwiftUI lays out on the main thread.
         MainActor.assumeIsolated {
             geometry.hitZone = zone.applying(local)
             geometry.halfGap = halfGap
             geometry.hoverTargets = targets
+            geometry.itemFrames = allFrames
         }
     }
 }

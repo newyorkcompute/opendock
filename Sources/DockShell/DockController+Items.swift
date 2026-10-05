@@ -33,6 +33,54 @@ extension DockController {
         return moved
     }
 
+    // MARK: - Drops (see `DockHostingView`)
+
+    /// Drags that start in this app are dock items being reordered: the item is the one
+    /// under the drag when it first appears. Anything else must carry file URLs.
+    func dragUpdated(_ info: any NSDraggingInfo) -> NSDragOperation {
+        guard let location = dropLocation(info) else { return [] }
+        cancelScheduledHide()
+        if info.draggingSource != nil {
+            if shellState.draggingItemID == nil {
+                shellState.draggingItemID = shellState.geometry.dropTarget(atX: location.x)
+            }
+            guard shellState.draggingItemID != nil else { return [] }
+            pointerMoved(to: location)
+            return .move
+        }
+        guard !droppedFileURLs(info).isEmpty else { return [] }
+        pointerMoved(to: location)
+        return .copy
+    }
+
+    func dragExited() {
+        pointerMoved(to: nil)
+    }
+
+    func performDrop(_ info: any NSDraggingInfo) -> Bool {
+        guard let location = dropLocation(info),
+              let target = shellState.geometry.dropTarget(atX: location.x)
+        else { return false }
+        if info.draggingSource != nil {
+            guard let dragged = shellState.draggingItemID else { return false }
+            return handleReorderDrop([dragged.uuidString], onto: target)
+        }
+        return handleDroppedURLs(droppedFileURLs(info))
+    }
+
+    func dragEnded() {
+        shellState.draggingItemID = nil
+    }
+
+    private func dropLocation(_ info: any NSDraggingInfo) -> CGPoint? {
+        guard let panel else { return nil }
+        return layoutPoint(fromScreen: panel.convertPoint(toScreen: info.draggingLocation))
+    }
+
+    private func droppedFileURLs(_ info: any NSDraggingInfo) -> [URL] {
+        info.draggingPasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
+    }
+
     func promptForApp() {
         presentingSystemPanel {
             let panel = NSOpenPanel()
