@@ -86,31 +86,7 @@ jobs:
         env:
           DEVELOPER_ID_CERT_P12: ${{ secrets.DEVELOPER_ID_CERT_P12 }}
           DEVELOPER_ID_CERT_PASSWORD: ${{ secrets.DEVELOPER_ID_CERT_PASSWORD }}
-        run: |
-          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
-          KEYCHAIN_PASSWORD="$(uuidgen)"
-          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
-          security set-keychain-settings -lut 21600 "$KEYCHAIN"
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
-          printf '%s' "$DEVELOPER_ID_CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
-          security import "$RUNNER_TEMP/cert.p12" -k "$KEYCHAIN" \
-            -P "$DEVELOPER_ID_CERT_PASSWORD" -T /usr/bin/codesign
-          rm -f "$RUNNER_TEMP/cert.p12"
-          security set-key-partition-list -S apple-tool:,apple:,codesign: \
-            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" > /dev/null
-          # Prepend to the search list so codesign finds the identity.
-          # shellcheck disable=SC2046
-          security list-keychains -d user -s "$KEYCHAIN" \
-            $(security list-keychains -d user | tr -d '"')
-          IDENTITY="$(security find-identity -v -p codesigning "$KEYCHAIN" \
-            | awk '/"Developer ID Application: / { print $2; exit }')"
-          if [[ -z "$IDENTITY" ]]; then
-            echo "::error::DEVELOPER_ID_CERT_P12 has no valid 'Developer ID Application' identity"
-            security find-identity -v -p codesigning "$KEYCHAIN"
-            exit 1
-          fi
-          echo "keychain=$KEYCHAIN" >> "$GITHUB_OUTPUT"
-          echo "identity=$IDENTITY" >> "$GITHUB_OUTPUT"
+        run: ./.github/scripts/import-signing-cert.sh
 
       - name: Build app
         env:
