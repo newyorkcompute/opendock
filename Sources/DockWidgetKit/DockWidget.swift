@@ -9,7 +9,7 @@ import SwiftUI
 /// - do their own polling, and stop/slow it when `\.dockIsVisible` is false,
 /// - persist settings through `\.widgetUpdateSettings`, never through their own files.
 public protocol DockWidget {
-    /// Stable reverse-DNS identifier, e.g. `org.opendock.widget.clock`. Never change it.
+    /// Stable reverse-DNS identifier, e.g. `com.newyorkcompute.opendock.widget.clock`. Never change it.
     static var typeID: String { get }
     /// Shown in the widget picker and context menus.
     static var displayName: String { get }

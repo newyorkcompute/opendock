@@ -49,14 +49,34 @@ public struct DockStorage: Sendable {
         return document
     }
 
-    /// Forward-migrate older documents. Currently a no-op beyond a version check.
+    /// Forward-migrate older documents, one version step at a time.
     static func migrate(_ document: DockDocument) throws -> DockDocument {
         guard document.version <= DockDocument.currentVersion else {
             throw StorageError.newerThanSupported(document.version)
         }
         var migrated = document
+        if migrated.version < 2 {
+            renameWidgetTypes(in: &migrated, prefix: legacyWidgetIDPrefix, to: widgetIDPrefix)
+        }
         migrated.version = DockDocument.currentVersion
         return migrated
+    }
+
+    static let legacyWidgetIDPrefix = "org.opendock.widget."
+    static let widgetIDPrefix = "com.newyorkcompute.opendock.widget."
+
+    /// Rewrites every widget whose type ID starts with `oldPrefix`, in every profile,
+    /// keeping its item ID, position, and settings.
+    private static func renameWidgetTypes(in document: inout DockDocument, prefix oldPrefix: String, to newPrefix: String) {
+        for profileIndex in document.profiles.indices {
+            for itemIndex in document.profiles[profileIndex].items.indices {
+                guard case var .widget(instance) = document.profiles[profileIndex].items[itemIndex].kind,
+                      instance.typeID.hasPrefix(oldPrefix)
+                else { continue }
+                instance.typeID = newPrefix + String(instance.typeID.dropFirst(oldPrefix.count))
+                document.profiles[profileIndex].items[itemIndex].kind = .widget(instance)
+            }
+        }
     }
 
     public enum StorageError: Error, LocalizedError {
