@@ -25,7 +25,12 @@ Apple's Dock. You can keep both, or hide Apple's.
 
 ## Build and run
 
-Requirements: macOS 15+, and Xcode 26+ or the Swift 6.2+ command line tools.
+Requirements:
+
+- macOS 15 or later to run OpenDock.
+- Xcode 26 or later to build it, for Swift 6.2+ and the macOS 26 SDK. A stock Xcode is
+  enough; you don't need a separate Swift toolchain. CI builds every change with Xcode
+  26.6 (Swift 6.3.3) and with Swift 6.4.
 
 ```sh
 make run
@@ -34,7 +39,8 @@ scripts/build-app.sh --debug
 open build/OpenDock.app
 ```
 
-`make release` builds an optimized bundle. `make test` runs the unit tests.
+`make release` builds an optimized bundle in `build/OpenDock.app`. `make test` runs the
+unit tests.
 
 Notes:
 
