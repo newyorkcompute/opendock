@@ -19,16 +19,11 @@ permissions:
 #   whose Xcodes ship the macOS 26 SDK the `#available(macOS 26, *)` Liquid
 #   Glass code compiles against. "Select Xcode" picks the newest stable Xcode
 #   on it (26.6 at the time of writing) for the SDK; set XCODE_VERSION to pin.
-# - Compiler: `build-and-test` and `universal` use the swift.org Swift 6.4.0
-#   release toolchain (the one in Xcode 27) via TOOLCHAINS, layered on the
-#   Xcode 26 SDK. They were added when Xcode 26.6's Swift 6.3.3 crashed
-#   (signal 11 in the SIL inliner) on `-O` builds of DockShell; that crash now
-#   has a source workaround (see `DockHostingView`), so 6.4 is no longer
-#   required. `stock-xcode` builds with the selected Xcode's own compiler, as a
-#   contributor on stock Xcode 26 would, so the crash can't come back unnoticed.
+# - Compiler: the selected Xcode's own, so CI builds exactly what a contributor
+#   on stock Xcode does. Both jobs compile with `-O`, which keeps the Swift 6.3.3
+#   crash worked around in `DockHostingView` from coming back unnoticed.
 env:
   XCODE_VERSION: ""
-  SWIFT_VERSION: "6.4.0"
 
 jobs:
   build-and-test:
@@ -45,23 +40,14 @@ jobs:
         id: xcode
         run: ./.github/scripts/select-xcode.sh
 
-      - name: Cache Swift toolchain
-        uses: actions/cache@v6
-        with:
-          path: ~/Library/Developer/Toolchains/swift-${{ env.SWIFT_VERSION }}-RELEASE.xctoolchain
-          key: swift-toolchain-${{ runner.os }}-${{ env.SWIFT_VERSION }}
-
-      - name: Install Swift ${{ env.SWIFT_VERSION }}
-        run: ./.github/scripts/install-swift-toolchain.sh
-
       - name: Cache SwiftPM build
         uses: actions/cache@v6
         with:
           path: .build
-          # Build products are only reusable with the exact same toolchain + SDK.
-          key: spm-${{ runner.os }}-${{ runner.arch }}-swift${{ env.SWIFT_VERSION }}-xcode${{ steps.xcode.outputs.version }}-${{ hashFiles('Package.swift', 'Package.resolved') }}-${{ hashFiles('Sources/**', 'App/**', 'Tests/**') }}
+          # Build products are only reusable with the exact same Xcode (compiler + SDK).
+          key: spm-${{ runner.os }}-${{ runner.arch }}-xcode${{ steps.xcode.outputs.version }}-${{ hashFiles('Package.swift', 'Package.resolved') }}-${{ hashFiles('Sources/**', 'App/**', 'Tests/**') }}
           restore-keys: |
-            spm-${{ runner.os }}-${{ runner.arch }}-swift${{ env.SWIFT_VERSION }}-xcode${{ steps.xcode.outputs.version }}-${{ hashFiles('Package.swift', 'Package.resolved') }}-
+            spm-${{ runner.os }}-${{ runner.arch }}-xcode${{ steps.xcode.outputs.version }}-${{ hashFiles('Package.swift', 'Package.resolved') }}-
 
       - name: swift build
         run: swift build
@@ -94,15 +80,6 @@ jobs:
       - name: Select Xcode
         run: ./.github/scripts/select-xcode.sh
 
-      - name: Cache Swift toolchain
-        uses: actions/cache@v6
-        with:
-          path: ~/Library/Developer/Toolchains/swift-${{ env.SWIFT_VERSION }}-RELEASE.xctoolchain
-          key: swift-toolchain-${{ runner.os }}-${{ env.SWIFT_VERSION }}
-
-      - name: Install Swift ${{ env.SWIFT_VERSION }}
-        run: ./.github/scripts/install-swift-toolchain.sh
-
       - name: Build arm64 + x86_64
         run: swift build -c release --arch arm64 --arch x86_64 --product OpenDock
 
@@ -111,29 +88,3 @@ jobs:
           BIN="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/OpenDock"
           lipo -info "$BIN"
           lipo "$BIN" -verify_arch arm64 x86_64
-
-  stock-xcode:
-    name: Stock Xcode release build
-    runs-on: macos-26
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-
-      # No swift.org toolchain and no build cache: exactly what a contributor
-      # gets from `make release` and `make test` on a fresh stock Xcode.
-      - name: Select Xcode
-        run: ./.github/scripts/select-xcode.sh
-
-      - name: Release build
-        run: swift build -c release --product OpenDock
-
-      - name: make release
-        run: |
-          make release
-          test -x build/OpenDock.app/Contents/MacOS/OpenDock
-          codesign --verify --deep --strict build/OpenDock.app
-
-      - name: make test
-        run: make test

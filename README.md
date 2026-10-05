@@ -29,8 +29,8 @@ Requirements:
 
 - macOS 15 or later to run OpenDock.
 - Xcode 26 or later to build it, for Swift 6.2+ and the macOS 26 SDK. A stock Xcode is
-  enough; you don't need a separate Swift toolchain. CI builds every change with Xcode
-  26.6 (Swift 6.3.3) and with Swift 6.4.
+  enough; you don't need a separate Swift toolchain. CI builds every change with the newest
+  stable Xcode on GitHub's macOS 26 runner (currently Xcode 26.6 with Swift 6.3.3).
 
 ```sh
 make run

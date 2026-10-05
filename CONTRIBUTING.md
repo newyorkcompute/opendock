@@ -37,7 +37,7 @@ icon, ad-hoc signature). You can still edit in Xcode by opening `Package.swift`.
 To watch the app's logs while it runs:
 
 ```sh
-log stream --predicate 'subsystem == "org.opendock"' --level debug
+log stream --predicate 'subsystem == "com.newyorkcompute.opendock"' --level debug
 ```
 
 ### Running several builds at once
@@ -83,8 +83,8 @@ change, open an issue to discuss it.
 - The layout file (`~/Library/Application Support/OpenDock/dock.json`) is a versioned
   `DockDocument` with tolerant decoding. Keep changes backward compatible: add fields with
   defaults rather than renaming or removing them.
-- Widget type IDs (`BuiltInWidgetID.*`, `org.opendock.widget.*`) are stored in users' layout
-  files. Never rename one.
+- Widget type IDs (`BuiltInWidgetID.*`, `com.newyorkcompute.opendock.widget.*`) are stored
+  in users' layout files. Never rename one.
 
 **Smaller gotchas**
 

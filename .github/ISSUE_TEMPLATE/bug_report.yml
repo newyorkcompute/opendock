@@ -94,6 +94,6 @@ body:
       label: Logs, screenshots, or recordings
       description: |
         A screenshot or short screen recording helps a lot for visual bugs. For logs, run
-        `log stream --predicate 'subsystem == "org.opendock"' --level debug` in Terminal
+        `log stream --predicate 'subsystem == "com.newyorkcompute.opendock"' --level debug` in Terminal
         while reproducing the bug, then paste the output here.
       render: text
