@@ -43,6 +43,10 @@ extension DockController {
         position.submenu = positions
         menu.addItem(position)
 
+        let display = NSMenuItem(title: "Display", action: nil, keyEquivalent: "")
+        display.submenu = displayMenu(current: settings.display)
+        menu.addItem(display)
+
         menu.addItem(actionMenuItem("Remove Divider") { [store] in
             store.remove(id: id)
         })
@@ -50,6 +54,39 @@ extension DockController {
         menu.addItem(actionMenuItem("Dock Settings…") { [weak self] in
             self?.actions.openSettings()
         })
+        return menu
+    }
+
+    /// The same choices as the Display picker in Settings > General: the main display,
+    /// the display with the active menu bar, then each connected display, plus the
+    /// chosen one while it's disconnected.
+    private func displayMenu(current: DockSettings.Display) -> NSMenu {
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        func add(_ title: String, _ display: DockSettings.Display, checked: Bool) {
+            let item = actionMenuItem(title) { [store] in
+                store.updateSettings { $0.display = display }
+            }
+            item.state = checked ? .on : .off
+            menu.addItem(item)
+        }
+
+        add("Main Display", .main, checked: current == .main)
+        add("Display with the Active Menu Bar", .active, checked: current == .active)
+
+        var currentID: String?
+        if case let .specific(id, _) = current { currentID = id }
+        let screens = NSScreen.screens.map(\.placementScreen).filter { $0.id != nil }
+        if !screens.isEmpty || currentID != nil {
+            menu.addItem(.separator())
+        }
+        for screen in screens {
+            guard let id = screen.id else { continue }
+            add(screen.name, .specific(id: id, name: screen.name), checked: id == currentID)
+        }
+        if case let .specific(id, name) = current, !screens.contains(where: { $0.id == id }) {
+            add("\(name.isEmpty ? "Display" : name) (Disconnected)", current, checked: true)
+        }
         return menu
     }
 
