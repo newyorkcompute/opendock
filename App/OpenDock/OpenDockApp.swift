@@ -22,7 +22,9 @@ struct OpenDockApp: App {
 }
 
 /// Owns the long-lived objects. Created once by SwiftUI at launch.
+/// Observable because `dock` only exists after launch and the menu bar menu reads it.
 @MainActor
+@Observable
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let store = DockStore.load()
     let registry = WidgetRegistry()
@@ -30,7 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let launchAtLogin = LaunchAtLogin()
     private(set) var dock: DockController?
 
-    private lazy var settingsWindow = SettingsWindowController(
+    @ObservationIgnored private lazy var settingsWindow = SettingsWindowController(
         store: store,
         registry: registry,
         launchAtLogin: launchAtLogin
