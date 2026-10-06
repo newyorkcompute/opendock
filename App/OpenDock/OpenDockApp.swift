@@ -80,7 +80,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func syncAppleDock() {
         let hide = withObservationTracking {
             store.settings.hideAppleDock
-        } onChange: {
+        } onChange: { [weak self] in
+            guard let self else { return }
             Task { @MainActor [weak self] in self?.syncAppleDock() }
         }
         guard hide != appliedHideAppleDock else { return }
