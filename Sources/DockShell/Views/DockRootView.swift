@@ -60,7 +60,11 @@ struct DockSurfaceView: View {
 
             ForEach(store.items) { item in
                 DockItemView(item: item, controller: controller)
-                    .dockLayoutRole(.item(item.id, magnifies: !item.isWidget, hoverable: !item.isSpacer))
+                    .dockLayoutRole(.item(
+                        item.id,
+                        magnifies: !item.isWidget && !item.isDivider,
+                        hoverable: !item.isSpacer && !item.isDivider
+                    ))
             }
 
             if !extras.isEmpty {
@@ -101,7 +105,7 @@ struct DockSurfaceView: View {
             case let .app(app): return app.displayName
             case let .folder(folder): return folder.displayName
             case let .widget(instance): return registry.displayName(for: instance)
-            case .spacer: return nil
+            case .spacer, .divider: return nil
             }
         }
         return extras.first { $0.item.id == id }?.app.displayName
@@ -168,16 +172,6 @@ private struct DockLabelBackground: View {
                 .overlay(Capsule().strokeBorder(.white.opacity(0.12), lineWidth: 0.5))
                 .shadow(color: .black.opacity(0.2), radius: 4, y: 2)
         }
-    }
-}
-
-struct DockDivider: View {
-    @Environment(\.dockIconSize) private var iconSize
-    var body: some View {
-        RoundedRectangle(cornerRadius: 1)
-            .fill(.primary.opacity(0.18))
-            .frame(width: 1, height: iconSize * 0.8)
-            .padding(.horizontal, 2)
     }
 }
 

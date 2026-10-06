@@ -32,6 +32,8 @@ struct DockItemView: View {
             SpacerItemView(item: item, spacer: spacer, controller: controller)
         case let .widget(instance):
             WidgetItemView(item: item, instance: instance, controller: controller)
+        case .divider:
+            DividerItemView(item: item, controller: controller)
         }
     }
 
@@ -46,6 +48,10 @@ struct DockItemView: View {
             Image(nsImage: AppIconProvider.shared.icon(for: folder.url))
                 .resizable()
                 .frame(width: iconSize, height: iconSize)
+        case .divider:
+            Capsule()
+                .fill(.secondary)
+                .frame(width: 2, height: iconSize * 0.8)
         default:
             RoundedRectangle(cornerRadius: 10)
                 .fill(.secondary.opacity(0.3))

@@ -35,6 +35,9 @@ struct DockItemInspector: View {
             }
             .pickerStyle(.segmented)
             .fixedSize()
+        case .divider:
+            Text("Dividers have no options. Click one in the dock for quick dock settings.")
+                .settingsFootnote()
         case let .widget(instance):
             widgetSettings(instance)
         }

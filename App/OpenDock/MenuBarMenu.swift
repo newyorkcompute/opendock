@@ -33,6 +33,7 @@ struct MenuBarMenu: View {
                 Button("Small") { DockItemActions.addSpacer(.small, to: store) }
                 Button("Regular") { DockItemActions.addSpacer(.regular, to: store) }
             }
+            Button("Divider") { DockItemActions.addDivider(to: store) }
             if !registry.descriptors.isEmpty {
                 Divider()
                 ForEach(registry.descriptors) { descriptor in

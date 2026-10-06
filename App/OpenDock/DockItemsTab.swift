@@ -96,6 +96,7 @@ struct DockItemsTab: View {
             Button("Small") { selection = DockItemActions.addSpacer(.small, to: store) }
             Button("Regular") { selection = DockItemActions.addSpacer(.regular, to: store) }
         }
+        Button("Divider") { selection = DockItemActions.addDivider(to: store) }
         Menu("Widget") {
             ForEach(registry.descriptors) { descriptor in
                 Button {

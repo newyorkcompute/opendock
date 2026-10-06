@@ -16,6 +16,7 @@ struct DockBackgroundMenu: View {
             Button("Small") { store.append(.spacer(.small)) }
             Button("Regular") { store.append(.spacer(.regular)) }
         }
+        Button("Add Divider") { store.append(.divider()) }
         Menu("Add Widget") {
             ForEach(registry.descriptors) { descriptor in
                 Button {

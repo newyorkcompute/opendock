@@ -7,6 +7,9 @@ public struct DockDocument: Hashable, Codable, Sendable {
     /// - 1: initial format.
     /// - 2: built-in widget type IDs moved from `org.opendock.widget.*` to
     ///   `com.newyorkcompute.opendock.widget.*`.
+    ///
+    /// New item kinds (such as `divider`) don't need a bump: they need no migration, and
+    /// `DockProfile` skips kinds it doesn't know rather than rejecting the file.
     public static let currentVersion = 2
 
     public var version: Int
@@ -42,8 +45,10 @@ public struct DockDocument: Hashable, Codable, Sendable {
 // MARK: - Defaults
 
 public extension DockDocument {
-    /// What a fresh install gets: a handful of common apps, Downloads, and the three
-    /// built-in widgets, so the dock is useful before the user touches anything.
+    /// What a fresh install gets: a handful of common apps, the three built-in widgets,
+    /// and Downloads, with dividers between the groups, so the dock is useful before the
+    /// user touches anything. Only used when there's no `dock.json`; existing layouts are
+    /// never rewritten to match.
     static func firstRun(fileManager: FileManager = .default) -> DockDocument {
         var items: [DockItem] = []
 
@@ -61,13 +66,13 @@ public extension DockDocument {
             items.append(.app(at: URL(fileURLWithPath: path)))
         }
 
-        items.append(.spacer(.small))
+        items.append(.divider())
         items.append(.widget(BuiltInWidgetID.calendar))
         items.append(.widget(BuiltInWidgetID.clock))
         items.append(.widget(BuiltInWidgetID.battery))
 
         if let downloads = fileManager.urls(for: .downloadsDirectory, in: .userDomainMask).first {
-            items.append(.spacer(.small))
+            items.append(.divider())
             items.append(.folder(at: downloads))
         }
 

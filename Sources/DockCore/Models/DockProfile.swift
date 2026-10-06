@@ -14,6 +14,35 @@ public struct DockProfile: Identifiable, Hashable, Codable, Sendable {
     }
 }
 
+// MARK: - Tolerant decoding
+
+extension DockProfile {
+    /// Items this build can't decode (an item kind added by a newer version, say) are
+    /// dropped one by one instead of failing the whole file, which would reset the dock.
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        name = try c.decode(String.self, forKey: .name)
+        var decoded: [DockItem] = []
+        if c.contains(.items) {
+            var list = try c.nestedUnkeyedContainer(forKey: .items)
+            while !list.isAtEnd {
+                if let item = try? list.decode(DockItem.self) {
+                    decoded.append(item)
+                } else {
+                    // A failed decode doesn't advance the container; step over the element.
+                    _ = try list.decode(SkippedElement.self)
+                }
+            }
+        }
+        items = decoded
+    }
+
+    private struct SkippedElement: Decodable {
+        init(from decoder: any Decoder) throws {}
+    }
+}
+
 // MARK: - Mutations
 
 public extension DockProfile {

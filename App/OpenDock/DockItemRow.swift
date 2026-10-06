@@ -72,6 +72,7 @@ struct DockItemRow: View {
         switch item.kind {
         case .app, .folder: "questionmark.app.dashed"
         case .spacer: "rectangle.dashed"
+        case .divider: "rectangle.split.2x1"
         case let .widget(instance): registry.widget(for: instance)?.systemImage ?? "questionmark.square.dashed"
         }
     }
@@ -81,6 +82,7 @@ struct DockItemRow: View {
         case let .app(app): app.displayName
         case let .folder(folder): folder.displayName
         case .spacer: "Spacer"
+        case .divider: "Divider"
         case let .widget(instance): registry.displayName(for: instance)
         }
     }
@@ -93,6 +95,8 @@ struct DockItemRow: View {
             isMissing ? "Missing: \(folder.url.path)" : folder.url.deletingLastPathComponent().abbreviatingWithTildeInPath
         case let .spacer(spacer):
             spacer.size == .small ? "Small spacer" : "Regular spacer"
+        case .divider:
+            "Separator line"
         case let .widget(instance):
             registry.widget(for: instance) == nil ? "Widget not available in this build" : "Widget"
         }
