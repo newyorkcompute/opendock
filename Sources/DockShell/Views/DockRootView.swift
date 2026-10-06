@@ -25,6 +25,9 @@ struct DockRootView: View {
             .onChange(of: store.settings.autoHide) { _, enabled in
                 controller.autoHideSettingChanged(enabled)
             }
+            .onChange(of: store.settings.display) {
+                controller.displaySettingChanged()
+            }
             .onChange(of: shellState.interactionDepth) { old, new in
                 if old > 0, new == 0 { controller.interactionEnded() }
             }

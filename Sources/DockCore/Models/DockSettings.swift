@@ -17,6 +17,8 @@ public struct DockSettings: Hashable, Codable, Sendable {
 
     /// Which screen edge the dock is attached to. MVP only implements `.bottom`.
     public var edge: Edge
+    /// Which display the dock is on.
+    public var display: Display
     /// Size in points of app icons. Widgets scale their height to match.
     public var iconSize: Double
     /// Hide the dock when the pointer leaves it; reveal by touching the screen edge.
@@ -36,6 +38,7 @@ public struct DockSettings: Hashable, Codable, Sendable {
 
     public init(
         edge: Edge = .bottom,
+        display: Display = .main,
         iconSize: Double = 48,
         autoHide: Bool = false,
         autoHideDelay: Double = 0.4,
@@ -46,6 +49,7 @@ public struct DockSettings: Hashable, Codable, Sendable {
         magnification: Double = 1.5
     ) {
         self.edge = edge
+        self.display = display
         self.iconSize = iconSize
         self.autoHide = autoHide
         self.autoHideDelay = autoHideDelay
@@ -76,6 +80,7 @@ extension DockSettings {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         let d = DockSettings.default
         edge = try c.decodeIfPresent(Edge.self, forKey: .edge) ?? d.edge
+        display = (try? c.decodeIfPresent(Display.self, forKey: .display)) ?? d.display
         iconSize = try c.decodeIfPresent(Double.self, forKey: .iconSize) ?? d.iconSize
         autoHide = try c.decodeIfPresent(Bool.self, forKey: .autoHide) ?? d.autoHide
         autoHideDelay = try c.decodeIfPresent(Double.self, forKey: .autoHideDelay) ?? d.autoHideDelay
