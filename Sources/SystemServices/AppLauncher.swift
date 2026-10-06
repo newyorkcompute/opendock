@@ -1,33 +1,91 @@
 import AppKit
 import DockCore
 
-/// Launching, activating, quitting, and revealing apps and files.
+/// The parts of a running app that `AppLauncher` drives. `NSRunningApplication` in production.
 @MainActor
-public enum AppLauncher {
-    /// Launches the app, or brings it to the front if it is already running.
-    public static func open(_ app: AppItem, running: RunningAppsMonitor) {
-        if let runningApp = running.runningApplication(bundleIdentifier: app.bundleIdentifier, bundleURL: app.url) {
-            if runningApp.isHidden {
-                runningApp.unhide()
-            }
-            runningApp.activate()
-            return
-        }
-        let configuration = NSWorkspace.OpenConfiguration()
-        configuration.activates = true
-        NSWorkspace.shared.openApplication(at: app.url, configuration: configuration) { _, error in
+public protocol RunningAppHandle: AnyObject {
+    var bundleURL: URL? { get }
+    var isHidden: Bool { get }
+    @discardableResult func unhide() -> Bool
+    @discardableResult func activate(options: NSApplication.ActivationOptions) -> Bool
+}
+
+extension NSRunningApplication: RunningAppHandle {}
+
+/// Finds the running instance of a dock item. `RunningAppsMonitor` in production.
+@MainActor
+public protocol RunningAppLookup {
+    func runningApp(bundleIdentifier: String?, bundleURL: URL) -> (any RunningAppHandle)?
+}
+
+extension RunningAppsMonitor: RunningAppLookup {
+    public func runningApp(bundleIdentifier: String?, bundleURL: URL) -> (any RunningAppHandle)? {
+        runningApplication(bundleIdentifier: bundleIdentifier, bundleURL: bundleURL)
+    }
+}
+
+/// The `NSWorkspace` calls `AppLauncher` makes.
+@MainActor
+public protocol AppWorkspace {
+    func openApplication(at url: URL, configuration: NSWorkspace.OpenConfiguration)
+    func open(_ url: URL, configuration: NSWorkspace.OpenConfiguration)
+    func activateFileViewerSelecting(_ urls: [URL])
+}
+
+public struct SystemAppWorkspace: AppWorkspace {
+    public init() {}
+
+    public func openApplication(at url: URL, configuration: NSWorkspace.OpenConfiguration) {
+        NSWorkspace.shared.openApplication(at: url, configuration: configuration) { _, error in
             if let error {
-                NSLog("OpenDock: failed to open \(app.url.path): \(error.localizedDescription)")
+                NSLog("OpenDock: failed to open \(url.path): \(error.localizedDescription)")
             }
         }
     }
 
+    public func open(_ url: URL, configuration: NSWorkspace.OpenConfiguration) {
+        NSWorkspace.shared.open(url, configuration: configuration) { _, error in
+            if let error {
+                NSLog("OpenDock: failed to open \(url.path): \(error.localizedDescription)")
+            }
+        }
+    }
+
+    public func activateFileViewerSelecting(_ urls: [URL]) {
+        NSWorkspace.shared.activateFileViewerSelecting(urls)
+    }
+}
+
+/// Launching, activating, quitting, and revealing apps and files.
+@MainActor
+public enum AppLauncher {
+    /// Does what clicking the app in Apple's Dock does: launches it if it isn't running;
+    /// otherwise unhides it, brings all its windows forward, and sends it the reopen event
+    /// so an app with no visible windows shows one (a new window, a deminiaturized one,
+    /// or for Finder a new browser window).
+    public static func open(
+        _ app: AppItem,
+        running: some RunningAppLookup,
+        workspace: any AppWorkspace = SystemAppWorkspace()
+    ) {
+        guard let runningApp = running.runningApp(bundleIdentifier: app.bundleIdentifier, bundleURL: app.url) else {
+            workspace.openApplication(at: app.url, configuration: activatingConfiguration())
+            return
+        }
+        if runningApp.isHidden {
+            runningApp.unhide()
+        }
+        // From a background app (the dock never activates) macOS 14+ may decline this
+        // request; the open below activates through LaunchServices either way.
+        runningApp.activate(options: .activateAllWindows)
+        // `activate` alone never sends kAEReopenApplication. LaunchServices does when an
+        // already-running app is opened, which is also how Finder and Apple's Dock do it.
+        workspace.openApplication(at: runningApp.bundleURL ?? app.url, configuration: activatingConfiguration())
+    }
+
     /// Opens a new instance even if one is running (⌘-click behaviour).
-    public static func openNewInstance(_ app: AppItem) {
-        let configuration = NSWorkspace.OpenConfiguration()
-        configuration.createsNewApplicationInstance = true
-        configuration.activates = true
-        NSWorkspace.shared.openApplication(at: app.url, configuration: configuration)
+    public static func openNewInstance(_ app: AppItem, workspace: any AppWorkspace = SystemAppWorkspace()) {
+        workspace.openApplication(at: app.url, configuration: activatingConfiguration(newInstance: true))
     }
 
     public static func quit(_ app: AppItem, running: RunningAppsMonitor, force: Bool = false) {
@@ -43,16 +101,23 @@ public enum AppLauncher {
         running.runningApplication(bundleIdentifier: app.bundleIdentifier, bundleURL: app.url)?.hide()
     }
 
-    /// Opens a folder or file with its default handler (Finder for folders).
-    public static func open(_ folder: FolderItem) {
-        NSWorkspace.shared.open(folder.url)
+    /// Opens a folder or file with its default handler (Finder for folders) and brings it forward.
+    public static func open(_ folder: FolderItem, workspace: any AppWorkspace = SystemAppWorkspace()) {
+        workspace.open(folder.url, configuration: activatingConfiguration())
     }
 
-    public static func revealInFinder(_ url: URL) {
-        NSWorkspace.shared.activateFileViewerSelecting([url])
+    public static func revealInFinder(_ url: URL, workspace: any AppWorkspace = SystemAppWorkspace()) {
+        workspace.activateFileViewerSelecting([url])
     }
 
-    public static func open(url: URL) {
-        NSWorkspace.shared.open(url)
+    public static func open(url: URL, workspace: any AppWorkspace = SystemAppWorkspace()) {
+        workspace.open(url, configuration: activatingConfiguration())
+    }
+
+    private static func activatingConfiguration(newInstance: Bool = false) -> NSWorkspace.OpenConfiguration {
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.activates = true
+        configuration.createsNewApplicationInstance = newInstance
+        return configuration
     }
 }
