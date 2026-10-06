@@ -35,6 +35,8 @@ public struct DockSettings: Hashable, Codable, Sendable {
     public var hoverEffect: Bool
     /// How large the item directly under the pointer grows, as a multiple of `iconSize`.
     public var magnification: Double
+    /// Hide Apple's Dock while OpenDock runs; its settings are restored afterwards.
+    public var hideAppleDock: Bool
 
     public init(
         edge: Edge = .bottom,
@@ -46,7 +48,8 @@ public struct DockSettings: Hashable, Codable, Sendable {
         showRunningIndicators: Bool = true,
         showRunningApps: Bool = false,
         hoverEffect: Bool = true,
-        magnification: Double = 1.5
+        magnification: Double = 1.5,
+        hideAppleDock: Bool = false
     ) {
         self.edge = edge
         self.display = display
@@ -58,6 +61,7 @@ public struct DockSettings: Hashable, Codable, Sendable {
         self.showRunningApps = showRunningApps
         self.hoverEffect = hoverEffect
         self.magnification = magnification
+        self.hideAppleDock = hideAppleDock
     }
 
     public static let `default` = DockSettings()
@@ -90,6 +94,7 @@ extension DockSettings {
         hoverEffect = try c.decodeIfPresent(Bool.self, forKey: .hoverEffect) ?? d.hoverEffect
         magnification = ((try? c.decodeIfPresent(Double.self, forKey: .magnification)) ?? d.magnification)
             .clamped(to: Self.magnificationRange)
+        hideAppleDock = (try? c.decodeIfPresent(Bool.self, forKey: .hideAppleDock)) ?? d.hideAppleDock
     }
 }
 

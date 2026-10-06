@@ -13,6 +13,7 @@ struct GeneralSettingsTab: View {
         Form {
             appearanceSection
             behaviorSection
+            appleDockSection
             startupSection
             backupSection
         }
@@ -113,6 +114,17 @@ struct GeneralSettingsTab: View {
                     }
                 }
             }
+        }
+    }
+
+    private var appleDockSection: some View {
+        Section {
+            Toggle("Hide Apple’s Dock while OpenDock runs", isOn: setting(\.hideAppleDock))
+        } header: {
+            Text("Apple’s Dock")
+        } footer: {
+            Text("Turns on auto-hide for Apple’s Dock with a long delay so it stays out of the way. Your Dock settings are put back when you quit OpenDock or turn this off.")
+                .settingsFootnote()
         }
     }
 
