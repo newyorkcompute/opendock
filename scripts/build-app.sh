@@ -60,8 +60,7 @@ BIN_DIR="$(swift build "${BUILD_FLAGS[@]}" --show-bin-path)"
 BINARY="$BIN_DIR/$APP_NAME"
 [[ -x "$BINARY" ]] || { echo "build failed: $BINARY not found" >&2; exit 1; }
 if [[ ${#ARCHS[@]} -gt 0 ]]; then
-    lipo "$BINARY" -verify_arch "${ARCHS[@]}" \
-        || { echo "$BINARY is missing one of: ${ARCHS[*]}" >&2; lipo -info "$BINARY"; exit 1; }
+    "$ROOT/scripts/verify-archs.sh" "$BINARY" "${ARCHS[@]}" > /dev/null
 fi
 
 echo "▸ assembling $APP_DIR"
