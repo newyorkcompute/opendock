@@ -32,6 +32,8 @@ public final class DockController {
     /// Watches the pointer while it's over the dock, to notice it leaving through a
     /// transparent part of the window (where the window itself gets no events).
     var hoverMonitor: Any?
+    /// Opens the divider menu on right-click and control-click (see `installDividerMenuMonitor`).
+    var dividerMenuMonitor: Any?
     private var hideTask: Task<Void, Never>?
     private var trackingProxy: TrackingProxy?
     /// Set by `revealAndHold()`; cleared when the pointer enters the dock.
@@ -74,6 +76,7 @@ public final class DockController {
         hostingView = hosting
 
         installTrackingArea()
+        installDividerMenuMonitor()
         observeScreens()
         observeMenus()
 
@@ -90,6 +93,7 @@ public final class DockController {
         hideTask?.cancel()
         removeEdgeMonitors()
         removeHoverMonitor()
+        removeDividerMenuMonitor()
         if let screenObserver {
             NotificationCenter.default.removeObserver(screenObserver)
         }

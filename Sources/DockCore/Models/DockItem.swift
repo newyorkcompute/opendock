@@ -15,6 +15,9 @@ public struct DockItem: Identifiable, Hashable, Codable, Sendable {
         case folder(FolderItem)
         case spacer(SpacerItem)
         case widget(WidgetInstance)
+        /// A thin vertical line between groups of items, like the Dock's separators.
+        /// Persisted as `{"divider": {}}`.
+        case divider
     }
 }
 
@@ -35,6 +38,10 @@ public extension DockItem {
 
     static func widget(_ typeID: String, settings: [String: String] = [:]) -> DockItem {
         DockItem(kind: .widget(WidgetInstance(typeID: typeID, settings: settings)))
+    }
+
+    static func divider() -> DockItem {
+        DockItem(kind: .divider)
     }
 }
 
@@ -63,6 +70,7 @@ public extension DockItem {
 
     var isWidget: Bool { widgetInstance != nil }
     var isSpacer: Bool { spacerItem != nil }
+    var isDivider: Bool { kind == .divider }
 }
 
 /// An application bundle pinned to the dock.

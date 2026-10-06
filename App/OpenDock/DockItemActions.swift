@@ -41,6 +41,13 @@ enum DockItemActions {
         return item.id
     }
 
+    @discardableResult
+    static func addDivider(to store: DockStore) -> DockItem.ID {
+        let item = DockItem.divider()
+        store.append(item)
+        return item.id
+    }
+
     /// Appends a new instance of the widget with its default settings.
     @discardableResult
     static func addWidget(_ typeID: String, registry: WidgetRegistry, to store: DockStore) -> DockItem.ID? {

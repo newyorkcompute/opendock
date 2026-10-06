@@ -66,6 +66,7 @@ struct DockDocumentCodecTests {
             .folder(at: URL(fileURLWithPath: "/Users/me/Downloads")),
             .spacer(.small),
             .widget(BuiltInWidgetID.clock, settings: ["style": "analog"]),
+            .divider(),
         ])
         var settings = DockSettings.default
         settings.iconSize = 64
@@ -106,6 +107,16 @@ struct DockDocumentCodecTests {
         let items = doc.activeProfile.items
         #expect(items.contains { $0.widgetInstance?.typeID == BuiltInWidgetID.clock })
         #expect(items.contains { $0.appItem != nil })
+    }
+
+    @Test func firstRunSeparatesGroupsWithDividers() throws {
+        let items = DockDocument.firstRun().activeProfile.items
+        let firstWidget = try #require(items.firstIndex(where: \.isWidget))
+        #expect(items[firstWidget - 1].isDivider)
+        if let folder = items.firstIndex(where: { $0.folderItem != nil }) {
+            #expect(items[folder - 1].isDivider)
+        }
+        #expect(!items.contains(where: \.isSpacer))
     }
 }
 
