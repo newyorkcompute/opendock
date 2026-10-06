@@ -15,7 +15,7 @@ struct DockItemView: View {
 
     var body: some View {
         content
-            .opacity(shellState.draggingItemID == item.id ? 0.35 : 1)
+            .opacity(shellState.draggingItemID == item.id ? 0 : 1)
             .draggable(item.id.uuidString) {
                 dragPreview
             }

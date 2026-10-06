@@ -50,6 +50,8 @@ struct DockSurfaceView: View {
             pointerX: shellState.pointerX,
             amount: shellState.magnification,
             hoveredID: shellState.hoveredItemID,
+            draggedID: shellState.draggingItemID,
+            gap: shellState.dropGap,
             geometry: shellState.geometry
         ) {
             DockHitZone()

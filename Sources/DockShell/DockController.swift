@@ -224,7 +224,8 @@ public final class DockController {
     public func hide() {
         holdUntilPointerEnters = false
         guard let panel, let screen = targetScreen, shellState.isVisible else { return }
-        guard !shellState.isInteracting else { return }
+        // A reorder dragged off the dock may still come back; it's held up until it ends.
+        guard !shellState.isInteracting, shellState.draggingItemID == nil else { return }
         shellState.isVisible = false
         resetMagnification()
         NSAnimationContext.runAnimationGroup({ context in
