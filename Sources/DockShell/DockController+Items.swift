@@ -97,7 +97,7 @@ extension DockController {
         else { return false }
         // The gap opens in the item's own slot, so nothing moves until the pointer does.
         shellState.draggingItemID = id
-        shellState.dropGap = DockDropGap(position: CGFloat(index), open: 1, width: slot.width, magnifies: slot.magnifies)
+        shellState.dropGap = DockDropGap(position: CGFloat(index), open: 1, width: slot.width, growth: slot.growth)
         shellState.hoveredItemID = nil
         return true
     }

@@ -213,6 +213,8 @@ struct WidgetItemView: View {
     @Environment(\.dockIconSize) private var iconSize
 
     @State private var showingPopout = false
+    /// How far the dock has magnified the tile, read back from the size it lays it out at.
+    @State private var scale = 1.0
 
     private var hasPopout: Bool { registry.popout(for: instance) != nil }
 
@@ -225,11 +227,24 @@ struct WidgetItemView: View {
     }
 
     var body: some View {
-        VStack(spacing: 2) {
+        // Magnified tiles are laid out again at the larger icon size rather than scaled
+        // up, so their text and symbols are drawn sharp at every size.
+        WidgetMagnifier(scale: scale) {
             registry.view(for: instance)
+                .environment(\.dockIconSize, iconSize * scale)
+                .environment(\.dockWidgetScale, scale)
                 .environment(\.widgetUpdateSettings, updater)
-            Color.clear.frame(width: 4, height: 4)
         }
+        .onGeometryChange(for: Double.self) { [iconSize] proxy in
+            DockMagnification.tileScale(height: proxy.size.height, iconSize: iconSize)
+        } action: { newScale in
+            // Follow the layout frame by frame. Animating this as well would leave the
+            // content trailing its tile.
+            var transaction = Transaction(animation: nil)
+            transaction.disablesAnimations = true
+            withTransaction(transaction) { scale = newScale }
+        }
+        .padding(.bottom, 6) // keep baseline aligned with apps
         .contentShape(Rectangle())
         .onTapGesture {
             guard hasPopout else { return }
@@ -258,5 +273,46 @@ struct WidgetItemView: View {
             Divider()
             Button("Remove from Dock", role: .destructive) { store.remove(id: item.id) }
         }
+    }
+}
+
+/// Takes the size the dock proposes, but reports the tile's resting size when measured, so
+/// magnifying a tile never changes the row the dock measures. The tile is drawn at its own
+/// natural size (laid out at `scale`), centered on the baseline, never stretched.
+nonisolated struct WidgetMagnifier: Layout {
+    var scale: Double
+
+    func makeCache(subviews: Subviews) -> DockMagnification.RestingSizeTracker {
+        DockMagnification.RestingSizeTracker()
+    }
+
+    /// The tracker must outlive scale changes: while magnified, it's the only record of the
+    /// resting size.
+    func updateCache(_ cache: inout DockMagnification.RestingSizeTracker, subviews: Subviews) {}
+
+    func sizeThatFits(
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout DockMagnification.RestingSizeTracker
+    ) -> CGSize {
+        let natural = subviews.first?.sizeThatFits(.unspecified) ?? .zero
+        let resting = cache.update(natural: natural, scale: scale)
+        return CGSize(width: Self.length(proposal.width, or: resting.width), height: Self.length(proposal.height, or: resting.height))
+    }
+
+    func placeSubviews(
+        in bounds: CGRect,
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout DockMagnification.RestingSizeTracker
+    ) {
+        for subview in subviews {
+            subview.place(at: CGPoint(x: bounds.midX, y: bounds.maxY), anchor: .bottom, proposal: .unspecified)
+        }
+    }
+
+    private static func length(_ proposed: CGFloat?, or resting: CGFloat) -> CGFloat {
+        guard let proposed, proposed.isFinite else { return resting }
+        return proposed
     }
 }
