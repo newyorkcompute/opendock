@@ -100,5 +100,10 @@ let package = Package(
             dependencies: ["DockCore"],
             swiftSettings: baseSettings
         ),
+        .testTarget(
+            name: "SystemServicesTests",
+            dependencies: ["DockCore", "SystemServices"],
+            swiftSettings: baseSettings
+        ),
     ]
 )
