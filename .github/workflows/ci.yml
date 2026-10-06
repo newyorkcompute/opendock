@@ -68,7 +68,7 @@ jobs:
           test -x "$APP/Contents/MacOS/OpenDock"
           plutil -lint "$APP/Contents/Info.plist"
           codesign --verify --deep --strict --verbose=2 "$APP"
-          lipo -info "$APP/Contents/MacOS/OpenDock"
+          scripts/verify-archs.sh "$APP/Contents/MacOS/OpenDock" arm64 x86_64
 
   universal:
     name: Universal release build
@@ -86,5 +86,8 @@ jobs:
       - name: Verify architectures
         run: |
           BIN="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/OpenDock"
-          lipo -info "$BIN"
-          lipo "$BIN" -verify_arch arm64 x86_64
+          scripts/verify-archs.sh "$BIN" arm64 x86_64
+          # The check must also be able to fail.
+          if scripts/verify-archs.sh "$BIN" arm64 x86_64 arm64e 2>/dev/null; then
+            echo "::error::verify-archs.sh accepted a missing architecture"; exit 1
+          fi

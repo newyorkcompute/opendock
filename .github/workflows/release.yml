@@ -99,8 +99,7 @@ jobs:
           BUNDLE_VERSION: ${{ steps.version.outputs.bundle_version }}
         run: |
           APP=build/OpenDock.app
-          lipo "$APP/Contents/MacOS/OpenDock" -verify_arch arm64 x86_64
-          lipo -info "$APP/Contents/MacOS/OpenDock"
+          scripts/verify-archs.sh "$APP/Contents/MacOS/OpenDock" arm64 x86_64
           ACTUAL="$(plutil -extract CFBundleShortVersionString raw -o - "$APP/Contents/Info.plist")"
           [[ "$ACTUAL" == "$BUNDLE_VERSION" ]] \
             || { echo "::error::CFBundleShortVersionString is '$ACTUAL', expected '$BUNDLE_VERSION'"; exit 1; }
