@@ -21,10 +21,10 @@ extension DockController {
         let menu = NSMenu()
         menu.autoenablesItems = false
 
-        menu.addItem(ActionMenuItem(settings.autoHide ? "Turn Hiding Off" : "Turn Hiding On") { [store] in
+        menu.addItem(actionMenuItem(settings.autoHide ? "Turn Hiding Off" : "Turn Hiding On") { [store] in
             store.updateSettings { $0.autoHide.toggle() }
         })
-        menu.addItem(ActionMenuItem(settings.hoverEffect ? "Turn Magnification Off" : "Turn Magnification On") { [store] in
+        menu.addItem(actionMenuItem(settings.hoverEffect ? "Turn Magnification Off" : "Turn Magnification On") { [store] in
             store.updateSettings { $0.hoverEffect.toggle() }
         })
 
@@ -32,7 +32,7 @@ extension DockController {
         positions.autoenablesItems = false
         let currentEdge = Self.supportedEdges.contains(settings.edge) ? settings.edge : .bottom
         for edge in [DockSettings.Edge.left, .bottom, .right] {
-            let item = ActionMenuItem(edge.menuTitle) { [store] in
+            let item = actionMenuItem(edge.menuTitle) { [store] in
                 store.updateSettings { $0.edge = edge }
             }
             item.state = edge == currentEdge ? .on : .off
@@ -43,11 +43,11 @@ extension DockController {
         position.submenu = positions
         menu.addItem(position)
 
-        menu.addItem(ActionMenuItem("Remove Divider") { [store] in
+        menu.addItem(actionMenuItem("Remove Divider") { [store] in
             store.remove(id: id)
         })
         menu.addItem(.separator())
-        menu.addItem(ActionMenuItem("Dock Settings…") { [weak self] in
+        menu.addItem(actionMenuItem("Dock Settings…") { [weak self] in
             self?.actions.openSettings()
         })
         return menu
@@ -92,20 +92,24 @@ extension DockController {
     }
 }
 
-/// A menu item that runs a closure.
-final class ActionMenuItem: NSMenuItem {
+/// A menu item that runs `handler` when chosen.
+private func actionMenuItem(_ title: String, handler: @escaping () -> Void) -> NSMenuItem {
+    let action = MenuAction(handler)
+    let item = NSMenuItem(title: title, action: #selector(MenuAction.fire(_:)), keyEquivalent: "")
+    item.target = action
+    // `target` is weak; the item keeps the action alive.
+    item.representedObject = action
+    return item
+}
+
+private final class MenuAction: NSObject {
     private let handler: () -> Void
 
-    init(_ title: String, handler: @escaping () -> Void) {
+    init(_ handler: @escaping () -> Void) {
         self.handler = handler
-        super.init(title: title, action: #selector(fire(_:)), keyEquivalent: "")
-        target = self
     }
 
-    @available(*, unavailable)
-    required init(coder: NSCoder) { fatalError("unsupported") }
-
-    @objc private func fire(_ sender: NSMenuItem) { handler() }
+    @objc func fire(_ sender: NSMenuItem) { handler() }
 }
 
 private extension DockSettings.Edge {
