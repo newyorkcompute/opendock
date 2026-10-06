@@ -51,7 +51,7 @@ struct DividerTests {
         #expect(items[1].spacerItem?.size == .small)
         #expect(items[2].widgetInstance?.typeID == BuiltInWidgetID.clock)
         #expect(items[3].folderItem?.url.normalizedPath == "/Users/me/Downloads")
-        #expect(!items.contains(where: \.isDivider))
+        #expect(!items.contains(where: { $0.isDivider }))
         #expect(document.settings.autoHide)
     }
 
@@ -64,12 +64,12 @@ struct DividerTests {
 
         let store = DockStore.load(from: storage)
         #expect(store.items.count == 4)
-        #expect(!store.items.contains(where: \.isDivider))
+        #expect(!store.items.contains(where: { $0.isDivider }))
 
         store.saveNow()
         let reloaded = try storage.load()
         #expect(itemIDs(reloaded) == itemIDs(store.document))
-        #expect(!reloaded.activeProfile.items.contains(where: \.isDivider))
+        #expect(!reloaded.activeProfile.items.contains(where: { $0.isDivider }))
     }
 
     @Test func dividerRoundTrips() throws {

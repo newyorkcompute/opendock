@@ -111,12 +111,12 @@ struct DockDocumentCodecTests {
 
     @Test func firstRunSeparatesGroupsWithDividers() throws {
         let items = DockDocument.firstRun().activeProfile.items
-        let firstWidget = try #require(items.firstIndex(where: \.isWidget))
+        let firstWidget = try #require(items.firstIndex(where: { $0.isWidget }))
         #expect(items[firstWidget - 1].isDivider)
         if let folder = items.firstIndex(where: { $0.folderItem != nil }) {
             #expect(items[folder - 1].isDivider)
         }
-        #expect(!items.contains(where: \.isSpacer))
+        #expect(!items.contains(where: { $0.isSpacer }))
     }
 }
 
