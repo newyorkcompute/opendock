@@ -27,6 +27,10 @@ public final class DockShellState {
     /// Notices a reorder released away from the dock, where the dock gets no drag events.
     @ObservationIgnored var dragEndWatcher: Task<Void, Never>?
 
+    /// Where the last right-click or control-click on the dock was, relative to the row's
+    /// center, so items added from the menu it opened go there.
+    @ObservationIgnored var contextClickX: CGFloat?
+
     var isDragging: Bool { draggingItemID != nil || dropIndex != nil }
 
     /// The item under the pointer, for its label.

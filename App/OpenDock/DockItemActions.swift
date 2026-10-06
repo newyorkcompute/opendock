@@ -3,10 +3,12 @@ import DockCore
 import DockWidgetKit
 import UniformTypeIdentifiers
 
-/// Adding items to the dock from the menu bar and the Settings window.
+/// Adding items to the dock from the menu bar and the Settings window. New items go right
+/// after the item with ID `after` when there is one (the selected row in Settings), else at
+/// the end.
 enum DockItemActions {
     /// Shows an open panel for `.app` bundles and pins each chosen app (skipping duplicates).
-    static func promptForApps(into store: DockStore) {
+    static func promptForApps(into store: DockStore, after anchor: DockItem.ID? = nil) {
         let panel = NSOpenPanel()
         panel.title = "Add App"
         panel.message = "Choose applications to add to your dock."
@@ -17,11 +19,15 @@ enum DockItemActions {
         panel.directoryURL = URL(fileURLWithPath: "/Applications")
         NSApp.activate()
         guard panel.runModal() == .OK else { return }
-        panel.urls.forEach { store.addApp(at: $0) }
+        var index = store.profile.index(after: anchor)
+        for url in panel.urls where !store.profile.containsApp(at: url) {
+            store.insert(.app(at: url), at: index)
+            index += 1
+        }
     }
 
     /// Shows an open panel for folders or files and pins each one (skipping duplicates).
-    static func promptForFolders(into store: DockStore) {
+    static func promptForFolders(into store: DockStore, after anchor: DockItem.ID? = nil) {
         let panel = NSOpenPanel()
         panel.title = "Add Folder"
         panel.message = "Choose folders or files to keep in your dock."
@@ -31,29 +37,32 @@ enum DockItemActions {
         panel.allowsMultipleSelection = true
         NSApp.activate()
         guard panel.runModal() == .OK else { return }
-        panel.urls.forEach { store.addFolder(at: $0) }
+        var index = store.profile.index(after: anchor)
+        for url in panel.urls where !store.profile.containsFolder(at: url) {
+            store.insert(.folder(at: url), at: index)
+            index += 1
+        }
     }
 
     @discardableResult
-    static func addSpacer(_ size: SpacerItem.Size, to store: DockStore) -> DockItem.ID {
-        let item = DockItem.spacer(size)
-        store.append(item)
-        return item.id
+    static func addSpacer(_ size: SpacerItem.Size, to store: DockStore, after anchor: DockItem.ID? = nil) -> DockItem.ID {
+        insert(.spacer(size), into: store, after: anchor)
     }
 
     @discardableResult
-    static func addDivider(to store: DockStore) -> DockItem.ID {
-        let item = DockItem.divider()
-        store.append(item)
-        return item.id
+    static func addDivider(to store: DockStore, after anchor: DockItem.ID? = nil) -> DockItem.ID {
+        insert(.divider(), into: store, after: anchor)
     }
 
-    /// Appends a new instance of the widget with its default settings.
+    /// Adds a new instance of the widget with its default settings.
     @discardableResult
-    static func addWidget(_ typeID: String, registry: WidgetRegistry, to store: DockStore) -> DockItem.ID? {
+    static func addWidget(_ typeID: String, registry: WidgetRegistry, to store: DockStore, after anchor: DockItem.ID? = nil) -> DockItem.ID? {
         guard let widget = registry.widget(for: typeID) else { return nil }
-        let item = DockItem(kind: .widget(widget.makeInstance()))
-        store.append(item)
+        return insert(DockItem(kind: .widget(widget.makeInstance())), into: store, after: anchor)
+    }
+
+    private static func insert(_ item: DockItem, into store: DockStore, after anchor: DockItem.ID?) -> DockItem.ID {
+        store.insert(item, at: store.profile.index(after: anchor))
         return item.id
     }
 }

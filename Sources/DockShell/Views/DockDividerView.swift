@@ -18,7 +18,7 @@ struct DockDivider: View {
 }
 
 /// A divider the user placed. Clicking it opens the divider menu (right-click and
-/// control-click are handled by `DockController`, see `installDividerMenuMonitor`).
+/// control-click are handled by `DockController`, see `installContextClickMonitor`).
 struct DividerItemView: View {
     let item: DockItem
     let controller: DockController

@@ -41,8 +41,8 @@ public final class DockController {
     /// Watches the pointer while it's over the dock, to notice it leaving through a
     /// transparent part of the window (where the window itself gets no events).
     var hoverMonitor: Any?
-    /// Opens the divider menu on right-click and control-click (see `installDividerMenuMonitor`).
-    var dividerMenuMonitor: Any?
+    /// Watches right-clicks and control-clicks on the dock (see `installContextClickMonitor`).
+    var contextClickMonitor: Any?
     private var hideTask: Task<Void, Never>?
     private var trackingProxy: TrackingProxy?
     /// Set by `revealAndHold()`; cleared when the pointer enters the dock.
@@ -98,7 +98,7 @@ public final class DockController {
             panel.orderFrontRegardless()
         }
 
-        installDividerMenuMonitor()
+        installContextClickMonitor()
     }
 
     public func stop() {
@@ -114,7 +114,7 @@ public final class DockController {
         activeDisplayMonitor = nil
         menuObservers.forEach(NotificationCenter.default.removeObserver)
         menuObservers = []
-        removeDividerMenuMonitor()
+        removeContextClickMonitor()
         panel?.orderOut(nil)
         panel = nil
         hostingView = nil
