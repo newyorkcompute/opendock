@@ -27,7 +27,8 @@ extension DockController {
         if store.settings.peakMagnification > 1, shellState.pointerX != location.x {
             shellState.pointerX = location.x
         }
-        let hovered = geometry.item(atX: location.x)
+        // No labels during a drag: the items are on the move.
+        let hovered = shellState.isDragging ? nil : geometry.item(atX: location.x)
         if shellState.hoveredItemID != hovered {
             shellState.hoveredItemID = hovered
         }

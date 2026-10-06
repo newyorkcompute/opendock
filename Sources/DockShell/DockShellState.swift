@@ -13,8 +13,21 @@ public final class DockShellState {
     /// even if the pointer leaves it.
     var interactionDepth = 0
 
-    /// Item currently being dragged for reordering, if any.
+    /// Item currently being dragged for reordering, if any. It's hidden, and the drop gap
+    /// stands in for it in the row.
     var draggingItemID: DockItem.ID?
+
+    /// The gap that previews where the drag over the dock would land.
+    var dropGap = DockDropGap()
+
+    /// Where a drop now would insert, among the pinned items without the dragged one.
+    /// Nil while no drag is over the dock (a reorder dragged out of it cancels on release).
+    @ObservationIgnored var dropIndex: Int?
+
+    /// Notices a reorder released away from the dock, where the dock gets no drag events.
+    @ObservationIgnored var dragEndWatcher: Task<Void, Never>?
+
+    var isDragging: Bool { draggingItemID != nil || dropIndex != nil }
 
     /// The item under the pointer, for its label.
     var hoveredItemID: DockItem.ID?
