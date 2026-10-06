@@ -76,7 +76,6 @@ public final class DockController {
         hostingView = hosting
 
         installTrackingArea()
-        installDividerMenuMonitor()
         observeScreens()
         observeMenus()
 
@@ -87,18 +86,20 @@ public final class DockController {
         } else {
             panel.orderFrontRegardless()
         }
+
+        installDividerMenuMonitor()
     }
 
     public func stop() {
         hideTask?.cancel()
         removeEdgeMonitors()
         removeHoverMonitor()
-        removeDividerMenuMonitor()
         if let screenObserver {
             NotificationCenter.default.removeObserver(screenObserver)
         }
         menuObservers.forEach(NotificationCenter.default.removeObserver)
         menuObservers = []
+        removeDividerMenuMonitor()
         panel?.orderOut(nil)
         panel = nil
         hostingView = nil
