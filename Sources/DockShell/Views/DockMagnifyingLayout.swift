@@ -36,12 +36,14 @@ nonisolated enum DockLayoutRole: Equatable {
     case surface
     /// The name shown above the hovered item.
     case label
-    /// An item in the row. `hoverable` items get a label; spacers and dividers don't.
-    case item(DockItem.ID?, magnifies: Bool, hoverable: Bool)
+    /// An item in the row, with its share of the peak growth (see
+    /// `DockMagnification.Slot.growth`). `hoverable` items get a label; spacers and
+    /// dividers don't.
+    case item(DockItem.ID?, growth: Double, hoverable: Bool)
 }
 
 private nonisolated struct DockLayoutRoleKey: LayoutValueKey {
-    static let defaultValue = DockLayoutRole.item(nil, magnifies: false, hoverable: false)
+    static let defaultValue = DockLayoutRole.item(nil, growth: 0, hoverable: false)
 }
 
 extension View {
@@ -59,7 +61,7 @@ nonisolated struct DockDropGap: Equatable {
     var open: CGFloat = 0
     /// Resting width when fully open, spacing included.
     var width: CGFloat = 0
-    var magnifies = true
+    var growth: Double = 1
 }
 
 /// Where things landed in the last layout pass, in the layout's local coordinates.
@@ -69,7 +71,7 @@ final class DockGeometry {
     nonisolated struct Slot {
         var id: DockItem.ID?
         var width: CGFloat
-        var magnifies: Bool
+        var growth: Double
     }
 
     var hitZone: CGRect = .zero
@@ -96,12 +98,14 @@ final class DockGeometry {
 
 /// Lays the dock out like Apple's Dock with magnification on: items grow upward from a
 /// shared baseline around the pointer, neighbors push outward, and the surface widens to
-/// fit. The container's own size never changes with the pointer, so the window doesn't
-/// have to be resized while the user sweeps across it.
+/// fit. Widget tiles take part with a smaller share of the growth. The container's own
+/// size never changes with the pointer, so the window doesn't have to be resized while
+/// the user sweeps across it.
 ///
 /// While something is dragged over the dock, a gap opens where it would land, and the
 /// item being reordered leaves the row (the gap takes its place). The gap is laid out
-/// as one more slot, so it magnifies and pushes neighbors aside like an icon.
+/// as one more slot, so it magnifies and pushes neighbors aside like the item it stands
+/// in for (or like an icon, for files).
 ///
 /// `amount` and the gap's position and opening are animatable, so magnifying in and out
 /// and the gap moving are each a single animation on one number.
@@ -156,14 +160,14 @@ nonisolated struct DockMagnifyingLayout: Layout {
         func appendGap(at index: Int) {
             for piece in pieces where piece.index == index {
                 let size = CGSize(width: max(0, piece.width - metrics.spacing), height: metrics.iconSize)
-                row.append(nil, id: nil, size: size, slot: .init(width: piece.width, magnifies: gap.magnifies), hoverable: false)
+                row.append(nil, id: nil, size: size, slot: .init(width: piece.width, growth: gap.growth), hoverable: false)
             }
         }
         for index in subviews.indices {
-            guard case let .item(id, magnifies, hoverable) = subviews[index][DockLayoutRoleKey.self] else { continue }
+            guard case let .item(id, growth, hoverable) = subviews[index][DockLayoutRoleKey.self] else { continue }
             let size = subviews[index].sizeThatFits(.unspecified)
-            let slot = DockMagnification.Slot(width: size.width + metrics.spacing, magnifies: magnifies)
-            row.resting.append(.init(id: id, width: slot.width, magnifies: magnifies))
+            let slot = DockMagnification.Slot(width: size.width + metrics.spacing, growth: growth)
+            row.resting.append(.init(id: id, width: slot.width, growth: growth))
             row.height = max(row.height, size.height)
             if withGap, let id, id == draggedID {
                 row.dragged = (index, size)
@@ -200,6 +204,7 @@ nonisolated struct DockMagnifyingLayout: Layout {
             cache = Cache(slots: row.slots, peakScale: metrics.peakScale, radius: metrics.radius, overhang: max(overhang.leading, overhang.trailing))
         }
         let side = cache.overhang + metrics.horizontalPadding + metrics.shadowMargin
+        // No item grows taller than an icon at the peak (see `DockMagnification.itemSize`).
         let growth = metrics.iconSize * (metrics.peakScale - 1)
         let above = max(metrics.verticalPadding + metrics.shadowMargin / 2, growth + Self.labelSpace)
         let height = metrics.bottomInset + metrics.verticalPadding + row.height + above
@@ -224,12 +229,7 @@ nonisolated struct DockMagnifyingLayout: Layout {
         var frames: [CGRect] = []
         frames.reserveCapacity(row.itemIndices.count)
         for (k, index) in row.itemIndices.enumerated() {
-            let base = row.sizes[k]
-            let scale = magnified.scales[k]
-            // Grow by the same amount in both directions so square icons stay square and
-            // the running indicator under them keeps its size and place.
-            let growth = base.width * (scale - 1)
-            let size = CGSize(width: base.width + growth, height: base.height + growth)
+            let size = DockMagnification.itemSize(row.sizes[k], scale: magnified.scales[k], iconSize: metrics.iconSize)
             let midX = rowLeft + magnified.origins[k] + magnified.widths[k] / 2
             frames.append(CGRect(x: midX - size.width / 2, y: rowBottom - size.height, width: size.width, height: size.height))
             if let index {
@@ -245,7 +245,7 @@ nonisolated struct DockMagnifyingLayout: Layout {
                 .max { magnified.widths[$0] < magnified.widths[$1] }
             let scale = gapSlot.map { magnified.scales[$0] } ?? 1
             let midX = gapSlot.map { frames[$0].midX } ?? bounds.midX
-            let size = CGSize(width: dragged.size.width * scale, height: dragged.size.height * scale)
+            let size = DockMagnification.itemSize(dragged.size, scale: scale, iconSize: metrics.iconSize)
             subviews[dragged.index].place(at: CGPoint(x: midX, y: rowBottom), anchor: .bottom, proposal: ProposedViewSize(size))
         }
 

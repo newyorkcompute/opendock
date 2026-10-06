@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 import Testing
 @testable import DockCore
@@ -9,7 +10,7 @@ struct MagnificationTests {
     private var radius: Double { 3 * pitch }
 
     private func icons(_ count: Int) -> [DockMagnification.Slot] {
-        Array(repeating: .init(width: pitch, magnifies: true), count: count)
+        Array(repeating: .init(width: pitch, growth: 1), count: count)
     }
 
     private func center(of index: Int) -> Double { (Double(index) + 0.5) * pitch }
@@ -100,11 +101,159 @@ struct MagnificationTests {
 
     @Test func rigidSlotsKeepTheirSize() {
         var slots = icons(5)
-        slots[2] = .init(width: 120, magnifies: false)
+        slots[2] = .init(width: 120, growth: 0)
         let row = DockMagnification.row(slots, pointer: 2 * pitch + 60, peakScale: peak, radius: radius)
         #expect(row.scales[2] == 1)
         #expect(row.widths[2] == 120)
         #expect(row.scales[1] > 1)
+    }
+
+    // MARK: Widgets
+
+    /// Icons around a widget tile three icon pitches wide, like the Calendar tile with an event.
+    private func iconsAroundWidget(width: Double = 3 * 54) -> [DockMagnification.Slot] {
+        var slots = icons(6)
+        slots.insert(.init(width: width, growth: DockMagnification.widgetGrowth), at: 3)
+        return slots
+    }
+
+    @Test(arguments: [1.2, 1.5, 2.0])
+    func widgetPeakIsDampedInProportionToTheSetting(peak: Double) {
+        let slots = iconsAroundWidget()
+        let widgetCenter = 3 * pitch + slots[3].width / 2
+        let row = DockMagnification.row(slots, pointer: widgetCenter, peakScale: peak, radius: radius)
+        #expect(abs(row.scales[3] - (1 + DockMagnification.widgetGrowth * (peak - 1))) < 1e-12)
+        #expect(row.scales[3] < peak)
+    }
+
+    @Test func widgetPeakAtDefaultSettingIs115() {
+        let peak = DockSettings.default.peakMagnification
+        let widget = [DockMagnification.Slot(width: 120, growth: DockMagnification.widgetGrowth)]
+        let row = DockMagnification.row(widget, pointer: 60, peakScale: peak, radius: radius)
+        #expect(abs(row.scales[0] - 1.15) < 1e-9)
+    }
+
+    @Test func widgetFollowsTheSameFalloffAsIcons() {
+        let slots = iconsAroundWidget()
+        let widgetCenter = 3 * pitch + slots[3].width / 2
+        for offset in stride(from: -200.0, through: 200, by: 25) {
+            let row = DockMagnification.row(slots, pointer: widgetCenter + offset, peakScale: peak, radius: radius)
+            let expected = 1 + DockMagnification.widgetGrowth * (peak - 1) * DockMagnification.falloff(distance: offset, radius: radius)
+            #expect(abs(row.scales[3] - expected) < 1e-9, "at \(offset): \(row.scales[3]) vs \(expected)")
+        }
+    }
+
+    @Test func wideWidgetPushesNeighborsNoFurtherThanOneIcon() {
+        // At full effect a tile three pitches wide grows less than one icon does.
+        let widget = DockMagnification.row(iconsAroundWidget(), pointer: 3 * pitch + 1.5 * pitch, peakScale: 2, radius: radius)
+        let icon = DockMagnification.row(icons(9), pointer: center(of: 4), peakScale: 2, radius: radius)
+        #expect(widget.widths[3] - 3 * pitch < icon.widths[4] - pitch)
+    }
+
+    @Test func pointStaysUnderPointerOverWidgets() {
+        let slots = iconsAroundWidget()
+        let restingWidth = slots.reduce(0) { $0 + $1.width }
+        var origins: [Double] = []
+        var x = 0.0
+        for slot in slots {
+            origins.append(x)
+            x += slot.width
+        }
+        for pointer in stride(from: 0.0, through: restingWidth - 0.1, by: 6.7) {
+            let row = DockMagnification.row(slots, pointer: pointer, peakScale: peak, radius: radius)
+            guard let k = row.slotIndex(at: pointer) else {
+                Issue.record("pointer \(pointer) not inside any slot")
+                continue
+            }
+            let restingFraction = (pointer - origins[k]) / slots[k].width
+            let magnifiedFraction = (pointer - row.origins[k]) / row.widths[k]
+            #expect(abs(restingFraction - magnifiedFraction) < 1e-9)
+        }
+    }
+
+    @Test func maximumOverhangIncludesWidgetGrowth() {
+        let widgets = Array(repeating: DockMagnification.Slot(width: 120, growth: DockMagnification.widgetGrowth), count: 3)
+        let overhang = DockMagnification.maximumOverhang(widgets, peakScale: peak, radius: radius)
+        #expect(overhang.leading > 0 && overhang.trailing > 0)
+        let mixed = iconsAroundWidget()
+        let mixedWidth = mixed.reduce(0) { $0 + $1.width }
+        let mixedOverhang = DockMagnification.maximumOverhang(mixed, peakScale: peak, radius: radius)
+        for pointer in stride(from: -radius, through: mixedWidth + radius, by: 2.9) {
+            let row = DockMagnification.row(mixed, pointer: pointer, peakScale: peak, radius: radius)
+            #expect(-row.leadingEdge <= mixedOverhang.leading + 0.5)
+            #expect(row.trailingEdge - mixedWidth <= mixedOverhang.trailing + 0.5)
+        }
+    }
+
+    @Test func growthByItemKind() {
+        #expect(DockMagnification.growth(for: .app(at: URL(filePath: "/Applications/Safari.app"))) == 1)
+        #expect(DockMagnification.growth(for: .folder(at: URL(filePath: "/Users/me/Downloads"))) == 1)
+        #expect(DockMagnification.growth(for: .spacer()) == 1)
+        #expect(DockMagnification.growth(for: .widget("com.example.widget")) == DockMagnification.widgetGrowth)
+        #expect(DockMagnification.growth(for: .divider()) == 0)
+    }
+
+    @Test func growthIsClamped() {
+        #expect(DockMagnification.Slot(width: 10, growth: 3).growth == 1)
+        #expect(DockMagnification.Slot(width: 10, growth: -1).growth == 0)
+    }
+
+    // MARK: Item sizes
+
+    @Test func iconsGrowSquareAndKeepTheirIndicatorRoom() {
+        let icon = CGSize(width: 48, height: 54)
+        let size = DockMagnification.itemSize(icon, scale: 1.5, iconSize: 48)
+        #expect(size == CGSize(width: 72, height: 78))
+    }
+
+    @Test func widgetsGrowInHeightLikeAnIconAndInWidthLikeTheirSlot() {
+        let tile = CGSize(width: 150, height: 54)
+        let size = DockMagnification.itemSize(tile, scale: 1.15, iconSize: 48)
+        #expect(abs(size.width - 150 * 1.15) < 1e-9)
+        #expect(abs(size.height - (54 + 48 * 0.15)) < 1e-9)
+        // The tile's own height, without the indicator room, is the icon size times the scale.
+        #expect(abs(DockMagnification.tileScale(height: size.height - 6, iconSize: 48) - 1.15) < 1e-9)
+    }
+
+    @Test func restingSizeIsUnchanged() {
+        let tile = CGSize(width: 150, height: 54)
+        #expect(DockMagnification.itemSize(tile, scale: 1, iconSize: 48) == tile)
+        #expect(DockMagnification.tileScale(height: 48, iconSize: 48) == 1)
+        #expect(DockMagnification.tileScale(height: 48.01, iconSize: 48) == 1)
+        #expect(DockMagnification.tileScale(height: 0, iconSize: 48) == 1)
+        #expect(DockMagnification.tileScale(height: 40, iconSize: 48) == 1)
+    }
+
+    // MARK: Resting size of re-laid-out tiles
+
+    @Test func restingSizeIsKeptWhileMagnified() {
+        var tracker = DockMagnification.RestingSizeTracker()
+        let resting = CGSize(width: 100, height: 48)
+        #expect(tracker.update(natural: resting, scale: 1) == resting)
+        // Laid out again at 1.1× and 1.15×; text doesn't scale exactly in proportion.
+        #expect(tracker.update(natural: CGSize(width: 111, height: 52.8), scale: 1.1) == resting)
+        #expect(tracker.update(natural: CGSize(width: 116, height: 55.2), scale: 1.15) == resting)
+        #expect(tracker.update(natural: CGSize(width: 116, height: 55.2), scale: 1.15) == resting)
+        #expect(tracker.update(natural: resting, scale: 1) == resting)
+    }
+
+    @Test func contentChangesWhileMagnifiedAreTracked() {
+        var tracker = DockMagnification.RestingSizeTracker()
+        _ = tracker.update(natural: CGSize(width: 100, height: 48), scale: 1)
+        _ = tracker.update(natural: CGSize(width: 115, height: 55.2), scale: 1.15)
+        // The clock ticked over to a wider time at the same scale.
+        let wider = tracker.update(natural: CGSize(width: 138, height: 55.2), scale: 1.15)
+        #expect(abs(wider.width - 120) < 1e-9)
+        #expect(abs(wider.height - 48) < 1e-9)
+        // Back at rest, the natural size is the resting size again.
+        #expect(tracker.update(natural: CGSize(width: 121, height: 48), scale: 1) == CGSize(width: 121, height: 48))
+    }
+
+    @Test func firstMeasurementWhileMagnifiedIsUnscaled() {
+        var tracker = DockMagnification.RestingSizeTracker()
+        let resting = tracker.update(natural: CGSize(width: 120, height: 60), scale: 1.2)
+        #expect(abs(resting.width - 100) < 1e-9)
+        #expect(abs(resting.height - 50) < 1e-9)
     }
 
     @Test func peakOfOneDisablesMagnification() {

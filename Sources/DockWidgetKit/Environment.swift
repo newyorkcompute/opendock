@@ -4,8 +4,14 @@ import SwiftUI
 // Environment values the shell injects so widgets can adapt without knowing about it.
 
 public extension EnvironmentValues {
-    /// Height, in points, that dock items (and therefore widget tiles) should be.
+    /// Height, in points, that dock items (and therefore widget tiles) should be. Inside a
+    /// widget it includes the widget's magnification, so a tile sized from it is laid out
+    /// again, with sharp text, at each magnified size.
     @Entry var dockIconSize: Double = 48
+
+    /// How far the dock has magnified this widget, 1 at rest. Already part of
+    /// `dockIconSize`; multiply sizes in fixed points by it.
+    @Entry var dockWidgetScale: Double = 1
 
     /// False while the dock is hidden off-screen. Widgets should pause expensive
     /// polling and animations when this is false.

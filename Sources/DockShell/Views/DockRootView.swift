@@ -67,17 +67,17 @@ struct DockSurfaceView: View {
                 DockItemView(item: item, controller: controller)
                     .dockLayoutRole(.item(
                         item.id,
-                        magnifies: !item.isWidget && !item.isDivider,
+                        growth: DockMagnification.growth(for: item),
                         hoverable: !item.isSpacer && !item.isDivider
                     ))
             }
 
             if !extras.isEmpty {
                 DockDivider()
-                    .dockLayoutRole(.item(nil, magnifies: false, hoverable: false))
+                    .dockLayoutRole(.item(nil, growth: 0, hoverable: false))
                 ForEach(extras, id: \.item.id) { extra in
                     AppItemView(item: extra.item, app: extra.app, controller: controller, isPinned: false)
-                        .dockLayoutRole(.item(extra.item.id, magnifies: true, hoverable: true))
+                        .dockLayoutRole(.item(extra.item.id, growth: 1, hoverable: true))
                 }
             }
 

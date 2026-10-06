@@ -5,6 +5,7 @@ import SwiftUI
 /// this so every tile in the dock looks like it belongs together.
 public struct WidgetTile<Content: View>: View {
     @Environment(\.dockIconSize) private var iconSize
+    @Environment(\.dockWidgetScale) private var scale
 
     private let minWidth: Double?
     private let content: Content
@@ -18,7 +19,7 @@ public struct WidgetTile<Content: View>: View {
         let radius = WidgetMetrics.cornerRadius(for: iconSize)
         content
             .padding(.horizontal, WidgetMetrics.horizontalPadding(for: iconSize))
-            .frame(minWidth: minWidth.map { CGFloat($0) })
+            .frame(minWidth: minWidth.map { CGFloat($0 * scale) })
             .frame(height: iconSize)
             .background(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)

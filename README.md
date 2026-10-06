@@ -36,11 +36,11 @@ Dock. You can keep both, or have OpenDock hide Apple's while it runs. Inspired b
 <table>
   <tr>
     <td width="50%"><img src="docs/assets/dock-hover-mail.png" alt="The pointer over Mail: Mail and its neighbors are magnified, and a Mail label floats above it."></td>
-    <td width="50%"><img src="docs/assets/dock-hover-end.png" alt="The pointer over the Downloads folder at the end of the dock: Downloads and Safari are magnified, with a Downloads label above. The Clock and Battery widgets beside them keep their size."></td>
+    <td width="50%"><img src="docs/assets/dock-hover-end.png" alt="The pointer over the Downloads folder at the end of the dock: Downloads and Safari are magnified, with a Downloads label above. The Clock and Battery widgets sit beside them."></td>
   </tr>
   <tr>
     <td>Icons near the pointer grow with a smooth falloff and push their neighbors aside.</td>
-    <td>Widgets keep their size and slide out of the way.</td>
+    <td>Widgets grow too, more gently, and slide out of the way.</td>
   </tr>
 </table>
 
@@ -49,7 +49,8 @@ Dock. You can keep both, or have OpenDock hide Apple's while it runs. Inspired b
   quick settings (hiding, magnification, position), like the Dock's separators
 - Running-app indicators, with an option to show running apps that aren't pinned
 - Magnification like the Dock's: icons near the pointer grow with a smooth falloff and
-  push their neighbors aside, with an adjustable size and a name label above the hovered item
+  push their neighbors aside, with an adjustable size and a name label above the hovered item.
+  Widget tiles grow along with them, more gently, and stay sharp
 - Auto-hide with a configurable delay
 - Optionally hides Apple's Dock while it runs, and puts your Dock settings back when it quits
 - Drag items in the dock to reorder them, and drop apps or folders from Finder to add them
@@ -160,7 +161,9 @@ struct HelloTile: View {
 Guidelines:
 
 - Wrap the content in `WidgetTile` and use `WidgetPrimaryText` and `WidgetSecondaryText`
-  so the tile scales with the icon-size setting (`\.dockIconSize`).
+  so the tile scales with the icon-size setting (`\.dockIconSize`). Size anything else
+  from `\.dockIconSize` too: it includes the tile's magnification, so the tile is laid
+  out again, with sharp text, as it grows under the pointer.
 - Pause polling when `\.dockIsVisible` is false.
 - Save settings through `\.widgetUpdateSettings`, never through your own files.
 
