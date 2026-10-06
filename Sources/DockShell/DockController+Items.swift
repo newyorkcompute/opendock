@@ -111,9 +111,9 @@ extension DockController {
         let pinned = Set(store.items.map(\.id))
         let limit = slots.prefix { slot in slot.id.map { pinned.contains($0) } ?? false }.count
         return DockReorder.insertionIndex(
-            pointer: location.x - geometry.rowCenterX,
-            slots: slots.map(\.width),
-            gapWidth: gapWidth,
+            pointer: Double(location.x - geometry.rowCenterX),
+            slots: slots.map { Double($0.width) },
+            gapWidth: Double(gapWidth),
             limit: limit
         )
     }
@@ -121,16 +121,14 @@ extension DockController {
     private func moveDropGap(to index: Int, width: CGFloat) {
         shellState.dropIndex = index
         let target = CGFloat(index)
-        if shellState.dropGap.open == 0 {
-            // Opening from nothing: put the gap in place first, or it would sweep across
-            // the row from wherever it last was. It opens on the next update (they keep
-            // coming while the drag rests), after this one has been drawn.
-            if shellState.dropGap.position != target || shellState.dropGap.width != width {
-                shellState.dropGap.position = target
-                shellState.dropGap.width = width
-                shellState.dropGap.magnifies = true
-                return
-            }
+        // Only a gap for files opens from nothing (a reordered item's is open from the start).
+        // Put it in place first, or it would sweep across the row from wherever it last was.
+        // It opens on the next update (they keep coming while the drag rests), after this
+        // one has been drawn.
+        let closed = DockDropGap(position: target, open: 0, width: width)
+        if shellState.dropGap.open == 0, shellState.dropGap != closed {
+            shellState.dropGap = closed
+            return
         }
         guard shellState.dropGap.position != target || shellState.dropGap.open != 1 else { return }
         withAnimation(.dockDropGap) {
