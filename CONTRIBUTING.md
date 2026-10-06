@@ -57,6 +57,23 @@ swift test --scratch-path .build-mytopic
 `.build-*` directories are already ignored by git. When several people or agents share one
 checkout, have each of them edit a separate set of files.
 
+### Working with Cursor agents
+
+This repository enables the [pstack](https://github.com/cursor/plugins/tree/main/pstack)
+plugin at project scope in `.cursor/settings.json`, so Cursor loads it when you open the repo.
+pstack is a set of skills that make agents work more carefully: reproduce a bug before fixing
+it, keep changes small, and verify against the real app before calling the work done.
+
+- Start a non-trivial task with `/poteto-mode`. It picks a playbook (bug fix, feature,
+  refactoring, and so on) and runs the other skills as it needs them.
+- Run `/setup-pstack` once to choose which models pstack uses. It writes a rule to your home
+  directory (`~/.cursor/rules/pstack-models.mdc`), not to this repo.
+- Not sure which skill fits? Ask `/poteto-help`.
+
+pstack doesn't change how OpenDock is built or tested. Verification still means `make test`
+plus the manual testing described under [Tests](#tests), and agents running in parallel should
+each use their own `--scratch-path`, as described above.
+
 ## Code conventions
 
 These keep the codebase consistent and avoid known pitfalls. If you think one of them should
