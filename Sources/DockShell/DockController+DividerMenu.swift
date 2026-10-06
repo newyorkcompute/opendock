@@ -92,30 +92,47 @@ extension DockController {
 
     // MARK: - Right-click and control-click
 
-    /// SwiftUI has no secondary-click gesture, and a `.contextMenu` would be a second copy
-    /// of this menu, so right-clicks on dividers are caught before they reach the view.
-    func installDividerMenuMonitor() {
-        guard dividerMenuMonitor == nil else { return }
-        dividerMenuMonitor = NSEvent.addLocalMonitorForEvents(matching: [.rightMouseDown, .leftMouseDown]) { [weak self] event in
+    /// Sees every right-click and control-click on the dock before SwiftUI does. Records
+    /// where it was, for items added from the menu it opens (`menuInsertionIndex`), and
+    /// opens this menu for dividers: SwiftUI has no secondary-click gesture, and a
+    /// `.contextMenu` would be a second copy of the menu.
+    func installContextClickMonitor() {
+        guard contextClickMonitor == nil else { return }
+        contextClickMonitor = NSEvent.addLocalMonitorForEvents(matching: [.rightMouseDown, .leftMouseDown]) { [weak self] event in
             guard event.type == .rightMouseDown || event.modifierFlags.contains(.control) else { return event }
             let windowNumber = event.windowNumber
-            let handled = MainActor.assumeIsolated { self?.openDividerMenu(inWindow: windowNumber) ?? false }
+            let handled = MainActor.assumeIsolated { self?.handleContextClick(inWindow: windowNumber) ?? false }
             return handled ? nil : event
         }
     }
 
-    func removeDividerMenuMonitor() {
-        if let dividerMenuMonitor { NSEvent.removeMonitor(dividerMenuMonitor) }
-        dividerMenuMonitor = nil
+    func removeContextClickMonitor() {
+        if let contextClickMonitor { NSEvent.removeMonitor(contextClickMonitor) }
+        contextClickMonitor = nil
     }
 
-    private func openDividerMenu(inWindow windowNumber: Int) -> Bool {
+    /// Returns true when the click opened the divider menu and should go no further.
+    private func handleContextClick(inWindow windowNumber: Int) -> Bool {
         guard let panel, panel.windowNumber == windowNumber,
-              let point = layoutPoint(fromScreen: NSEvent.mouseLocation),
-              let id = dividerID(at: point)
+              let point = layoutPoint(fromScreen: NSEvent.mouseLocation)
         else { return false }
+        shellState.contextClickX = point.x - shellState.geometry.rowCenterX
+        guard let id = dividerID(at: point) else { return false }
         showDividerMenu(for: id)
         return true
+    }
+
+    /// Where an item added from a context menu on the dock goes: right after `anchor` (the
+    /// item whose menu it was), else in the gap nearest the right-click that opened the
+    /// dock's background menu.
+    func menuInsertionIndex(after anchor: DockItem.ID?) -> Int {
+        let items = store.items
+        return DockReorder.menuInsertionIndex(
+            afterItemAt: anchor.flatMap { id in items.firstIndex { $0.id == id } },
+            pointer: shellState.contextClickX.map(Double.init),
+            slots: shellState.geometry.restingSlots.map { Double($0.width) },
+            limit: items.count
+        )
     }
 
     /// The divider item under `point` (layout coordinates), counting the gaps beside it.

@@ -2,26 +2,28 @@ import DockCore
 import DockWidgetKit
 import SwiftUI
 
-/// Right-click menu on the dock's empty surface.
+/// Right-click menu on the dock's empty surface, also shown in a spacer's menu. Items it
+/// adds go where it was opened: after `anchor` (the spacer), or at the right-click.
 struct DockBackgroundMenu: View {
     let controller: DockController
+    var anchor: DockItem.ID?
 
     @Environment(DockStore.self) private var store
     @Environment(WidgetRegistry.self) private var registry
 
     var body: some View {
-        Button("Add App…") { controller.promptForApp() }
-        Button("Add Folder…") { controller.promptForFolder() }
+        Button("Add App…") { controller.promptForApp(at: insertionIndex) }
+        Button("Add Folder…") { controller.promptForFolder(at: insertionIndex) }
         Menu("Add Spacer") {
-            Button("Small") { store.append(.spacer(.small)) }
-            Button("Regular") { store.append(.spacer(.regular)) }
+            Button("Small") { add(.spacer(.small)) }
+            Button("Regular") { add(.spacer(.regular)) }
         }
-        Button("Add Divider") { store.append(.divider()) }
+        Button("Add Divider") { add(.divider()) }
         Menu("Add Widget") {
             ForEach(registry.descriptors) { descriptor in
                 Button {
                     if let widget = registry.widget(for: descriptor.typeID) {
-                        store.append(DockItem(kind: .widget(widget.makeInstance())))
+                        add(DockItem(kind: .widget(widget.makeInstance())))
                     }
                 } label: {
                     Label(descriptor.displayName, systemImage: descriptor.systemImage)
@@ -36,5 +38,13 @@ struct DockBackgroundMenu: View {
         Divider()
         Button("Settings…") { controller.actions.openSettings() }
         Button("Quit OpenDock") { controller.actions.quit() }
+    }
+
+    private var insertionIndex: Int {
+        controller.menuInsertionIndex(after: anchor)
+    }
+
+    private func add(_ item: DockItem) {
+        store.insert(item, at: insertionIndex)
     }
 }

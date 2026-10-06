@@ -90,17 +90,17 @@ struct DockItemsTab: View {
 
     @ViewBuilder
     private var addMenuItems: some View {
-        Button("App…") { DockItemActions.promptForApps(into: store) }
-        Button("Folder…") { DockItemActions.promptForFolders(into: store) }
+        Button("App…") { DockItemActions.promptForApps(into: store, after: selection) }
+        Button("Folder…") { DockItemActions.promptForFolders(into: store, after: selection) }
         Menu("Spacer") {
-            Button("Small") { selection = DockItemActions.addSpacer(.small, to: store) }
-            Button("Regular") { selection = DockItemActions.addSpacer(.regular, to: store) }
+            Button("Small") { selection = DockItemActions.addSpacer(.small, to: store, after: selection) }
+            Button("Regular") { selection = DockItemActions.addSpacer(.regular, to: store, after: selection) }
         }
-        Button("Divider") { selection = DockItemActions.addDivider(to: store) }
+        Button("Divider") { selection = DockItemActions.addDivider(to: store, after: selection) }
         Menu("Widget") {
             ForEach(registry.descriptors) { descriptor in
                 Button {
-                    selection = DockItemActions.addWidget(descriptor.typeID, registry: registry, to: store)
+                    selection = DockItemActions.addWidget(descriptor.typeID, registry: registry, to: store, after: selection)
                 } label: {
                     Label(descriptor.displayName, systemImage: descriptor.systemImage)
                 }

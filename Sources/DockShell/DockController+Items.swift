@@ -195,7 +195,8 @@ extension DockController {
         info.draggingPasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
     }
 
-    func promptForApp() {
+    /// Items chosen in the open panel are inserted at `index` among the items, or appended.
+    func promptForApp(at index: Int? = nil) {
         presentingSystemPanel {
             let panel = NSOpenPanel()
             panel.title = "Add App"
@@ -205,12 +206,12 @@ extension DockController {
             panel.canChooseDirectories = false
             panel.directoryURL = URL(fileURLWithPath: "/Applications")
             if panel.runModal() == .OK {
-                panel.urls.forEach { store.addApp(at: $0) }
+                handleDroppedURLs(panel.urls, at: index)
             }
         }
     }
 
-    func promptForFolder() {
+    func promptForFolder(at index: Int? = nil) {
         presentingSystemPanel {
             let panel = NSOpenPanel()
             panel.title = "Add Folder"
@@ -219,7 +220,7 @@ extension DockController {
             panel.canChooseFiles = true
             panel.allowsMultipleSelection = true
             if panel.runModal() == .OK {
-                panel.urls.forEach { store.addFolder(at: $0) }
+                handleDroppedURLs(panel.urls, at: index)
             }
         }
     }

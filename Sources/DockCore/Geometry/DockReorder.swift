@@ -39,6 +39,21 @@ public enum DockReorder {
         return index
     }
 
+    /// Index at which an item added from a context menu on the dock is inserted: right
+    /// after the item whose menu it was, else in the gap nearest the right-click, else at
+    /// the end.
+    ///
+    /// - Parameters:
+    ///   - anchor: Index of the item whose menu it was; nil for the dock's background menu.
+    ///   - pointer: Right-click x relative to the row's center, as for `insertionIndex`.
+    ///   - slots: Resting widths of the row's slots.
+    ///   - limit: Number of pinned items, which lead the row; the result is at most this.
+    public static func menuInsertionIndex(afterItemAt anchor: Int?, pointer: Double?, slots: [Double], limit: Int) -> Int {
+        if let anchor { return min(max(anchor + 1, 0), max(0, limit)) }
+        guard let pointer else { return max(0, limit) }
+        return insertionIndex(pointer: pointer, slots: slots, gapWidth: 0, limit: limit)
+    }
+
     /// The part of a gap standing at one insertion index.
     public struct GapPiece: Hashable, Sendable {
         /// Insertion index: the piece sits before the slot at this index.

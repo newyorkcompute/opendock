@@ -79,6 +79,13 @@ public extension DockProfile {
         items.insert(item, at: adjustedTarget)
     }
 
+    /// Index just after the item with `id`: where an item added "after" it goes. The end
+    /// when `id` is nil or not in the profile.
+    func index(after id: DockItem.ID?) -> Int {
+        guard let id, let index = items.firstIndex(where: { $0.id == id }) else { return items.count }
+        return index + 1
+    }
+
     func item(id: DockItem.ID) -> DockItem? {
         items.first { $0.id == id }
     }
