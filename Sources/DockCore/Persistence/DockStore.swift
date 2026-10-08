@@ -24,12 +24,14 @@ public final class DockStore {
     }
 
     /// Loads from disk, or seeds a first-run document (and persists it) if nothing is there
-    /// or the file is unreadable.
+    /// or the file is unreadable. Only a missing file counts as a fresh install that gets
+    /// the welcome window; someone whose file was unreadable has used OpenDock before.
     public static func load(from storage: DockStorage = .default()) -> DockStore {
+        var document = DockDocument.firstRun()
         if storage.exists {
             do {
-                let document = try storage.load()
-                return DockStore(storage: storage, document: document)
+                let saved = try storage.load()
+                return DockStore(storage: storage, document: saved)
             } catch {
                 Logger(subsystem: "com.newyorkcompute.opendock", category: "DockStore")
                     .error(
@@ -37,8 +39,10 @@ public final class DockStore {
                     )
                 storage.backupCorruptFile()
             }
+        } else {
+            document.hasSeenWelcome = false
         }
-        let store = DockStore(storage: storage, document: .firstRun())
+        let store = DockStore(storage: storage, document: document)
         store.saveNow()
         return store
     }
@@ -104,6 +108,21 @@ public final class DockStore {
         return true
     }
 
+    /// Swaps the active profile's apps for `urls`, leaving its other items in place.
+    public func replaceApps(with urls: [URL]) {
+        updateProfile { $0.replaceApps(with: urls) }
+    }
+
+    // MARK: - Welcome
+
+    /// True until the welcome window has been closed once on a fresh install.
+    public var needsWelcome: Bool { !document.hasSeenWelcome }
+
+    public func markWelcomeSeen() {
+        guard !document.hasSeenWelcome else { return }
+        update { $0.hasSeenWelcome = true }
+    }
+
     // MARK: - Profiles
 
     public var profiles: [DockProfile] { document.profiles }
@@ -151,8 +170,11 @@ public final class DockStore {
         update { $0.moveProfile(id, by: offset) }
     }
 
+    /// Keeps whether the welcome window was seen: that's about this install, not the layout.
     public func resetToFirstRun() {
-        update { $0 = .firstRun() }
+        var fresh = DockDocument.firstRun()
+        fresh.hasSeenWelcome = document.hasSeenWelcome
+        update { $0 = fresh }
     }
 
     // MARK: - Export / import
@@ -161,8 +183,10 @@ public final class DockStore {
         try DockStorage.encode(document)
     }
 
+    /// Like `resetToFirstRun`, keeps whether the welcome window was seen.
     public func importData(_ data: Data) throws {
-        let imported = try DockStorage.decode(data)
+        var imported = try DockStorage.decode(data)
+        imported.hasSeenWelcome = document.hasSeenWelcome
         update { $0 = imported }
     }
 

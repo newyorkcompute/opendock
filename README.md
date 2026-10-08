@@ -70,6 +70,8 @@ Dock. You can keep both, or have OpenDock hide Apple's while it runs. Inspired b
 - Export and import your layout as JSON
 - Launch at login
 - Menu bar menu for showing and hiding the dock, adding items, and backups
+- A short welcome window on first launch, which can switch the starter apps for the ones
+  in Apple's Dock
 
 ## Widgets
 
