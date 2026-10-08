@@ -22,6 +22,7 @@ struct DockRootView: View {
             }
             .environment(\.dockIconSize, store.settings.iconSize)
             .environment(\.dockIsVisible, shellState.isVisible)
+            .environment(\.widgetsMayRequestAccess, !store.needsWelcome)
             .onChange(of: store.settings.autoHide) { _, enabled in
                 controller.autoHideSettingChanged(enabled)
             }

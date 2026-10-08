@@ -49,7 +49,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         windows: windows,
         badges: badges,
         profiles: profiles,
-        hotKeys: hotKeys
+        hotKeys: hotKeys,
+        showWelcome: ShowWelcomeAction { [weak self] in self?.showWelcome() }
+    )
+    @ObservationIgnored private lazy var welcomeWindow = WelcomeWindowController(
+        store: store,
+        launchAtLogin: launchAtLogin
     )
 
     override init() {
@@ -75,6 +80,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         syncAppleDock()
         syncHotKeys()
         terminateOnSignals()
+        if store.needsWelcome { showWelcome() }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -87,6 +93,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Brings the Settings window to the front, optionally switching to `tab`.
     func showSettings(_ tab: SettingsTab? = nil) {
         settingsWindow.show(tab)
+    }
+
+    func showWelcome() {
+        welcomeWindow.show()
     }
 
     /// Hides or restores Apple's Dock to match the setting, now and whenever it changes

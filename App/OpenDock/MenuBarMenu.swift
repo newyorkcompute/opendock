@@ -75,6 +75,7 @@ struct MenuBarMenu: View {
         Button("Settings…") { app.showSettings() }
             .keyboardShortcut(",")
         Button("About OpenDock") { app.showSettings(.about) }
+        Button("Welcome Guide…") { app.showWelcome() }
 
         Divider()
 

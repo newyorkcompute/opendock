@@ -17,6 +17,11 @@ public extension EnvironmentValues {
     /// polling and animations when this is false.
     @Entry var dockIsVisible: Bool = true
 
+    /// False while the welcome window is up on a fresh install. Widgets shouldn't ask for a
+    /// permission on their own until it's true, so the system prompt doesn't compete with
+    /// the welcome window. Asking because the user clicked something is still fine.
+    @Entry var widgetsMayRequestAccess: Bool = true
+
     /// Call to persist changed settings for the current widget instance.
     @Entry var widgetUpdateSettings = WidgetSettingsUpdater.noop
 }

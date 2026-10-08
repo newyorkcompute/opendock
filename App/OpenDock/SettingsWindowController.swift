@@ -19,7 +19,8 @@ final class SettingsWindowController: NSWindowController {
         windows: AppWindowManager,
         badges: DockBadgeMonitor,
         profiles: ProfileSwitcher,
-        hotKeys: GlobalHotKeys
+        hotKeys: GlobalHotKeys,
+        showWelcome: ShowWelcomeAction
     ) {
         tabController.tabStyle = .toolbar
         for tab in SettingsTab.allCases {
@@ -32,6 +33,7 @@ final class SettingsWindowController: NSWindowController {
                 .environment(badges)
                 .environment(profiles)
                 .environment(hotKeys)
+                .environment(\.showWelcome, showWelcome)
             let hosting = NSHostingController(rootView: pane)
             hosting.sizingOptions = []
             hosting.preferredContentSize = tab.contentSize

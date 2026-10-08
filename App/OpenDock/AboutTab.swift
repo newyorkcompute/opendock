@@ -6,6 +6,8 @@ import SystemServices
 /// App identity, version, links, and a shortcut to the data file.
 struct AboutTab: View {
     private static let repositoryURL = URL(string: "https://github.com/newyorkcompute/opendock")!
+    @Environment(\.showWelcome) private var showWelcome
+
     var body: some View {
         VStack(spacing: 14) {
             Image(nsImage: NSApp.applicationIconImage)
@@ -31,8 +33,11 @@ struct AboutTab: View {
 
             Link("github.com/newyorkcompute/opendock", destination: Self.repositoryURL)
 
-            Button("Reveal Data File") { revealDataFile() }
-                .padding(.top, 4)
+            HStack {
+                Button("Welcome Guide…") { showWelcome() }
+                Button("Reveal Data File") { revealDataFile() }
+            }
+            .padding(.top, 4)
         }
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

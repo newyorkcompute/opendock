@@ -70,6 +70,8 @@ Dock. You can keep both, or have OpenDock hide Apple's while it runs. Inspired b
 - Export and import your layout as JSON
 - Launch at login
 - Menu bar menu for showing and hiding the dock, adding items, and backups
+- A short welcome window on first launch, which can switch the starter apps for the ones
+  in Apple's Dock
 
 ## Widgets
 
@@ -86,7 +88,8 @@ popover with more detail. Each widget has its own options in Settings > Dock Ite
 | Clock | The time, with the date or your own label below | The full date, time zone, and a month calendar | Seconds, date, time zone, label |
 | Battery | Charge level and power source | Each battery, including connected accessories, and a shortcut to Battery Settings | Percentage, accessory batteries |
 
-The Calendar widget asks for calendar access when it first appears. Without access it
+The Calendar widget asks for calendar access when it first appears (on a fresh install,
+once the welcome window is closed). Without access it
 shows "Tap to allow", and its popover has a button to allow access or open Privacy
 Settings. To build your own widget, see [Writing a widget](#writing-a-widget).
 
@@ -193,6 +196,9 @@ Guidelines:
   from `\.dockIconSize` too: it includes the tile's magnification, so the tile is laid
   out again, with sharp text, as it grows under the pointer.
 - Pause polling when `\.dockIsVisible` is false.
+- If the widget needs a permission, ask for it on its own only while
+  `\.widgetsMayRequestAccess` is true. It's false while the welcome window is open on a
+  fresh install.
 - Save settings through `\.widgetUpdateSettings`, never through your own files.
 
 Then add a target under `Sources/Widgets/` in `Package.swift`, add it as a dependency of

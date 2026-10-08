@@ -17,18 +17,23 @@ public struct DockDocument: Hashable, Codable, Sendable {
     public var profiles: [DockProfile]
     public var activeProfileID: DockProfile.ID
     public var settings: DockSettings
+    /// Whether the welcome window has been shown and closed. Only a fresh install starts
+    /// without it; a file saved before the welcome window existed decodes as seen.
+    public var hasSeenWelcome: Bool
 
     public init(
         version: Int = DockDocument.currentVersion,
         profiles: [DockProfile],
         activeProfileID: DockProfile.ID,
-        settings: DockSettings = .default
+        settings: DockSettings = .default,
+        hasSeenWelcome: Bool = true
     ) {
         precondition(!profiles.isEmpty, "A document needs at least one profile")
         self.version = version
         self.profiles = profiles
         self.activeProfileID = profiles.contains { $0.id == activeProfileID } ? activeProfileID : profiles[0].id
         self.settings = settings
+        self.hasSeenWelcome = hasSeenWelcome
     }
 
     public var activeProfile: DockProfile {
@@ -65,6 +70,7 @@ extension DockDocument {
         let active = try? c.decodeIfPresent(DockProfile.ID.self, forKey: .activeProfileID)
         activeProfileID = active.flatMap { id in profiles.contains { $0.id == id } ? id : nil } ?? profiles[0].id
         settings = try c.decodeIfPresent(DockSettings.self, forKey: .settings) ?? .default
+        hasSeenWelcome = (try? c.decodeIfPresent(Bool.self, forKey: .hasSeenWelcome)) ?? true
     }
 }
 

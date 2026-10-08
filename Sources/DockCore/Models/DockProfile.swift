@@ -105,6 +105,16 @@ public extension DockProfile {
         let path = url.normalizedPath
         return items.contains { $0.folderItem?.url.normalizedPath == path }
     }
+
+    /// Replaces every app with the apps at `urls`, in order and without duplicates. They go
+    /// where the first app was, or at the start; every other item stays where it is.
+    mutating func replaceApps(with urls: [URL]) {
+        let index = items.firstIndex { $0.appItem != nil } ?? 0
+        items.removeAll { $0.appItem != nil }
+        var seen = Set<String>()
+        let apps = urls.filter { seen.insert($0.normalizedPath).inserted }.map(DockItem.app(at:))
+        items.insert(contentsOf: apps, at: index)
+    }
 }
 
 public extension URL {

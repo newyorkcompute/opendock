@@ -46,7 +46,7 @@ public struct EventSummary: Sendable, Hashable, Identifiable {
 /// Wraps `EKEventStore` and publishes today's events.
 ///
 /// The service never prompts on its own except through ``requestAccessIfNeeded()``
-/// (called once when a tile first appears) and ``requestAccess()``. It refreshes on
+/// (called when a tile appears, once widgets may request access) and ``requestAccess()``. It refreshes on
 /// `EKEventStoreChanged` and whenever ``refresh(force:)`` is called — the tiles call it
 /// once a minute while the dock is visible. Use ``shared`` so all tiles share one store.
 @MainActor
