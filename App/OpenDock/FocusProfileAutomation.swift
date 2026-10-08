@@ -1,4 +1,5 @@
 import DockCore
+import Observation
 import SystemServices
 import os
 
