@@ -73,6 +73,9 @@ public final class DockController {
     let activationMonitor = AppActivationMonitor()
     /// Clears the next bounce to finish, once it has landed.
     var launchBounceTask: Task<Void, Never>?
+    /// Follows a pinned item dragged off the dock, and shows the poof when it's let go
+    /// (see `DockController+DragOff.swift`). Up only during such a drag.
+    var dragOffOverlay: DragOffOverlayPanel?
     /// The keyboard's selection while it controls the dock (see `DockController+Keyboard`).
     var keyboard = DockKeyboardNavigation<DockRowItemID>()
     /// Key presses, and the clicks that end keyboard control. Installed only while it's on.
@@ -169,6 +172,7 @@ public final class DockController {
         menuObservers.forEach(NotificationCenter.default.removeObserver)
         menuObservers = []
         removeContextClickMonitor()
+        dismissDragOffOverlay()
         panel?.orderOut(nil)
         panel = nil
         hostingView = nil

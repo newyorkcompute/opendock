@@ -36,7 +36,8 @@ extension DockController {
     // While a drag is over the dock, a gap opens where it would land and follows the
     // pointer (`DockReorder` places it). Reordering takes the dragged item out of the row,
     // the gap standing in for it, so the other items close up behind it and make room
-    // ahead of it. Releasing commits the move; releasing away from the dock cancels.
+    // ahead of it. Releasing commits the move; releasing away from the dock cancels, unless
+    // the item was held well away from it, which removes it (`DockController+DragOff.swift`).
 
     func dragUpdated(_ info: any NSDraggingInfo) -> NSDragOperation {
         guard let location = dropLocation(info) else { return [] }
@@ -52,6 +53,7 @@ extension DockController {
             return []
         }
         stopWatchingForDragEnd()
+        dragOffReturned()
         let width = isReorder ? shellState.dropGap.width : DockRowMetrics(settings: store.settings).dropGapWidth
         moveDropGap(to: dropIndex(at: location, gapWidth: width), width: width)
         pointerMoved(to: location)
@@ -100,6 +102,12 @@ extension DockController {
         shellState.draggingItemID = id
         shellState.dropGap = DockDropGap(position: CGFloat(index), open: 1, width: slot.width, growth: slot.growth)
         shellState.hoveredItemID = nil
+        // Where on the item it was picked up, for labeling the dragged icon off the dock.
+        if let frame = geometry.itemFrames.first(where: { $0.id == .pinned(id) })?.frame {
+            shellState.dragGrabOffset = CGPoint(x: frame.midX - location.x, y: frame.midY - location.y)
+        } else {
+            shellState.dragGrabOffset = .zero
+        }
         return true
     }
 
@@ -137,17 +145,21 @@ extension DockController {
         }
     }
 
-    /// The drag went off the dock. Dropping there does nothing: a reordered item's gap goes
-    /// back to its own slot to show that, and a gap for files closes.
+    /// The drag went off the dock. Dropping there does nothing (unless it goes on to remove
+    /// the item): a reordered item's gap goes back to its own slot to show that, and a gap
+    /// for files closes.
     private func dragLeftDock() {
         shellState.dropIndex = nil
         pointerMoved(to: nil)
         if let dragged = shellState.draggingItemID {
-            if let index = store.items.firstIndex(where: { $0.id == dragged }),
+            // Once the removal is armed the slot has closed up, and stays closed.
+            if !shellState.dragOffRemoval.isArmed,
+                let index = store.items.firstIndex(where: { $0.id == dragged }),
                 shellState.dropGap.position != CGFloat(index)
             {
                 withAnimation(.dockDropGap) { shellState.dropGap.position = CGFloat(index) }
             }
+            dragOffBegan()
             watchForDragEnd()
         } else if shellState.dropGap.open != 0 {
             withAnimation(.dockDropGap) { shellState.dropGap.open = 0 }
@@ -156,8 +168,9 @@ extension DockController {
 
     /// Put the dragged item back in the row (where the gap was, after a drop) and close the
     /// gap, all at once: the row already looks like that, so nothing visibly moves.
-    private func endDrag() {
+    func endDrag() {
         stopWatchingForDragEnd()
+        dragOffEnded()
         guard shellState.isDragging || shellState.dropGap.open != 0 else { return }
         shellState.draggingItemID = nil
         shellState.dropIndex = nil
@@ -169,16 +182,26 @@ extension DockController {
 
     /// AppKit only tells a drag destination the drag ended if it ended over it, so a reorder
     /// released elsewhere would leave its item hidden. Watch the mouse button instead.
+    ///
+    /// The same watch feeds the pointer to the removal (`dragOffPointerMoved`): the overlay
+    /// does too while the drag is over it, but a pointer resting in one place sends few
+    /// drag events, and one on another display sends none.
     private func watchForDragEnd() {
         guard shellState.dragEndWatcher == nil else { return }
         shellState.dragEndWatcher = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(for: .milliseconds(100))
+                try? await Task.sleep(for: .milliseconds(50))
                 guard let self, !Task.isCancelled else { return }
+                let location = NSEvent.mouseLocation
                 if NSEvent.pressedMouseButtons & 1 == 0 {
-                    self.endDrag()
+                    // Give a drop on the overlay a moment to arrive first: it ends the drag
+                    // (and this watch) itself, with the icon staying put under the poof.
+                    try? await Task.sleep(for: .milliseconds(150))
+                    guard !Task.isCancelled else { return }
+                    self.dragOffReleased(atScreen: location)
                     return
                 }
+                self.dragOffPointerMoved(toScreen: location)
             }
         }
     }
