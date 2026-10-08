@@ -80,11 +80,12 @@ extension DockController {
     }
 
     /// Drags that start in the dock are items being reordered. Other drags from this app
-    /// (such as rows of the Settings item list) are not; they carry no files either.
+    /// are not: rows of the Settings item list carry no files, and files dragged out of a
+    /// folder's popover are added like files from Finder.
     private func isReorderDrag(_ info: any NSDraggingInfo) -> Bool {
         guard let source = info.draggingSource else { return false }
         if let view = source as? NSView { return view.window === panel }
-        return true
+        return droppedFileURLs(info).isEmpty
     }
 
     /// The dragged item is the one under the drag when it first shows up: the drag starts

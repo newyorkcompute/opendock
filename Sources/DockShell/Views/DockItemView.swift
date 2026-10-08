@@ -124,13 +124,20 @@ struct AppItemView: View {
 
 // MARK: - Folder
 
+/// Clicking opens the folder in Finder. Clicking and holding, or Browse in its menu, shows
+/// its contents in a popover instead.
 struct FolderItemView: View {
     let item: DockItem
     let folder: FolderItem
     let controller: DockController
 
     @Environment(DockStore.self) private var store
+    @Environment(DockShellState.self) private var shellState
     @Environment(\.dockIconSize) private var iconSize
+
+    @State private var showingContents = false
+
+    private static let holdDuration = 0.4
 
     var body: some View {
         VStack(spacing: 2) {
@@ -139,16 +146,57 @@ struct FolderItemView: View {
             Color.clear.frame(width: 4, height: 4) // keep baseline aligned with apps
         }
         .contentShape(Rectangle())
-        .onTapGesture { AppLauncher.open(folder) }
+        .gesture(
+            // Exclusive, so letting go after the hold doesn't count as a click as well.
+            LongPressGesture(minimumDuration: Self.holdDuration)
+                .exclusively(before: TapGesture())
+                .onEnded { gesture in
+                    switch gesture {
+                    case .first: browse()
+                    case .second: AppLauncher.open(folder)
+                    }
+                }
+        )
+        .popover(isPresented: $showingContents, arrowEdge: .top) {
+            FolderBrowserView(folder: folder, sortOrderChanged: setSortOrder) { showingContents = false }
+        }
+        .onChange(of: showingContents) { _, shown in
+            if shown { shellState.beginInteraction() } else { shellState.endInteraction() }
+        }
+        .onDisappear {
+            // Switching profiles can take the folder away with its popover still open.
+            if showingContents { shellState.endInteraction() }
+        }
         .accessibilityLabel(folder.displayName)
+        .accessibilityAction(named: "Browse") { browse() }
         .contextMenu {
             Text(folder.displayName)
             Divider()
+            if FolderListing.isBrowsable(folder.url) {
+                Button("Browse") { showingContents = true }
+            }
             Button("Open") { AppLauncher.open(folder) }
             Button("Show in Finder") { AppLauncher.revealInFinder(folder.url) }
             Divider()
             Button("Remove from Dock", role: .destructive) { store.remove(id: item.id) }
         }
+    }
+
+    /// Files pinned to the dock have no contents to show, so they just open.
+    private func browse() {
+        if FolderListing.isBrowsable(folder.url) {
+            showingContents = true
+        } else {
+            AppLauncher.open(folder)
+        }
+    }
+
+    private func setSortOrder(_ order: FolderSortOrder) {
+        var updated = folder
+        updated.sortOrder = order
+        var copy = item
+        copy.kind = .folder(updated)
+        store.updateItem(copy)
     }
 }
 

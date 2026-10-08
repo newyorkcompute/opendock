@@ -95,14 +95,28 @@ public struct FolderItem: Hashable, Codable, Sendable {
     public var url: URL
     /// Optional user-facing override. Defaults to the last path component.
     public var customName: String?
+    /// How the folder's popover orders its contents. Nil means by name.
+    public var sortOrder: FolderSortOrder?
 
-    public init(url: URL, customName: String? = nil) {
+    public init(url: URL, customName: String? = nil, sortOrder: FolderSortOrder? = nil) {
         self.url = url.standardizedFileURL
         self.customName = customName
+        self.sortOrder = sortOrder
     }
 
     public var displayName: String {
         customName ?? url.lastPathComponent
+    }
+}
+
+extension FolderItem {
+    /// A sort order this version doesn't know (written by a newer one) falls back to the
+    /// default instead of failing the whole document.
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        url = try c.decode(URL.self, forKey: .url)
+        customName = try c.decodeIfPresent(String.self, forKey: .customName)
+        sortOrder = try? c.decodeIfPresent(FolderSortOrder.self, forKey: .sortOrder)
     }
 }
 
