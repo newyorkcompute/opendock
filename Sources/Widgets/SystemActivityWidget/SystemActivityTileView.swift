@@ -15,7 +15,7 @@ struct SystemActivityTileView: View {
     @State private var monitor = SystemActivityMonitor.shared
 
     private var metrics: [SystemActivityMetric] { SystemActivitySettings.metrics(in: instance) }
-    private var showsHistory: Bool { SystemActivitySettings.bool(SystemActivitySettings.showCPUHistory, in: instance) }
+    private var showsHistory: Bool { SystemActivitySettings.showCPUHistory.boolValue(in: instance.settings) }
 
     var body: some View {
         WidgetTile {

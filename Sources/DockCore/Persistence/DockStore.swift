@@ -224,7 +224,7 @@ public final class DockStore {
     /// Like `resetToFirstRun`, keeps whether the welcome window was seen. The recent apps
     /// stay too: they're about what was used on this Mac, not part of a layout.
     public func importData(_ data: Data) throws {
-        var imported = try DockStorage.decode(data)
+        var imported = try DockStorage.decode(data, widgetSchemas: storage.widgetSchemas)
         imported.hasSeenWelcome = document.hasSeenWelcome
         imported.recentApps = document.recentApps
         update { $0 = imported }

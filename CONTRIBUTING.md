@@ -156,8 +156,10 @@ Dockset's (or any other app's) icons, artwork, or marketing copy.
 
 - Write tests with [Swift Testing](https://developer.apple.com/documentation/testing)
   (`import Testing`, `@Suite`, `@Test`, `#expect`). Don't use XCTest.
-- Unit tests live in `Tests/DockCoreTests` and `Tests/SystemServicesTests`. Logic that can run without a screen (models,
-  persistence, geometry) belongs in `DockCore`, where it can be tested.
+- Unit tests live in `Tests/DockCoreTests`, `Tests/SystemServicesTests`, and `Tests/WidgetTests`. Logic that can run
+  without a screen (models, persistence, geometry) belongs in `DockCore`, where it can be tested.
+- `Tests/WidgetTests` checks that `docs/widgets.md` matches the widgets' settings schemas. After changing a
+  widget's `settingsSchema`, run `make widget-docs` and commit the regenerated tables.
 - Much of the dock panel's behavior (hover, drag and drop, auto-hide, multiple displays)
   can't be covered by unit tests yet. For changes there, describe in your pull request how you
   tested by hand, including your macOS version and display setup.

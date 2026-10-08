@@ -23,6 +23,16 @@ public final class WidgetRegistry {
         widgets.map(WidgetDescriptor.init)
     }
 
+    /// Settings schemas of every registered widget, by type ID, for `DockStorage`.
+    public var settingsSchemas: [String: WidgetSettingsSchema] {
+        Self.settingsSchemas(of: widgets)
+    }
+
+    /// Settings schemas by type ID, for building a `DockStorage` before the registry exists.
+    public static func settingsSchemas(of widgets: [any DockWidget.Type]) -> [String: WidgetSettingsSchema] {
+        Dictionary(widgets.map { ($0.typeID, $0.settingsSchema) }, uniquingKeysWith: { first, _ in first })
+    }
+
     public func widget(for typeID: String) -> (any DockWidget.Type)? {
         widgets.first { $0.typeID == typeID }
     }
@@ -57,12 +67,14 @@ public struct WidgetDescriptor: Identifiable, Hashable, Sendable {
     public let displayName: String
     public let systemImage: String
     public let summary: String
+    public let settingsSchema: WidgetSettingsSchema
 
     public init(_ widget: any DockWidget.Type) {
         typeID = widget.typeID
         displayName = widget.displayName
         systemImage = widget.systemImage
         summary = widget.summary
+        settingsSchema = widget.settingsSchema
     }
 }
 

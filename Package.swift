@@ -100,6 +100,18 @@ let package = Package(
             swiftSettings: baseSettings
         ),
 
+        /// The list of built-in widgets, shared by the app, storage validation, and the
+        /// widget docs test.
+        .target(
+            name: "BuiltInWidgets",
+            dependencies: [
+                "DockWidgetKit", "ClockWidget", "BatteryWidget", "CalendarWidget", "SystemActivityWidget",
+                "WeatherWidget", "NowPlayingWidget",
+            ],
+            path: "Sources/Widgets/BuiltInWidgets",
+            swiftSettings: uiSettings
+        ),
+
         // MARK: Shell + App
 
         /// The floating dock panel itself: window, positioning, auto-hide, item views.
@@ -117,12 +129,7 @@ let package = Package(
                 "DockWidgetKit",
                 "DockShell",
                 "SystemServices",
-                "ClockWidget",
-                "BatteryWidget",
-                "CalendarWidget",
-                "SystemActivityWidget",
-                "WeatherWidget",
-                "NowPlayingWidget",
+                "BuiltInWidgets",
             ],
             path: "App/OpenDock",
             swiftSettings: uiSettings
@@ -139,6 +146,12 @@ let package = Package(
             name: "SystemServicesTests",
             dependencies: ["DockCore", "SystemServices"],
             resources: [.copy("Fixtures")],
+            swiftSettings: baseSettings
+        ),
+        /// The built-in widgets' settings schemas, and that `docs/widgets.md` matches them.
+        .testTarget(
+            name: "WidgetTests",
+            dependencies: ["DockCore", "DockWidgetKit", "BuiltInWidgets"],
             swiftSettings: baseSettings
         ),
     ]

@@ -181,6 +181,38 @@ public extension DockDocument {
     }
 }
 
+// MARK: - Widgets
+
+public extension DockDocument {
+    /// Runs `body` over every widget instance in every profile, in place.
+    mutating func updateWidgets(_ body: (inout WidgetInstance) -> Void) {
+        for profileIndex in profiles.indices {
+            for itemIndex in profiles[profileIndex].items.indices {
+                guard case var .widget(instance) = profiles[profileIndex].items[itemIndex].kind else { continue }
+                body(&instance)
+                profiles[profileIndex].items[itemIndex].kind = .widget(instance)
+            }
+        }
+    }
+
+    /// Replaces every widget setting that isn't valid for its key (per the widget's schema
+    /// in `schemas`, by type ID) with the key's default. Widgets without a schema, and keys
+    /// a schema doesn't declare, are left as they are. Returns how many values changed.
+    @discardableResult
+    mutating func sanitizeWidgetSettings(using schemas: [String: WidgetSettingsSchema]) -> Int {
+        guard !schemas.isEmpty else { return 0 }
+        var changed = 0
+        updateWidgets { instance in
+            guard let schema = schemas[instance.typeID] else { return }
+            for key in schema.invalidKeys(in: instance.settings) {
+                instance.settings[key.name] = key.defaultValue
+                changed += 1
+            }
+        }
+        return changed
+    }
+}
+
 // MARK: - Defaults
 
 public extension DockDocument {

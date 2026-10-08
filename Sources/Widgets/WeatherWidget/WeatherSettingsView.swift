@@ -160,7 +160,7 @@ struct WeatherSettingsView: View {
         Binding(
             get: { settings.unit },
             set: { newValue in
-                instance.settings[WeatherSettings.unit] = newValue.rawValue
+                instance.settings[WeatherSettings.unit.name] = newValue.rawValue
                 updater(instance)
             }
         )
@@ -170,7 +170,7 @@ struct WeatherSettingsView: View {
         Binding(
             get: { settings.caption },
             set: { newValue in
-                instance.settings[WeatherSettings.caption] = newValue.rawValue
+                instance.settings[WeatherSettings.caption.name] = newValue.rawValue
                 updater(instance)
             }
         )

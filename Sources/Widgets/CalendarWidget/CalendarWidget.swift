@@ -2,19 +2,14 @@ import DockCore
 import DockWidgetKit
 import SwiftUI
 
-/// Today's date as a mini calendar icon plus your next event.
-///
-/// Settings: `showNextEvent` ("true"/"false", default "true"). When "false" the
-/// tile is just the date icon.
+/// Today's date as a mini calendar icon plus your next event. The settings keys are
+/// declared in `CalendarSettings` and listed in `docs/widgets.md`.
 public enum CalendarWidget: DockWidget {
     public static let typeID = BuiltInWidgetID.calendar
     public static let displayName = "Calendar"
     public static let systemImage = "calendar"
     public static let summary = "Today's date and your next event."
-
-    public static var defaultSettings: [String: String] {
-        [CalendarSettings.showNextEvent: "true"]
-    }
+    public static let settingsSchema = CalendarSettings.schema
 
     public static func makeView(instance: WidgetInstance) -> AnyView {
         AnyView(CalendarTileView(instance: instance))
@@ -29,13 +24,13 @@ public enum CalendarWidget: DockWidget {
     }
 }
 
-/// Setting keys used by the calendar widget.
+/// The calendar widget's settings keys.
 enum CalendarSettings {
-    static let showNextEvent = "showNextEvent"
+    static let showNextEvent = WidgetSettingKey(
+        "showNextEvent", type: .bool, default: "true",
+        summary: "Show the next event beside the date. When off, the tile is just the date icon.")
 
-    static func showNextEvent(in instance: WidgetInstance) -> Bool {
-        instance.settings[showNextEvent] != "false"
-    }
+    static let schema = WidgetSettingsSchema([showNextEvent])
 }
 
 extension Color {

@@ -17,8 +17,8 @@ struct NowPlayingTileView: View {
     /// Text beside the artwork on the bottom edge, under it on a side edge.
     private var textAlignment: HorizontalAlignment { edge.isVertical ? .center : .leading }
 
-    private var showControls: Bool { NowPlayingSettings.showControls(in: instance) }
-    private var showWhenIdle: Bool { NowPlayingSettings.showWhenIdle(in: instance) }
+    private var showControls: Bool { NowPlayingSettings.showControls.boolValue(in: instance.settings) }
+    private var showWhenIdle: Bool { NowPlayingSettings.showWhenIdle.boolValue(in: instance.settings) }
 
     var body: some View {
         // A container that outlives the branches below, so switching between them doesn't

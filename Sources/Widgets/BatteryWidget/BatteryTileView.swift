@@ -15,8 +15,8 @@ struct BatteryTileView: View {
     /// Text beside the ring on the bottom edge, under it on a side edge.
     private var textAlignment: HorizontalAlignment { edge.isVertical ? .center : .leading }
 
-    private var showPercentage: Bool { BatterySettings.bool(BatterySettings.showPercentage, in: instance) }
-    private var showAccessories: Bool { BatterySettings.bool(BatterySettings.showAccessories, in: instance) }
+    private var showPercentage: Bool { BatterySettings.showPercentage.boolValue(in: instance.settings) }
+    private var showAccessories: Bool { BatterySettings.showAccessories.boolValue(in: instance.settings) }
 
     var body: some View {
         WidgetTile {

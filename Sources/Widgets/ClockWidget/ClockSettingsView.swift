@@ -12,15 +12,15 @@ struct ClockSettingsView: View {
 
     init(instance: WidgetInstance) {
         _instance = State(initialValue: instance)
-        _label = State(initialValue: instance.settings[ClockSettings.label] ?? "")
+        _label = State(initialValue: ClockSettings.label.value(in: instance.settings))
     }
 
     var body: some View {
         Form {
-            Toggle("Show seconds", isOn: boolBinding(ClockSettings.showSeconds, default: false))
-            Toggle("Show date", isOn: boolBinding(ClockSettings.showDate, default: true))
+            Toggle("Show seconds", isOn: updater.boolBinding(ClockSettings.showSeconds, in: $instance))
+            Toggle("Show date", isOn: updater.boolBinding(ClockSettings.showDate, in: $instance))
 
-            Picker("Time zone", selection: stringBinding(ClockSettings.timeZone)) {
+            Picker("Time zone", selection: updater.stringBinding(ClockSettings.timeZone, in: $instance)) {
                 Text("System").tag("")
                 ForEach(Self.zoneIdentifiers, id: \.self) { id in
                     Text(id.replacingOccurrences(of: "_", with: " ")).tag(id)
@@ -33,29 +33,11 @@ struct ClockSettingsView: View {
         .onDisappear(perform: commitLabel)
     }
 
+    /// The label is committed on submit and when the view goes away, not on every
+    /// keystroke, so typing doesn't write the file over and over.
     private func commitLabel() {
-        guard label != (instance.settings[ClockSettings.label] ?? "") else { return }
-        instance.settings[ClockSettings.label] = label
+        guard label != ClockSettings.label.value(in: instance.settings) else { return }
+        instance.settings[ClockSettings.label.name] = label
         updater(instance)
-    }
-
-    private func boolBinding(_ key: String, default value: Bool) -> Binding<Bool> {
-        Binding(
-            get: { instance.settings[key].map { $0 == "true" } ?? value },
-            set: { newValue in
-                instance.settings[key] = newValue ? "true" : "false"
-                updater(instance)
-            }
-        )
-    }
-
-    private func stringBinding(_ key: String) -> Binding<String> {
-        Binding(
-            get: { instance.settings[key] ?? "" },
-            set: { newValue in
-                instance.settings[key] = newValue
-                updater(instance)
-            }
-        )
     }
 }

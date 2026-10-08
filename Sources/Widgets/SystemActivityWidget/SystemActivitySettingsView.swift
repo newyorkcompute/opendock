@@ -13,23 +13,13 @@ struct SystemActivitySettingsView: View {
 
     var body: some View {
         Form {
-            Toggle("Show CPU", isOn: binding(SystemActivitySettings.showCPU))
-            Toggle("Show memory", isOn: binding(SystemActivitySettings.showMemory))
-            Toggle("Show disk", isOn: binding(SystemActivitySettings.showDisk))
-            Toggle("Show CPU history", isOn: binding(SystemActivitySettings.showCPUHistory))
+            Toggle("Show CPU", isOn: updater.boolBinding(SystemActivitySettings.showCPU, in: $instance))
+            Toggle("Show memory", isOn: updater.boolBinding(SystemActivitySettings.showMemory, in: $instance))
+            Toggle("Show disk", isOn: updater.boolBinding(SystemActivitySettings.showDisk, in: $instance))
+            Toggle("Show CPU history", isOn: updater.boolBinding(SystemActivitySettings.showCPUHistory, in: $instance))
             Text("The tile shows CPU when every metric is turned off.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
-    }
-
-    private func binding(_ key: String) -> Binding<Bool> {
-        Binding(
-            get: { SystemActivitySettings.bool(key, in: instance) },
-            set: { newValue in
-                instance.settings[key] = newValue ? "true" : "false"
-                updater(instance)
-            }
-        )
     }
 }
