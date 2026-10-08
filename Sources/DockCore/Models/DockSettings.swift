@@ -66,6 +66,9 @@ public struct DockSettings: Hashable, Codable, Sendable {
     public var revealInFullScreen: Bool
     /// Which profile each macOS Focus mode shows, and what happens when Focus turns off.
     public var focusRules: FocusProfileRules
+    /// Global shortcut that shows the dock and puts the keyboard in control of it (see
+    /// `DockKeyboardNavigation`).
+    public var keyboardNavigationHotKey: HotKey?
 
     public init(
         edge: Edge = .bottom,
@@ -88,7 +91,8 @@ public struct DockSettings: Hashable, Codable, Sendable {
         showRecentApps: Bool = false,
         recentAppsCount: Int = 3,
         revealInFullScreen: Bool = true,
-        focusRules: FocusProfileRules = .default
+        focusRules: FocusProfileRules = .default,
+        keyboardNavigationHotKey: HotKey? = nil
     ) {
         self.edge = edge
         self.display = display
@@ -111,9 +115,25 @@ public struct DockSettings: Hashable, Codable, Sendable {
         self.recentAppsCount = recentAppsCount.clamped(to: Self.recentAppsCountRange)
         self.revealInFullScreen = revealInFullScreen
         self.focusRules = focusRules
+        self.keyboardNavigationHotKey = keyboardNavigationHotKey
     }
 
     public static let `default` = DockSettings()
+
+    /// Every global shortcut setting.
+    public static var hotKeyPaths: [WritableKeyPath<DockSettings, HotKey?>] {
+        [\.nextProfileHotKey, \.previousProfileHotKey, \.keyboardNavigationHotKey]
+    }
+
+    /// Sets one shortcut. A shortcut can only do one thing, so giving it to this action
+    /// takes it from any other that had it.
+    public mutating func setHotKey(_ hotKey: HotKey?, for keyPath: WritableKeyPath<DockSettings, HotKey?>) {
+        self[keyPath: keyPath] = hotKey
+        guard let hotKey else { return }
+        for other in Self.hotKeyPaths where other != keyPath && self[keyPath: other] == hotKey {
+            self[keyPath: other] = nil
+        }
+    }
 
     public static let iconSizeRange: ClosedRange<Double> = 32 ... 96
     public static let magnificationRange: ClosedRange<Double> = 1.2 ... 2.0
@@ -160,6 +180,8 @@ extension DockSettings {
             .clamped(to: Self.recentAppsCountRange)
         revealInFullScreen = (try? c.decodeIfPresent(Bool.self, forKey: .revealInFullScreen)) ?? d.revealInFullScreen
         focusRules = (try? c.decodeIfPresent(FocusProfileRules.self, forKey: .focusRules)) ?? d.focusRules
+        keyboardNavigationHotKey =
+            (try? c.decodeIfPresent(HotKey.self, forKey: .keyboardNavigationHotKey)) ?? d.keyboardNavigationHotKey
     }
 }
 
