@@ -46,5 +46,16 @@
 	<string>OpenDock shows your upcoming events in the Calendar widget.</string>
 	<key>NSRemindersFullAccessUsageDescription</key>
 	<string>OpenDock can show your reminders in the dock.</string>
+	<!-- Asked the first time a folder in these places is browsed from the dock. -->
+	<key>NSDesktopFolderUsageDescription</key>
+	<string>OpenDock shows the contents of folders you keep in the dock.</string>
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>OpenDock shows the contents of folders you keep in the dock.</string>
+	<key>NSDownloadsFolderUsageDescription</key>
+	<string>OpenDock shows the contents of folders you keep in the dock.</string>
+	<key>NSNetworkVolumesUsageDescription</key>
+	<string>OpenDock shows the contents of folders you keep in the dock.</string>
+	<key>NSRemovableVolumesUsageDescription</key>
+	<string>OpenDock shows the contents of folders you keep in the dock.</string>
 </dict>
 </plist>
