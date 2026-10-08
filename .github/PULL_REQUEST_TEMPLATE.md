@@ -21,3 +21,4 @@ auto-hide, displays), include your macOS version and display setup.
 - [ ] Follows the [code conventions](https://github.com/newyorkcompute/opendock/blob/main/CONTRIBUTING.md#code-conventions)
 - [ ] No persisted widget type IDs were renamed, and older `dock.json` files still load
 - [ ] The PR title works as the squash-merge commit message
+- [ ] I understand and have tested every line. If AI did a notable part of the work, the summary says which tool and what it did ([AI-assisted contributions](https://github.com/newyorkcompute/opendock/blob/main/CONTRIBUTING.md#ai-assisted-contributions))
