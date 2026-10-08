@@ -124,9 +124,12 @@ struct ProfilesTab: View {
                     )
                     .symbolRenderingMode(.multicolor)
                 }
-            case .unavailable, .unknown:
+            case .unavailable:
                 Text("Focus modes aren’t available on this Mac.")
                     .foregroundStyle(.secondary)
+            case .unknown:
+                ProgressView()
+                    .controlSize(.small)
             }
         } header: {
             Text("Focus")
