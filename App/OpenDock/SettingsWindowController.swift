@@ -16,8 +16,7 @@ final class SettingsWindowController: NSWindowController {
         store: DockStore,
         registry: WidgetRegistry,
         launchAtLogin: LaunchAtLogin,
-        windows: AppWindowManager,
-        badges: DockBadgeMonitor,
+        accessibility: AccessibilityPermission,
         profiles: ProfileSwitcher,
         focus: FocusModeMonitor,
         hotKeys: GlobalHotKeys,
@@ -30,8 +29,7 @@ final class SettingsWindowController: NSWindowController {
                 .environment(store)
                 .environment(registry)
                 .environment(launchAtLogin)
-                .environment(windows)
-                .environment(badges)
+                .environment(accessibility)
                 .environment(profiles)
                 .environment(focus)
                 .environment(hotKeys)

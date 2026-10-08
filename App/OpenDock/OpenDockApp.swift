@@ -28,8 +28,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let store = DockStore.load(from: .default(widgetSchemas: BuiltInWidgets.settingsSchemas))
     let registry = WidgetRegistry()
     let running = RunningAppsMonitor()
-    let windows = AppWindowManager()
-    let badges = DockBadgeMonitor(source: AccessibilityDockBadgeSource())
+    /// Shared by the window list, click-to-minimize, and badges, so they agree on it.
+    let accessibility = AccessibilityPermission()
+    let windows: AppWindowManager
+    let badges: DockBadgeMonitor
     let launchAtLogin = LaunchAtLogin()
     let appleDock = AppleDockHider(backend: SystemAppleDockBackend())
     let focus = FocusModeMonitor(source: DoNotDisturbDatabase())
@@ -47,8 +49,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         store: store,
         registry: registry,
         launchAtLogin: launchAtLogin,
-        windows: windows,
-        badges: badges,
+        accessibility: accessibility,
         profiles: profiles,
         focus: focus,
         hotKeys: hotKeys,
@@ -60,6 +61,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     )
 
     override init() {
+        windows = AppWindowManager(permission: accessibility)
+        badges = DockBadgeMonitor(source: AccessibilityDockBadgeSource(), permission: accessibility)
         super.init()
         registry.register(BuiltInWidgets.all)
     }

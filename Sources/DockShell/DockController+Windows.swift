@@ -73,8 +73,8 @@ extension DockController {
     /// and minimized ones get a diamond, as in the Dock and the Window menu. Without
     /// Accessibility access there's an item that asks for it instead.
     private func addWindowItems(to menu: NSMenu, app: AppItem, processIdentifier: pid_t) {
-        guard windows.refreshTrust() else {
-            let item = actionMenuItem("Allow Access to Windows…") { [windows] in windows.requestAccess() }
+        guard windows.permission.refresh() else {
+            let item = actionMenuItem("Allow Access to Windows…") { [windows] in windows.permission.request() }
             item.toolTip = "OpenDock needs Accessibility access to list and switch between an app’s windows."
             menu.addItem(item)
             menu.addItem(.separator())

@@ -1,6 +1,5 @@
 import AppKit
 import ApplicationServices
-import Observation
 import os
 
 /// One of a running app's windows, as the Accessibility API describes it.
@@ -24,12 +23,6 @@ public struct AppWindow: Identifiable, Hashable, Sendable {
 /// Everything `AppWindowManager` asks of the system. `SystemWindowBackend` in production.
 @MainActor
 public protocol WindowBackend: AnyObject {
-    /// Whether the user has given OpenDock Accessibility access.
-    var isTrusted: Bool { get }
-    /// Shows macOS's prompt to allow Accessibility access.
-    func promptForTrust()
-    /// Opens Privacy & Security > Accessibility in System Settings.
-    func openAccessibilitySettings()
     /// The app's standard windows (documents, browser windows; not panels or dialogs),
     /// front to back, minimized ones included. Ids from earlier listings stop working.
     func windows(ofProcess processIdentifier: pid_t) -> [AppWindow]
@@ -41,10 +34,9 @@ public protocol WindowBackend: AnyObject {
 }
 
 /// Lists and arranges other apps' windows for the dock: the windows in an app's menu, and
-/// minimizing on click. Both need Accessibility access, which is only asked for when the
-/// user wants one of them (`requestAccess`), never at launch.
+/// minimizing on click. Both need Accessibility access (`permission`), which is checked
+/// before every use and only asked for when the user wants one of them, never at launch.
 @MainActor
-@Observable
 public final class AppWindowManager {
     /// What clicking the frontmost app's icon did with click-to-minimize on.
     public enum ToggleOutcome: Hashable, Sendable {
@@ -52,42 +44,21 @@ public final class AppWindowManager {
         case restored
     }
 
-    /// Whether OpenDock has Accessibility access, as of the last check.
-    public private(set) var isTrusted: Bool
+    /// The Accessibility permission the windows come through, shared with everything else
+    /// that needs it.
+    public let permission: AccessibilityPermission
 
-    @ObservationIgnored private let backend: any WindowBackend
-    @ObservationIgnored private var hasPrompted = false
+    private let backend: any WindowBackend
 
-    public init(backend: any WindowBackend = SystemWindowBackend()) {
+    public init(permission: AccessibilityPermission, backend: any WindowBackend = SystemWindowBackend()) {
+        self.permission = permission
         self.backend = backend
-        isTrusted = backend.isTrusted
-    }
-
-    /// Checks for Accessibility access again. The user grants it in System Settings, which
-    /// doesn't tell the app.
-    @discardableResult
-    public func refreshTrust() -> Bool {
-        let trusted = backend.isTrusted
-        if trusted != isTrusted { isTrusted = trusted }
-        return trusted
-    }
-
-    /// Asks for Accessibility access: with macOS's prompt the first time, then by opening
-    /// System Settings, because macOS doesn't prompt again once the user has answered.
-    public func requestAccess() {
-        guard !refreshTrust() else { return }
-        if hasPrompted {
-            backend.openAccessibilitySettings()
-        } else {
-            hasPrompted = true
-            backend.promptForTrust()
-        }
     }
 
     /// The windows to list in an app's menu, sorted by title like the Dock's menu. Empty
     /// without Accessibility access.
     public func menuWindows(ofProcess processIdentifier: pid_t) -> [AppWindow] {
-        guard refreshTrust() else { return [] }
+        guard permission.refresh() else { return [] }
         return backend.windows(ofProcess: processIdentifier).sorted {
             $0.title.localizedStandardCompare($1.title) == .orderedAscending
         }
@@ -95,7 +66,7 @@ public final class AppWindowManager {
 
     /// Brings `window` to the front, restoring it first if it's minimized.
     public func bringToFront(_ window: AppWindow, ofProcess processIdentifier: pid_t) {
-        guard refreshTrust() else { return }
+        guard permission.refresh() else { return }
         if window.isMinimized { backend.setMinimized(false, window: window.id) }
         backend.raise(window.id)
         backend.activate(processIdentifier: processIdentifier)
@@ -105,7 +76,7 @@ public final class AppWindowManager {
     /// restores them when they're all minimized already. Returns nil when it can't do
     /// either (no access, or no windows), and the click should open the app as usual.
     public func toggleMinimized(ofProcess processIdentifier: pid_t) -> ToggleOutcome? {
-        guard refreshTrust() else { return nil }
+        guard permission.refresh() else { return nil }
         let windows = backend.windows(ofProcess: processIdentifier)
         let visible = windows.filter { !$0.isMinimized }
         if !visible.isEmpty {
@@ -134,20 +105,6 @@ public final class SystemWindowBackend: WindowBackend {
         // The dock waits for these calls. An app that has stopped responding would
         // otherwise hold it up for the default of about six seconds.
         AXUIElementSetMessagingTimeout(AXUIElementCreateSystemWide(), 1)
-    }
-
-    public var isTrusted: Bool { AXIsProcessTrusted() }
-
-    public func promptForTrust() {
-        // `kAXTrustedCheckOptionPrompt` is this key; the imported constant isn't concurrency-safe.
-        _ = AXIsProcessTrustedWithOptions(["AXTrustedCheckOptionPrompt": true] as CFDictionary)
-    }
-
-    public func openAccessibilitySettings() {
-        guard
-            let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
-        else { return }
-        NSWorkspace.shared.open(url)
     }
 
     public func windows(ofProcess processIdentifier: pid_t) -> [AppWindow] {

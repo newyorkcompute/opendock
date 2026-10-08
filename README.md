@@ -115,12 +115,13 @@ last forecast when offline.
 Right-click a running app in the dock to list its open windows, like Apple's Dock: the
 current one is checked, minimized ones have a diamond, and choosing one brings it to the
 front. With "Click the active app's icon to minimize its windows" on (Settings > General >
-Windows), clicking the icon of the app you're using minimizes its windows, and clicking it
+Behavior), clicking the icon of the app you're using minimizes its windows, and clicking it
 again restores them.
 
-Both need Accessibility access, because macOS only lets apps see and arrange other apps'
-windows through the Accessibility API. OpenDock doesn't ask at launch. It asks when you
-turn on click-to-minimize, or choose "Allow Access to Windows…" in an app's menu, and you
+Both need Accessibility access (as do app badges), because macOS only lets apps see and
+arrange other apps' windows through the Accessibility API. OpenDock doesn't ask at launch.
+It asks when you turn on click-to-minimize or badges, or choose "Allow Access to Windows…"
+in an app's menu, and Settings > General > Accessibility shows whether it's allowed; you
 can allow it in System Settings > Privacy & Security > Accessibility at any time. OpenDock
 only reads window titles and whether a window is minimized; it doesn't read what's in your
 windows. Without access, the dock works as before.

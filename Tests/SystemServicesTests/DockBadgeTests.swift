@@ -4,26 +4,14 @@ import Testing
 
 @testable import SystemServices
 
-/// Stands in for Apple's Dock and the Accessibility permission.
+/// Stands in for Apple's Dock.
 @MainActor
 final class FakeDockBadgeSource: DockBadgeSource {
-    var access: Bool
     var badges: [DockBadge] = []
     var error: DockBadgeReadError?
-    var prompts = 0
-    var settingsOpened = 0
     var reads = 0
 
-    init(access: Bool = true) {
-        self.access = access
-    }
-
-    func hasAccess(prompt: Bool) -> Bool {
-        if prompt { prompts += 1 }
-        return access
-    }
-
-    func openAccessSettings() { settingsOpened += 1 }
+    init() {}
 
     func readBadges() async throws -> [DockBadge] {
         reads += 1
@@ -105,8 +93,11 @@ struct DockBadgesLookupTests {
 struct DockBadgeMonitorTests {
     private let mailBadge = DockBadge(label: "4", bundleIdentifier: "com.apple.mail")
 
-    private func monitor(_ source: FakeDockBadgeSource, enabled: Bool = true) -> DockBadgeMonitor {
-        let monitor = DockBadgeMonitor(source: source)
+    private func monitor(
+        _ source: FakeDockBadgeSource, enabled: Bool = true, access: FakeAccessibilityBackend? = nil
+    ) -> DockBadgeMonitor {
+        let permission = AccessibilityPermission(backend: access ?? FakeAccessibilityBackend(trusted: true))
+        let monitor = DockBadgeMonitor(source: source, permission: permission)
         monitor.isEnabled = enabled
         return monitor
     }
@@ -148,7 +139,7 @@ struct DockBadgeMonitorTests {
 
     @Test func readsNothingWhileTheDockIsHidden() async {
         let source = FakeDockBadgeSource()
-        let monitor = DockBadgeMonitor(source: source)
+        let monitor = monitor(source, enabled: false)
         monitor.isDockVisible = false
         monitor.isEnabled = true
         await monitor.refresh()
@@ -165,33 +156,50 @@ struct DockBadgeMonitorTests {
     }
 
     @Test func withoutAccessNeverPromptsOrReads() async {
-        let source = FakeDockBadgeSource(access: false)
-        let monitor = monitor(source)
-        #expect(!monitor.hasAccess)
+        let source = FakeDockBadgeSource()
+        let access = FakeAccessibilityBackend(trusted: false)
+        let monitor = monitor(source, access: access)
+        #expect(!monitor.permission.isGranted)
         let wait = await monitor.refresh()
         #expect(wait == DockBadgeMonitor.accessCheckInterval)
         #expect(source.reads == 0)
-        #expect(source.prompts == 0)
+        #expect(access.prompts == 0)
     }
 
     @Test func picksUpAccessGrantedLater() async {
-        let source = FakeDockBadgeSource(access: false)
+        let source = FakeDockBadgeSource()
         source.badges = [mailBadge]
-        let monitor = monitor(source)
-        source.access = true
+        let access = FakeAccessibilityBackend(trusted: false)
+        let monitor = monitor(source, access: access)
+        access.isTrusted = true
         await monitor.refresh()
-        #expect(monitor.hasAccess)
+        #expect(monitor.permission.isGranted)
+        #expect(monitor.label(for: mail) == "4")
+    }
+
+    @Test func readsAsSoonAsAccessIsGrantedElsewhere() async {
+        let source = FakeDockBadgeSource()
+        source.badges = [mailBadge]
+        let access = FakeAccessibilityBackend(trusted: false)
+        let monitor = monitor(source, access: access)
+        try? await Task.sleep(for: .milliseconds(50))
+        #expect(source.reads == 0)
+        // Granted in System Settings and noticed by, say, the Settings window.
+        access.isTrusted = true
+        monitor.permission.refresh()
+        await eventually { monitor.label(for: mail) != nil }
         #expect(monitor.label(for: mail) == "4")
     }
 
     @Test func losingAccessClearsTheBadges() async {
         let source = FakeDockBadgeSource()
         source.badges = [mailBadge]
-        let monitor = monitor(source)
+        let access = FakeAccessibilityBackend(trusted: true)
+        let monitor = monitor(source, access: access)
         await monitor.refresh()
         source.error = .accessDenied
         let wait = await monitor.refresh()
-        #expect(!monitor.hasAccess)
+        #expect(!monitor.permission.isGranted)
         #expect(monitor.badges.isEmpty)
         #expect(wait == DockBadgeMonitor.accessCheckInterval)
     }
@@ -203,28 +211,8 @@ struct DockBadgeMonitorTests {
         await monitor.refresh()
         source.error = .dockNotRunning
         let wait = await monitor.refresh()
-        #expect(monitor.hasAccess)
+        #expect(monitor.permission.isGranted)
         #expect(monitor.badges.isEmpty)
         #expect(wait == DockBadgeMonitor.pollInterval)
-    }
-
-    @Test func requestAccessPromptsOnceThenOpensSettings() {
-        let source = FakeDockBadgeSource(access: false)
-        let monitor = DockBadgeMonitor(source: source)
-        monitor.requestAccess()
-        #expect(source.prompts == 1)
-        #expect(source.settingsOpened == 0)
-        monitor.requestAccess()
-        #expect(source.prompts == 1)
-        #expect(source.settingsOpened == 1)
-    }
-
-    @Test func refreshAccessNoticesAGrant() {
-        let source = FakeDockBadgeSource(access: false)
-        let monitor = DockBadgeMonitor(source: source)
-        source.access = true
-        monitor.refreshAccess()
-        #expect(monitor.hasAccess)
-        #expect(source.prompts == 0)
     }
 }
