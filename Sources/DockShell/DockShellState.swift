@@ -27,18 +27,19 @@ public final class DockShellState {
     /// Notices a reorder released away from the dock, where the dock gets no drag events.
     @ObservationIgnored var dragEndWatcher: Task<Void, Never>?
 
-    /// Where the last right-click or control-click on the dock was, relative to the row's
-    /// center, so items added from the menu it opened go there.
-    @ObservationIgnored var contextClickX: CGFloat?
+    /// Where along the row the last right-click or control-click on the dock was, relative
+    /// to the row's center, so items added from the menu it opened go there.
+    @ObservationIgnored var contextClickOffset: CGFloat?
 
     var isDragging: Bool { draggingItemID != nil || dropIndex != nil }
 
     /// The item under the pointer, for its label.
     var hoveredItemID: DockRowItemID?
 
-    /// Pointer x in the dock layout's coordinates. Kept after the pointer leaves so the
-    /// row settles back around where it was, like Apple's Dock.
-    var pointerX: CGFloat?
+    /// Pointer position along the row (x on the bottom edge, y on a side), in the dock
+    /// layout's coordinates. Kept after the pointer leaves so the row settles back around
+    /// where it was, like Apple's Dock.
+    var pointer: CGFloat?
 
     /// 0 ... 1, animated: how much of the configured magnification is applied.
     var magnification: CGFloat = 0

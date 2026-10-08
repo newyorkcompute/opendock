@@ -12,6 +12,7 @@ struct DockItemView: View {
 
     @Environment(DockShellState.self) private var shellState
     @Environment(\.dockIconSize) private var iconSize
+    @Environment(\.dockEdge) private var edge
 
     var body: some View {
         content
@@ -49,9 +50,10 @@ struct DockItemView: View {
                 .resizable()
                 .frame(width: iconSize, height: iconSize)
         case .divider:
+            let size = edge.axis.size(length: 2, thickness: iconSize * 0.8)
             Capsule()
                 .fill(.secondary)
-                .frame(width: 2, height: iconSize * 0.8)
+                .frame(width: size.width, height: size.height)
         default:
             RoundedRectangle(cornerRadius: 10)
                 .fill(.secondary.opacity(0.3))
@@ -68,6 +70,40 @@ extension Image {
             .interpolation(.high)
             .aspectRatio(1, contentMode: .fit)
             .frame(idealWidth: restingSize, idealHeight: restingSize)
+    }
+}
+
+/// An icon with its running indicator (or the room for one) on the screen-edge side of it:
+/// under it on the bottom edge, beside it on a side, as in Apple's Dock.
+struct DockBaselineStack<Icon: View, Indicator: View>: View {
+    @Environment(\.dockEdge) private var edge
+
+    private let icon: Icon
+    private let indicator: Indicator
+
+    init(@ViewBuilder icon: () -> Icon, @ViewBuilder indicator: () -> Indicator) {
+        self.icon = icon()
+        self.indicator = indicator()
+    }
+
+    var body: some View {
+        switch edge {
+        case .bottom:
+            VStack(spacing: 2) {
+                icon
+                indicator
+            }
+        case .left:
+            HStack(spacing: 2) {
+                indicator
+                icon
+            }
+        case .right:
+            HStack(spacing: 2) {
+                icon
+                indicator
+            }
+        }
     }
 }
 
@@ -90,7 +126,7 @@ struct AppItemView: View {
 
     var body: some View {
         let badge = badges.label(for: app)
-        VStack(spacing: 2) {
+        DockBaselineStack {
             Image(nsImage: AppIconProvider.shared.icon(for: app.url))
                 .dockIcon(restingSize: iconSize)
                 .opacity(exists ? 1 : 0.4)
@@ -103,6 +139,7 @@ struct AppItemView: View {
                 }
                 .dockBadge(badge)
                 .launchBounce(shellState.launchBounces.bounce(for: app))
+        } indicator: {
             runningIndicator
         }
         .contentShape(Rectangle())
@@ -138,15 +175,17 @@ struct FolderItemView: View {
     @Environment(DockStore.self) private var store
     @Environment(DockShellState.self) private var shellState
     @Environment(\.dockIconSize) private var iconSize
+    @Environment(\.dockEdge) private var edge
 
     @State private var showingContents = false
 
     private static let holdDuration = 0.4
 
     var body: some View {
-        VStack(spacing: 2) {
+        DockBaselineStack {
             Image(nsImage: AppIconProvider.shared.icon(for: folder.url))
                 .dockIcon(restingSize: iconSize)
+        } indicator: {
             Color.clear.frame(width: 4, height: 4) // keep baseline aligned with apps
         }
         .contentShape(Rectangle())
@@ -161,7 +200,7 @@ struct FolderItemView: View {
                     }
                 }
         )
-        .popover(isPresented: $showingContents, arrowEdge: .top) {
+        .popover(isPresented: $showingContents, arrowEdge: edge.popoverArrowEdge) {
             FolderBrowserView(folder: folder, sortOrderChanged: setSortOrder) { showingContents = false }
         }
         .onChange(of: showingContents) { _, shown in
@@ -213,13 +252,22 @@ struct SpacerItemView: View {
 
     @Environment(DockStore.self) private var store
     @Environment(\.dockIconSize) private var iconSize
+    @Environment(\.dockEdge) private var edge
 
     var body: some View {
+        // An icon thick, and its ideal length along the dock, stretching to fill its slot
+        // when magnified.
+        let length = spacer.size == .small ? iconSize * 0.3 : iconSize * 0.7
+        let vertical = edge.isVertical
         Color.clear
             .frame(
-                minWidth: 0, idealWidth: spacer.size == .small ? iconSize * 0.3 : iconSize * 0.7, maxWidth: .infinity
+                minWidth: vertical ? iconSize : 0,
+                idealWidth: vertical ? iconSize : length,
+                maxWidth: vertical ? iconSize : .infinity,
+                minHeight: vertical ? 0 : iconSize,
+                idealHeight: vertical ? length : iconSize,
+                maxHeight: vertical ? .infinity : iconSize
             )
-            .frame(height: iconSize)
             .contentShape(Rectangle())
             .contextMenu {
                 Text("Spacer")
@@ -248,6 +296,7 @@ struct WidgetItemView: View {
     @Environment(WidgetRegistry.self) private var registry
     @Environment(DockShellState.self) private var shellState
     @Environment(\.dockIconSize) private var iconSize
+    @Environment(\.dockEdge) private var edge
 
     @State private var showingPopout = false
     /// How far the dock has magnified the tile, read back from the size it lays it out at.
@@ -266,14 +315,15 @@ struct WidgetItemView: View {
     var body: some View {
         // Magnified tiles are laid out again at the larger icon size rather than scaled
         // up, so their text and symbols are drawn sharp at every size.
-        WidgetMagnifier(scale: scale) {
+        WidgetMagnifier(scale: scale, anchor: edge.unitPoint) {
             registry.view(for: instance)
                 .environment(\.dockIconSize, iconSize * scale)
                 .environment(\.dockWidgetScale, scale)
                 .environment(\.widgetUpdateSettings, updater)
         }
-        .onGeometryChange(for: Double.self) { [iconSize] proxy in
-            DockMagnification.tileScale(height: proxy.size.height, iconSize: iconSize)
+        .onGeometryChange(for: Double.self) { [iconSize, axis = edge.axis] proxy in
+            // Tiles are an icon thick across the dock; that's what magnification grows.
+            DockMagnification.tileScale(height: axis.thickness(of: proxy.size), iconSize: iconSize)
         } action: { newScale in
             // Follow the layout frame by frame. Animating this as well would leave the
             // content trailing its tile.
@@ -281,13 +331,13 @@ struct WidgetItemView: View {
             transaction.disablesAnimations = true
             withTransaction(transaction) { scale = newScale }
         }
-        .padding(.bottom, 6) // keep baseline aligned with apps
+        .padding(edge.facingSide, 6) // keep baseline aligned with apps
         .contentShape(Rectangle())
         .onTapGesture {
             guard hasPopout else { return }
             showingPopout.toggle()
         }
-        .popover(isPresented: $showingPopout, arrowEdge: .top) {
+        .popover(isPresented: $showingPopout, arrowEdge: edge.popoverArrowEdge) {
             if let popout = registry.popout(for: instance) {
                 popout.environment(\.widgetUpdateSettings, updater)
             }
@@ -322,6 +372,8 @@ struct WidgetItemView: View {
 /// natural size (laid out at `scale`), centered on the baseline, never stretched.
 nonisolated struct WidgetMagnifier: Layout {
     var scale: Double
+    /// The side of the tile on the dock's baseline (see `DockSettings.Edge.unitPoint`).
+    var anchor: UnitPoint
 
     func makeCache(subviews: Subviews) -> DockMagnification.RestingSizeTracker {
         DockMagnification.RestingSizeTracker()
@@ -349,8 +401,9 @@ nonisolated struct WidgetMagnifier: Layout {
         subviews: Subviews,
         cache: inout DockMagnification.RestingSizeTracker
     ) {
+        let point = CGPoint(x: bounds.minX + bounds.width * anchor.x, y: bounds.minY + bounds.height * anchor.y)
         for subview in subviews {
-            subview.place(at: CGPoint(x: bounds.midX, y: bounds.maxY), anchor: .bottom, proposal: .unspecified)
+            subview.place(at: point, anchor: anchor, proposal: .unspecified)
         }
     }
 

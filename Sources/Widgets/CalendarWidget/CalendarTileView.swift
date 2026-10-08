@@ -8,6 +8,7 @@ struct CalendarTileView: View {
     let instance: WidgetInstance
 
     @Environment(\.dockIconSize) private var iconSize
+    @Environment(\.dockEdge) private var edge
     @Environment(\.dockIsVisible) private var isVisible
     @Environment(\.widgetsMayRequestAccess) private var mayRequestAccess
     @State private var service = CalendarService.shared
@@ -17,7 +18,7 @@ struct CalendarTileView: View {
             if CalendarSettings.showNextEvent(in: instance) {
                 TimelineView(.periodic(from: .now, by: isVisible ? 60 : 900)) { context in
                     WidgetTile {
-                        HStack(spacing: iconSize * 0.16) {
+                        WidgetStack(spacing: iconSize * (edge.isVertical ? 0.08 : 0.16)) {
                             CalendarDateIcon(date: context.date, size: iconSize * 0.72)
                             summary(at: context.date)
                         }
@@ -37,17 +38,19 @@ struct CalendarTileView: View {
         }
     }
 
-    // MARK: Right-hand summary
+    // MARK: Summary (beside the date on the bottom edge, under it on a side edge)
+
+    private var textAlignment: HorizontalAlignment { edge.isVertical ? .center : .leading }
 
     @ViewBuilder
     private func summary(at now: Date) -> some View {
         if !service.hasAccess {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: textAlignment, spacing: 0) {
                 WidgetPrimaryText(now.formatted(.dateTime.month(.abbreviated).day()))
                 WidgetSecondaryText("Tap to allow")
             }
         } else if let event = service.nextEvent(at: now) {
-            VStack(alignment: .leading, spacing: 1) {
+            VStack(alignment: textAlignment, spacing: 1) {
                 HStack(spacing: iconSize * 0.07) {
                     Circle()
                         .fill(Color(hex: event.calendarColorHex))
@@ -59,9 +62,11 @@ struct CalendarTileView: View {
                 }
                 WidgetSecondaryText(Self.timeText(for: event, now: now))
             }
-            .frame(maxWidth: iconSize * 1.8, alignment: .leading)
+            .frame(
+                maxWidth: edge.isVertical ? nil : CGFloat(iconSize * 1.8),
+                alignment: Alignment(horizontal: textAlignment, vertical: .center))
         } else {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: textAlignment, spacing: 0) {
                 WidgetPrimaryText(now.formatted(.dateTime.month(.abbreviated).day()))
                 WidgetSecondaryText("No more events")
             }

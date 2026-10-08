@@ -28,7 +28,7 @@ extension DockController {
 
         shellState.profileSwapDirection = direction ?? (newIndex > oldIndex ? 1 : -1)
         shellState.hoveredItemID = nil
-        // The new row may be narrower; let the old one finish leaving before the window fits it.
+        // The new row may be shorter; let the old one finish leaving before the window fits it.
         holdFrameSize(for: .milliseconds(450))
         withAnimation(.dockProfileSwap) {
             store.selectProfile(id)
@@ -77,6 +77,7 @@ extension DockController {
             !shellState.isInteracting,
             !shellState.isDragging
         else { return false }
+        profileScrollGesture.axis = edge.axis
         guard let step = profileScrollGesture.handle(scroll) else { return false }
         switchProfile(by: step)
         return true
@@ -113,12 +114,17 @@ extension Animation {
 
 extension AnyTransition {
     /// How items come and go in a profile switch. The outgoing ones shrink into the dock
-    /// wherever they are; the incoming ones slide in from `direction`'s side.
-    static func dockProfileSwap(direction: Int, distance: CGFloat, reduceMotion: Bool) -> AnyTransition {
+    /// wherever they are; the incoming ones slide in along the dock from `direction`'s
+    /// side: from the right (or, on a side edge, from below) for the next profile.
+    static func dockProfileSwap(direction: Int, distance: CGFloat, edge: DockSettings.Edge, reduceMotion: Bool)
+        -> AnyTransition
+    {
         guard !reduceMotion else { return .opacity }
+        let offset = CGFloat(direction) * distance
         return .asymmetric(
-            insertion: .offset(x: CGFloat(direction) * distance).combined(with: .opacity),
-            removal: .scale(scale: 0.6, anchor: .bottom).combined(with: .opacity)
+            insertion: .offset(x: edge.isVertical ? 0 : offset, y: edge.isVertical ? offset : 0).combined(
+                with: .opacity),
+            removal: .scale(scale: 0.6, anchor: edge.unitPoint).combined(with: .opacity)
         )
     }
 }

@@ -164,17 +164,26 @@ public enum DockMagnification {
         return (leading, trailing)
     }
 
-    /// Size of an item drawn at `scale`. Icons grow by the same amount in both directions,
-    /// so they stay square and the running indicator under them keeps its size and place.
-    /// Items wider than an icon (widgets) grow in height like an icon at the same scale,
-    /// and in width in proportion, like their slot.
-    public static func itemSize(_ resting: CGSize, scale: Double, iconSize: Double) -> CGSize {
-        let heightGrowth = min(resting.width, iconSize) * (scale - 1)
-        return CGSize(width: resting.width * scale, height: resting.height + heightGrowth)
+    /// Size of an item drawn at `scale` in a row along `axis`. Icons grow by the same amount
+    /// in both directions, so they stay square and the running indicator beside them keeps
+    /// its size and place. Items longer than an icon along the row (widgets) grow across
+    /// the row like an icon at the same scale, and along it in proportion, like their slot.
+    public static func itemSize(
+        _ resting: CGSize,
+        scale: Double,
+        iconSize: Double,
+        axis: DockAxis = .horizontal
+    ) -> CGSize {
+        let thicknessGrowth = min(axis.length(of: resting), iconSize) * (scale - 1)
+        return axis.size(
+            length: axis.length(of: resting) * scale,
+            thickness: axis.thickness(of: resting) + thicknessGrowth
+        )
     }
 
-    /// The scale to draw a widget tile at, from the height the dock lays it out at: tiles
-    /// are as tall as an icon, and `itemSize` grows them like one. Snaps to 1 near rest.
+    /// The scale to draw a widget tile at, from its size across the row as the dock lays
+    /// it out (its height on the bottom edge, its width on a side): tiles are an icon
+    /// thick, and `itemSize` grows them like one. Snaps to 1 near rest.
     public static func tileScale(height: Double, iconSize: Double) -> Double {
         guard iconSize > 0, height > 0 else { return 1 }
         let scale = max(1, height / iconSize)

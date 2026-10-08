@@ -6,6 +6,12 @@ public struct DockSettings: Hashable, Codable, Sendable {
         case bottom
         case left
         case right
+
+        /// Whether the dock runs up the side of the screen rather than along the bottom.
+        public var isVertical: Bool { self != .bottom }
+
+        /// The axis the dock's items are lined up on.
+        public var axis: DockAxis { isVertical ? .vertical : .horizontal }
     }
 
     public enum Material: String, Codable, Sendable, CaseIterable {
@@ -15,7 +21,7 @@ public struct DockSettings: Hashable, Codable, Sendable {
         case solid
     }
 
-    /// Which screen edge the dock is attached to. MVP only implements `.bottom`.
+    /// Which screen edge the dock is attached to.
     public var edge: Edge
     /// Which display the dock is on.
     public var display: Display
@@ -123,7 +129,7 @@ extension DockSettings {
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         let d = DockSettings.default
-        edge = try c.decodeIfPresent(Edge.self, forKey: .edge) ?? d.edge
+        edge = (try? c.decodeIfPresent(Edge.self, forKey: .edge)) ?? d.edge
         display = (try? c.decodeIfPresent(Display.self, forKey: .display)) ?? d.display
         iconSize = try c.decodeIfPresent(Double.self, forKey: .iconSize) ?? d.iconSize
         autoHide = try c.decodeIfPresent(Bool.self, forKey: .autoHide) ?? d.autoHide

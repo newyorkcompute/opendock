@@ -13,6 +13,10 @@ public extension EnvironmentValues {
     /// `dockIconSize`; multiply sizes in fixed points by it.
     @Entry var dockWidgetScale: Double = 1
 
+    /// The screen edge the dock is on. On a side edge the dock is a column an icon wide,
+    /// and tiles stack their content rather than lining it up (see `WidgetTile`).
+    @Entry var dockEdge: DockSettings.Edge = .bottom
+
     /// False while the dock is hidden off-screen. Widgets should pause expensive
     /// polling and animations when this is false.
     @Entry var dockIsVisible: Bool = true
@@ -65,6 +69,16 @@ public enum WidgetMetrics {
     /// Horizontal padding inside a tile.
     public static func horizontalPadding(for iconSize: Double) -> Double {
         max(8, iconSize * 0.22)
+    }
+
+    /// Horizontal padding inside a tile that is only an icon wide (on a side edge).
+    public static func compactHorizontalPadding(for iconSize: Double) -> Double {
+        max(3, iconSize * 0.08)
+    }
+
+    /// Vertical padding inside a tile whose height follows its content (on a side edge).
+    public static func verticalPadding(for iconSize: Double) -> Double {
+        max(5, iconSize * 0.12)
     }
 
     /// Primary text size for a tile at the given icon size.

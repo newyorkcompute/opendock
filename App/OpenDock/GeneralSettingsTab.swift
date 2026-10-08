@@ -72,18 +72,19 @@ struct GeneralSettingsTab: View {
             }
             .pickerStyle(.segmented)
 
-            LabeledContent("Position") {
-                Text("Bottom")
+            Picker("Position on screen", selection: setting(\.edge)) {
+                Text("Left").tag(DockSettings.Edge.left)
+                Text("Bottom").tag(DockSettings.Edge.bottom)
+                Text("Right").tag(DockSettings.Edge.right)
             }
+            .pickerStyle(.segmented)
 
             DisplayPicker()
         } header: {
             Text("Appearance")
         } footer: {
-            Text(
-                "Liquid Glass requires macOS 26; earlier versions use Frosted. Left and right screen edges are coming soon."
-            )
-            .settingsFootnote()
+            Text("Liquid Glass requires macOS 26; earlier versions use Frosted.")
+                .settingsFootnote()
         }
     }
 

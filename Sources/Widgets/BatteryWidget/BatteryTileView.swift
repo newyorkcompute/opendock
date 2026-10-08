@@ -9,14 +9,18 @@ struct BatteryTileView: View {
     let instance: WidgetInstance
 
     @Environment(\.dockIconSize) private var iconSize
+    @Environment(\.dockEdge) private var edge
     @State private var monitor = PowerSourceMonitor.shared
+
+    /// Text beside the ring on the bottom edge, under it on a side edge.
+    private var textAlignment: HorizontalAlignment { edge.isVertical ? .center : .leading }
 
     private var showPercentage: Bool { BatterySettings.bool(BatterySettings.showPercentage, in: instance) }
     private var showAccessories: Bool { BatterySettings.bool(BatterySettings.showAccessories, in: instance) }
 
     var body: some View {
         WidgetTile {
-            HStack(spacing: iconSize * 0.16) {
+            WidgetStack(spacing: iconSize * (edge.isVertical ? 0.08 : 0.16)) {
                 if monitor.hasBattery {
                     batteryContent
                 } else {
@@ -50,7 +54,7 @@ struct BatteryTileView: View {
                 }
             }
 
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: textAlignment, spacing: 0) {
             if showPercentage {
                 WidgetPrimaryText(percentage.map { "\($0)%" } ?? "—%")
             }
@@ -94,7 +98,7 @@ struct BatteryTileView: View {
         Image(systemName: "powerplug.fill")
             .font(.system(size: iconSize * 0.36, weight: .semibold))
             .foregroundStyle(.green)
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: textAlignment, spacing: 0) {
             WidgetPrimaryText("AC")
             WidgetSecondaryText("Power adapter")
         }
