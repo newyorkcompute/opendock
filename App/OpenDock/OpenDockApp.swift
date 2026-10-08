@@ -5,6 +5,7 @@ import DockCore
 import DockShell
 import DockWidgetKit
 import SwiftUI
+import SystemActivityWidget
 import SystemServices
 
 @main
@@ -59,7 +60,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     override init() {
         super.init()
-        registry.register([ClockWidget.self, BatteryWidget.self, CalendarWidget.self])
+        registry.register([ClockWidget.self, BatteryWidget.self, CalendarWidget.self, SystemActivityWidget.self])
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
