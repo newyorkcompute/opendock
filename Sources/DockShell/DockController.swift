@@ -73,6 +73,12 @@ public final class DockController {
     let activationMonitor = AppActivationMonitor()
     /// Clears the next bounce to finish, once it has landed.
     var launchBounceTask: Task<Void, Never>?
+    /// The keyboard's selection while it controls the dock (see `DockController+Keyboard`).
+    var keyboard = DockKeyboardNavigation<DockRowItemID>()
+    /// Key presses, and the clicks that end keyboard control. Installed only while it's on.
+    var keyboardMonitors: [Any] = []
+    var keyboardObservers: [any NSObjectProtocol] = []
+    var popoverRequestSerial = 0
 
     private let log = Logger(subsystem: "com.newyorkcompute.opendock", category: "DockController")
 
@@ -145,6 +151,9 @@ public final class DockController {
         launchMonitor.onLaunchEnded = nil
         activationMonitor.onActivate = nil
         badges.isDockVisible = false
+        _ = keyboard.end()
+        shellState.keyboardSelection = nil
+        removeKeyboardMonitors()
         removeScrollMonitor()
         removeEdgeMonitors()
         removeHoverMonitor()
@@ -433,9 +442,10 @@ public final class DockController {
     }
 
     /// Start the countdown to hide, after the auto-hide delay unless `delay` (in seconds)
-    /// says otherwise. Cancelled if the pointer comes back.
+    /// says otherwise. Cancelled if the pointer comes back. Not while the keyboard is in
+    /// control: the dock stays up until that ends.
     func scheduleHide(after delay: Double? = nil) {
-        guard hidesWhenPointerLeaves, !holdUntilPointerEnters else { return }
+        guard hidesWhenPointerLeaves, !holdUntilPointerEnters, !keyboard.isActive else { return }
         hideTask?.cancel()
         let delay = delay ?? store.settings.autoHideDelay
         hideTask = Task { [weak self] in
@@ -455,6 +465,11 @@ public final class DockController {
 
     /// Called when an interaction (popover/menu) ends; re-arm hiding if the pointer left.
     func interactionEnded() {
+        if keyboard.isActive {
+            // The popover or menu took the keyboard; the selection takes it back.
+            keyboardInteractionEnded()
+            return
+        }
         guard !pointerIsOverDock else {
             // Hover events stopped while the menu or popover was open; pick up from here.
             pointerMoved(to: layoutPoint(fromScreen: NSEvent.mouseLocation))

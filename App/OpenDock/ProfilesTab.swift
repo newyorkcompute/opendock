@@ -249,20 +249,11 @@ struct ProfilesTab: View {
     }
 
     /// A binding to one of the profile shortcuts. A shortcut can only do one thing, so
-    /// giving it to one action takes it from the other.
+    /// giving it to one action takes it from any other (see `DockSettings.setHotKey`).
     private func hotKey(_ keyPath: WritableKeyPath<DockSettings, HotKey?>) -> Binding<HotKey?> {
         Binding(
             get: { store.settings[keyPath: keyPath] },
-            set: { value in
-                store.updateSettings { settings in
-                    settings[keyPath: keyPath] = value
-                    guard let value else { return }
-                    for other in [\DockSettings.nextProfileHotKey, \DockSettings.previousProfileHotKey]
-                    where other != keyPath && settings[keyPath: other] == value {
-                        settings[keyPath: other] = nil
-                    }
-                }
-            }
+            set: { value in store.updateSettings { $0.setHotKey(value, for: keyPath) } }
         )
     }
 

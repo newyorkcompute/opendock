@@ -67,6 +67,9 @@ Dock. You can keep both, or have OpenDock hide Apple's while it runs. Inspired b
 - Profiles: keep several layouts (say, Work and Home) and switch between them from the menu
   bar, with your own global shortcuts, or by swiping sideways on the dock (⌘-scroll works
   with a mouse). A Focus mode can switch profiles too (see [Focus modes](#focus-modes))
+- Keyboard control: a global shortcut shows the dock and selects an item; arrow keys move
+  along it, Return opens, Space browses a folder or opens a widget, Delete removes, Escape
+  puts the keyboard back. The selection is announced to VoiceOver
 - Widgets: Clock, Battery, Calendar, System Activity, and Weather
 - Settings window with General, Profiles, Dock Items, Widgets, and About tabs
 - Export and import your layout as JSON

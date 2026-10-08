@@ -171,6 +171,9 @@ nonisolated struct DockMagnifyingLayout: Layout {
     var metrics: DockRowMetrics
     /// Pointer position along the row, in the layout's local coordinates.
     var pointer: CGFloat?
+    /// The keyboard's selection while the pointer is off the dock: the row magnifies around
+    /// its resting center, as if the pointer were there, instead of around `pointer`.
+    var selectedID: DockRowItemID?
     var amount: CGFloat
     var hoveredID: DockRowItemID?
     /// Item being reordered: out of the row while the gap stands in for it.
@@ -244,6 +247,20 @@ nonisolated struct DockMagnifyingLayout: Layout {
         return row
     }
 
+    /// What the row magnifies around, in resting coordinates (from the row's start): the
+    /// keyboard's selection while it has one in the row, else the pointer.
+    private func magnificationPointer(space: DockEdgeSpace, rowStart: CGFloat, row: Row) -> Double? {
+        if let selectedID {
+            var position: CGFloat = 0
+            for (k, slot) in row.slots.enumerated() {
+                if row.ids[k] == selectedID { return Double(position + slot.width / 2) }
+                position += slot.width
+            }
+        }
+        guard let pointer else { return nil }
+        return Double(space.span.lowerBound + pointer - rowStart)
+    }
+
     /// The container's size only depends on the resting slots, but layout runs on every
     /// pointer move; remember the (comparatively costly) overhang for the last slots seen.
     struct Cache {
@@ -292,7 +309,7 @@ nonisolated struct DockMagnifyingLayout: Layout {
 
         let magnified = DockMagnification.row(
             row.slots,
-            pointer: pointer.map { space.span.lowerBound + $0 - rowStart },
+            pointer: magnificationPointer(space: space, rowStart: rowStart, row: row),
             peakScale: metrics.peakScale,
             radius: metrics.radius,
             amount: amount

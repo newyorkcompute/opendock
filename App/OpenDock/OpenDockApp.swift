@@ -127,18 +127,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private enum HotKeyAction {
         static let nextProfile = "nextProfile"
         static let previousProfile = "previousProfile"
+        static let keyboardNavigation = "keyboardNavigation"
     }
 
-    /// Registers the profile shortcuts, now and whenever they change.
+    /// Registers the global shortcuts, now and whenever they change.
     private func syncHotKeys() {
-        let (next, previous) = withObservationTracking {
-            (store.settings.nextProfileHotKey, store.settings.previousProfileHotKey)
+        let (next, previous, keyboard) = withObservationTracking {
+            (
+                store.settings.nextProfileHotKey, store.settings.previousProfileHotKey,
+                store.settings.keyboardNavigationHotKey
+            )
         } onChange: { [weak self] in
             Task { @MainActor [weak self] in self?.syncHotKeys() }
         }
         var shortcuts: [String: HotKey] = [:]
         if let next, next.isValidGlobalShortcut { shortcuts[HotKeyAction.nextProfile] = next }
         if let previous, previous.isValidGlobalShortcut { shortcuts[HotKeyAction.previousProfile] = previous }
+        if let keyboard, keyboard.isValidGlobalShortcut { shortcuts[HotKeyAction.keyboardNavigation] = keyboard }
         hotKeys.update(shortcuts)
     }
 
@@ -146,6 +151,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         switch action {
         case HotKeyAction.nextProfile: profiles.step(by: 1)
         case HotKeyAction.previousProfile: profiles.step(by: -1)
+        case HotKeyAction.keyboardNavigation: dock?.toggleKeyboardNavigation()
         default: break
         }
     }

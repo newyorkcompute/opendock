@@ -206,6 +206,10 @@ struct FolderItemView: View {
         .onChange(of: showingContents) { _, shown in
             if shown { shellState.beginInteraction() } else { shellState.endInteraction() }
         }
+        .onChange(of: shellState.popoverRequest) { _, request in
+            // Space, while the keyboard controls the dock.
+            if request?.item == item.id { browse() }
+        }
         .onDisappear {
             // Switching profiles can take the folder away with its popover still open.
             if showingContents { shellState.endInteraction() }
@@ -344,6 +348,10 @@ struct WidgetItemView: View {
         }
         .onChange(of: showingPopout) { _, shown in
             if shown { shellState.beginInteraction() } else { shellState.endInteraction() }
+        }
+        .onChange(of: shellState.popoverRequest) { _, request in
+            // Space, while the keyboard controls the dock.
+            if request?.item == item.id, hasPopout { showingPopout = true }
         }
         .onDisappear {
             // Switching profiles can take the tile away with its popover still open.

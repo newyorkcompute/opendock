@@ -19,11 +19,11 @@ extension DockController {
         open(app)
     }
 
-    /// Opens the app's menu at the pointer. `id` is the row item the menu is for: for a
-    /// running app it picks the instance whose windows to list; otherwise that's the first
-    /// running instance of `app`.
-    func showAppMenu(for app: AppItem, id: DockRowItemID) {
-        let location = NSEvent.mouseLocation
+    /// Opens the app's menu at `location` (screen coordinates), or at the pointer. `id` is
+    /// the row item the menu is for: for a running app it picks the instance whose windows
+    /// to list; otherwise that's the first running instance of `app`.
+    func showAppMenu(for app: AppItem, id: DockRowItemID, at location: NSPoint? = nil) {
+        let location = location ?? NSEvent.mouseLocation
         // Start the menu's tracking loop after the event that asked for it has finished.
         Task { [weak self] in
             guard let self else { return }
