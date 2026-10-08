@@ -81,6 +81,12 @@ public struct OSAScriptRunner: AppleScriptRunner {
 public final class ScriptedPlayersProvider: NowPlayingProvider {
     public let sourceName = "Music and Spotify"
 
+    /// How often the players are asked while the dock is shown. Each read runs `osascript`
+    /// once per running player, so this is the fallback's main cost.
+    public static let visiblePollInterval = Duration.seconds(2)
+    /// How often they're asked while the dock is hidden, when nothing shows the answer.
+    public static let hiddenPollInterval = Duration.seconds(30)
+
     private let players: [ScriptedPlayer]
     private let runner: any AppleScriptRunner
     private let runningBundleIDs: @MainActor () -> Set<String>
@@ -135,11 +141,18 @@ public final class ScriptedPlayersProvider: NowPlayingProvider {
                     MainActor.assumeIsolated { self?.refreshSoon() }
                 })
         }
+        startPolling()
+    }
+
+    /// Reads now, then every `visiblePollInterval` while the dock is shown and every
+    /// `hiddenPollInterval` while it's hidden.
+    private func startPolling() {
+        pollTask?.cancel()
         pollTask = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self else { return }
                 await self.refresh()
-                let interval: Duration = self.isDockVisible ? .seconds(2) : .seconds(30)
+                let interval = self.isDockVisible ? Self.visiblePollInterval : Self.hiddenPollInterval
                 try? await Task.sleep(for: interval)
             }
         }
@@ -169,7 +182,9 @@ public final class ScriptedPlayersProvider: NowPlayingProvider {
     public func setDockVisible(_ visible: Bool) {
         guard visible != isDockVisible else { return }
         isDockVisible = visible
-        if visible { refreshSoon() }
+        // Hidden, the loop slows down at its next turn. Shown again, its next turn could be
+        // most of a hidden interval away, so it starts over, with a read now.
+        if visible, pollTask != nil { startPolling() }
     }
 
     // MARK: Refresh
