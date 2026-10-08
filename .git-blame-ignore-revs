@@ -1,0 +1,6 @@
+# Bulk, behavior-neutral changes that `git blame` should skip. GitHub's blame view reads this
+# file automatically; locally, run `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
+# Use full hashes of commits on main (squash merges), one per line.
+
+# Format the code with swift-format and enforce it in CI (#55)
+b2956cc314bf8005bf94d265ebc9fe2e84ec6bbb

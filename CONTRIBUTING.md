@@ -39,6 +39,12 @@ icon, ad-hoc signature). You can still edit in Xcode by opening `Package.swift`.
 
 Releases are cut by pushing a `v*` tag; see [RELEASING.md](RELEASING.md).
 
+To watch the app's logs while it runs:
+
+```sh
+log stream --predicate 'subsystem == "com.newyorkcompute.opendock"' --level debug
+```
+
 ### Formatting
 
 Swift code is formatted with [swift-format](https://github.com/swiftlang/swift-format),
@@ -50,10 +56,11 @@ the `Build & test` job on any formatting difference or lint warning.
 In Xcode, Editor > Structure > Format File with 'swift-format' (⌃⇧I) formats the current
 file with the same settings.
 
-To watch the app's logs while it runs:
+Whole-repo formatting commits are listed in `.git-blame-ignore-revs`. GitHub's blame view
+skips them already; to make `git blame` skip them too, run this once in your checkout:
 
 ```sh
-log stream --predicate 'subsystem == "com.newyorkcompute.opendock"' --level debug
+git config blame.ignoreRevsFile .git-blame-ignore-revs
 ```
 
 ### Running several builds at once
