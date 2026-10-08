@@ -9,7 +9,8 @@ public struct DockDocument: Hashable, Codable, Sendable {
     ///   `com.newyorkcompute.opendock.widget.*`.
     ///
     /// New item kinds (such as `divider`) don't need a bump: they need no migration, and
-    /// `DockProfile` skips kinds it doesn't know rather than rejecting the file.
+    /// `DockProfile` skips kinds it doesn't know rather than rejecting the file. Neither do
+    /// new settings, which decode with defaults, so older builds can still open the file.
     public static let currentVersion = 2
 
     public var version: Int
@@ -39,6 +40,119 @@ public struct DockDocument: Hashable, Codable, Sendable {
                 profiles[0] = newValue
             }
         }
+    }
+}
+
+// MARK: - Tolerant decoding
+
+extension DockDocument {
+    /// A missing or unknown active profile falls back to the first one, and a profile that
+    /// repeats another's ID gets a new one, so every profile can be told apart. A file with
+    /// no profiles at all is rejected (and backed up by `DockStore`) rather than crashing.
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        version = try c.decode(Int.self, forKey: .version)
+        var profiles = try c.decode([DockProfile].self, forKey: .profiles)
+        guard !profiles.isEmpty else {
+            throw DecodingError.dataCorruptedError(forKey: .profiles, in: c, debugDescription: "A document needs at least one profile")
+        }
+        var seen = Set<DockProfile.ID>()
+        for index in profiles.indices where !seen.insert(profiles[index].id).inserted {
+            profiles[index].id = UUID()
+        }
+        self.profiles = profiles
+        let active = try? c.decodeIfPresent(DockProfile.ID.self, forKey: .activeProfileID)
+        activeProfileID = active.flatMap { id in profiles.contains { $0.id == id } ? id : nil } ?? profiles[0].id
+        settings = try c.decodeIfPresent(DockSettings.self, forKey: .settings) ?? .default
+    }
+}
+
+// MARK: - Profiles
+
+public extension DockDocument {
+    func profile(id: DockProfile.ID) -> DockProfile? {
+        profiles.first { $0.id == id }
+    }
+
+    /// The profile `offset` steps after the active one, wrapping around at either end.
+    func profileID(offsetFromActive offset: Int) -> DockProfile.ID {
+        guard let index = profiles.firstIndex(where: { $0.id == activeProfileID }) else { return profiles[0].id }
+        let count = profiles.count
+        return profiles[((index + offset) % count + count) % count].id
+    }
+
+    mutating func activateProfile(_ id: DockProfile.ID) {
+        guard profile(id: id) != nil else { return }
+        activeProfileID = id
+    }
+
+    /// Adds an empty profile at the end, with a name no other profile has. It isn't activated.
+    @discardableResult
+    mutating func addProfile(named name: String? = nil) -> DockProfile.ID {
+        let requested = name.flatMap(Self.trimmedName)
+        let profile = DockProfile(name: requested.map { uniqueProfileName($0, numberFirst: false) }
+            ?? uniqueProfileName("Profile", numberFirst: true))
+        profiles.append(profile)
+        return profile.id
+    }
+
+    /// Copies a profile, right after the original. The copy's items get new IDs, so the two
+    /// layouts never share an item. It isn't activated.
+    @discardableResult
+    mutating func duplicateProfile(_ id: DockProfile.ID) -> DockProfile.ID? {
+        guard let index = profiles.firstIndex(where: { $0.id == id }) else { return nil }
+        let source = profiles[index]
+        let copy = DockProfile(
+            name: uniqueProfileName("\(source.name) Copy", numberFirst: false),
+            items: source.items.map { DockItem(kind: $0.kind) }
+        )
+        profiles.insert(copy, at: index + 1)
+        return copy.id
+    }
+
+    /// Blank names are ignored. Names don't have to be unique; IDs tell profiles apart.
+    mutating func renameProfile(_ id: DockProfile.ID, to name: String) {
+        guard let name = Self.trimmedName(name),
+              let index = profiles.firstIndex(where: { $0.id == id })
+        else { return }
+        profiles[index].name = name
+    }
+
+    /// Deletes a profile unless it's the only one. Deleting the active profile activates the
+    /// one after it (or before it, if it was last). Returns whether anything was deleted.
+    @discardableResult
+    mutating func deleteProfile(_ id: DockProfile.ID) -> Bool {
+        guard profiles.count > 1, let index = profiles.firstIndex(where: { $0.id == id }) else { return false }
+        if id == activeProfileID {
+            activeProfileID = profiles[index + 1 < profiles.count ? index + 1 : index - 1].id
+        }
+        profiles.remove(at: index)
+        return true
+    }
+
+    /// Moves a profile `offset` places along the list (the order profiles are cycled in),
+    /// stopping at either end.
+    mutating func moveProfile(_ id: DockProfile.ID, by offset: Int) {
+        guard let index = profiles.firstIndex(where: { $0.id == id }) else { return }
+        let destination = min(max(index + offset, 0), profiles.count - 1)
+        guard destination != index else { return }
+        profiles.insert(profiles.remove(at: index), at: destination)
+    }
+
+    /// A name no profile has yet. With `numberFirst` it's always numbered, starting from the
+    /// new profile's position ("Profile 2" for the second); otherwise it's `base` if that's
+    /// free, then "base 2", "base 3"…
+    func uniqueProfileName(_ base: String, numberFirst: Bool) -> String {
+        let taken = Set(profiles.map(\.name))
+        if !numberFirst, !taken.contains(base) { return base }
+        var number = numberFirst ? profiles.count + 1 : 2
+        while taken.contains("\(base) \(number)") { number += 1 }
+        return "\(base) \(number)"
+    }
+
+    private static func trimmedName(_ name: String) -> String? {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
     }
 }
 

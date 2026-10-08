@@ -47,6 +47,14 @@ public final class DockController {
     private var trackingProxy: TrackingProxy?
     /// Set by `revealAndHold()`; cleared when the pointer enters the dock.
     var holdUntilPointerEnters = false
+    /// Watches scrolling on the dock, which can switch profiles (see `ProfileScrollGesture`).
+    var scrollMonitor: Any?
+    var profileScrollGesture = ProfileScrollGesture()
+    /// While a profile switch animates, the window stays at least this big, so the outgoing
+    /// row isn't cut off when the new one is narrower.
+    private var frameHold: CGSize?
+    private var frameHoldTask: Task<Void, Never>?
+    var profileBannerTask: Task<Void, Never>?
 
     private let log = Logger(subsystem: "com.newyorkcompute.opendock", category: "DockController")
 
@@ -99,11 +107,15 @@ public final class DockController {
         }
 
         installContextClickMonitor()
+        installScrollMonitor()
     }
 
     public func stop() {
         hideTask?.cancel()
         settleTask?.cancel()
+        frameHoldTask?.cancel()
+        profileBannerTask?.cancel()
+        removeScrollMonitor()
         removeEdgeMonitors()
         removeHoverMonitor()
         screenObservers.forEach(NotificationCenter.default.removeObserver)
@@ -129,15 +141,33 @@ public final class DockController {
         applyFrame(animated: false)
     }
 
+    /// Keep the window from shrinking for `duration`, then fit it to the content again.
+    func holdFrameSize(for duration: Duration) {
+        let held = frameHold ?? contentSize
+        frameHold = CGSize(width: max(held.width, contentSize.width), height: max(held.height, contentSize.height))
+        frameHoldTask?.cancel()
+        frameHoldTask = Task { [weak self] in
+            try? await Task.sleep(for: duration)
+            guard let self, !Task.isCancelled else { return }
+            frameHold = nil
+            applyFrame(animated: false)
+        }
+    }
+
+    private var frameSize: CGSize {
+        guard let frameHold else { return contentSize }
+        return CGSize(width: max(frameHold.width, contentSize.width), height: max(frameHold.height, contentSize.height))
+    }
+
     /// Frame for the panel when fully shown. The window reaches down to the edge so the
     /// strip under the dock still counts as "over the dock"; the layout insets the surface.
     private func shownFrame(on screen: NSScreen) -> NSRect {
-        DockPlacement.shownFrame(contentSize: contentSize, visibleFrame: screen.visibleFrame)
+        DockPlacement.shownFrame(contentSize: frameSize, visibleFrame: screen.visibleFrame)
     }
 
     /// Frame for the panel when hidden: just below the bottom edge of the screen.
     private func hiddenFrame(on screen: NSScreen) -> NSRect {
-        DockPlacement.hiddenFrame(contentSize: contentSize, on: screen.placementScreen)
+        DockPlacement.hiddenFrame(contentSize: frameSize, on: screen.placementScreen)
     }
 
     private func applyFrame(animated: Bool) {
@@ -342,11 +372,12 @@ public final class DockController {
         })
     }
 
-    /// Start the countdown to hide. Cancelled if the pointer comes back.
-    func scheduleHide() {
+    /// Start the countdown to hide, after the auto-hide delay unless `delay` (in seconds)
+    /// says otherwise. Cancelled if the pointer comes back.
+    func scheduleHide(after delay: Double? = nil) {
         guard store.settings.autoHide, !holdUntilPointerEnters else { return }
         hideTask?.cancel()
-        let delay = store.settings.autoHideDelay
+        let delay = delay ?? store.settings.autoHideDelay
         hideTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(delay))
             guard !Task.isCancelled, let self else { return }

@@ -46,6 +46,13 @@ public final class DockShellState {
     /// True while the pointer is inside the dock's hit zone.
     var isPointerInside = false
 
+    /// Side the newest profile's items slide in from: 1 from the right (the next profile),
+    /// -1 from the left.
+    var profileSwapDirection = 1
+
+    /// The profile just switched to, named above the dock for a moment.
+    var profileBanner: String?
+
     let geometry = DockGeometry()
 
     var isInteracting: Bool { interactionDepth > 0 }
