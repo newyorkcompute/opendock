@@ -1,7 +1,4 @@
 {
-  "fileScopedDeclarationPrivacy": {
-    "accessLevel": "private"
-  },
   "indentBlankLines": false,
   "indentConditionalCompilationBlocks": true,
   "indentSwitchCaseLabels": false,
@@ -16,14 +13,7 @@
   "lineLength": 120,
   "maximumBlankLines": 1,
   "multiElementCollectionTrailingCommas": true,
-  "noAssignmentInExpressions": {
-    "allowedFunctions": [
-      "XCTAssertNoThrow"
-    ]
-  },
-  "orderedImports": {
-    "includeConditionalImports": false
-  },
+  "multilineTrailingCommaBehavior": "keptAsWritten",
   "prioritizeKeepingFunctionOutputTogether": false,
   "reflowMultilineStringLiterals": "never",
   "respectsExistingLineBreaks": true,
