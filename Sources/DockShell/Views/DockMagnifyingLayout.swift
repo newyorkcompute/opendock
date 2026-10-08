@@ -118,8 +118,12 @@ final class DockGeometry {
     var edge: DockSettings.Edge = .bottom
     var hitZone: CGRect = .zero
     var hoverTargets: [(id: DockRowItemID, frame: CGRect)] = []
-    /// Every item with an ID (spacers included) except the one being dragged.
+    /// Every item with an ID (spacers included) except the one being dragged and the hidden ones.
     var itemFrames: [(id: DockRowItemID, frame: CGRect)] = []
+    /// Items that have no length along the row (a widget tile with nothing to show). They
+    /// keep their place in the row and in `restingSlots`, with a zero-width slot, but can't
+    /// be seen, hovered, or selected.
+    var hiddenItemIDs: Set<DockRowItemID> = []
     /// Every item in the row at rest, in order, with no gap and nothing left out.
     var restingSlots: [Slot] = []
     /// The row is centered here, along the edge.
@@ -203,6 +207,8 @@ nonisolated struct DockMagnifyingLayout: Layout {
         /// The dragged item's subview and size, when it's out of the row.
         var dragged: (index: Int, size: CGSize)?
         var resting: [DockGeometry.Slot] = []
+        /// Items in the row that have no length and so can't be seen, hovered, or selected.
+        var hiddenIDs: Set<DockRowItemID> = []
 
         mutating func append(
             _ index: Int?, id: DockRowItemID?, size: CGSize, slot: DockMagnification.Slot, hoverable: Bool
@@ -232,18 +238,27 @@ nonisolated struct DockMagnifyingLayout: Layout {
         for index in subviews.indices {
             guard case let .item(id, growth, hoverable) = subviews[index][DockLayoutRoleKey.self] else { continue }
             let size = subviews[index].sizeThatFits(.unspecified)
-            let slot = DockMagnification.Slot(width: axis.length(of: size) + metrics.spacing, growth: growth)
-            row.resting.append(.init(id: id, width: slot.width, growth: growth))
-            row.thickness = max(row.thickness, axis.thickness(of: size))
+            let length = axis.length(of: size)
+            // An item with no length along the row (a widget tile with nothing to show)
+            // keeps its place in the row but takes no slot, so the row closes up over it:
+            // no spacing, no magnification, no label.
+            let hidden = length <= 0
+            let slot = DockMagnification.Slot(
+                width: hidden ? 0 : length + metrics.spacing, growth: hidden ? 0 : growth)
+            row.resting.append(.init(id: id, width: slot.width, growth: slot.growth))
+            if !hidden { row.thickness = max(row.thickness, axis.thickness(of: size)) }
             if withGap, let draggedID, id == .pinned(draggedID) {
                 row.dragged = (index, size)
                 continue
             }
             appendGap(at: position)
-            row.append(index, id: id, size: size, slot: slot, hoverable: hoverable)
+            row.append(index, id: id, size: size, slot: slot, hoverable: hoverable && !hidden)
+            if hidden, let id { row.hiddenIDs.insert(id) }
             position += 1
         }
         appendGap(at: position)
+        // A row of nothing but hidden items still has the dock's depth.
+        if row.thickness == 0 { row.thickness = metrics.iconSize }
         return row
     }
 
@@ -410,11 +425,15 @@ nonisolated struct DockMagnifyingLayout: Layout {
         let targets = zip(row.hoverIDs, frames).compactMap { id, frame in
             id.map { (id: $0, frame: frame.applying(local)) }
         }
-        let allFrames = zip(row.ids, frames).compactMap { id, frame in
-            id.map { (id: $0, frame: frame.applying(local)) }
+        // Hidden items have no frame to hit (with the gaps counted, a zero-length frame
+        // would still catch clicks and drags meant for its neighbors).
+        let allFrames: [(id: DockRowItemID, frame: CGRect)] = zip(row.ids, frames).compactMap { id, frame in
+            guard let id, !row.hiddenIDs.contains(id) else { return nil }
+            return (id: id, frame: frame.applying(local))
         }
         let halfGap = metrics.spacing / 2
         let resting = row.resting
+        let hidden = row.hiddenIDs
         let rowCenter = space.middle - space.span.lowerBound
         let edge = metrics.edge
         // SwiftUI lays out on the main thread.
@@ -424,6 +443,7 @@ nonisolated struct DockMagnifyingLayout: Layout {
             geometry.halfGap = halfGap
             geometry.hoverTargets = targets
             geometry.itemFrames = allFrames
+            geometry.hiddenItemIDs = hidden
             geometry.restingSlots = resting
             geometry.rowCenter = rowCenter
         }

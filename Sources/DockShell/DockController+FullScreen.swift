@@ -69,6 +69,7 @@ extension DockController {
         guard let panel, !isRevealedOverFullScreen else { return }
         isRevealedOverFullScreen = true
         panel.collectionBehavior.insert(.fullScreenAuxiliary)
+        updateEdgeMonitors()
         if shellState.isVisible {
             // Auto-hide is off: the panel sits at its shown frame, which this Space never
             // displayed. Start from hidden so it slides in like an auto-hidden dock.
@@ -96,6 +97,7 @@ extension DockController {
             applyFrame(animated: false)
             panel.orderFrontRegardless()
         }
+        updateEdgeMonitors()
     }
 
     func observeSpaces() {
@@ -117,5 +119,7 @@ extension DockController {
         } else if store.settings.autoHide, shellState.isVisible, isOnFullScreenSpace {
             hide()
         }
+        // Arriving on or leaving a full-screen Space decides whether the pointer is watched.
+        updateEdgeMonitors()
     }
 }

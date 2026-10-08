@@ -143,7 +143,8 @@ public final class DockController {
 
     public func stop() {
         hideTask?.cancel()
-        edgeHoldTask?.cancel()
+        cancelEdgeHold()
+        isRevealedOverFullScreen = false
         settleTask?.cancel()
         frameHoldTask?.cancel()
         profileBannerTask?.cancel()
@@ -259,6 +260,8 @@ public final class DockController {
             )
             // Hover state refers to where the dock used to be.
             resetMagnification()
+            // The new display may be showing a full-screen Space.
+            updateEdgeMonitors()
         }
         applyFrame(animated: false)
         if moved, shellState.isVisible, store.settings.autoHide {
@@ -490,9 +493,16 @@ public final class DockController {
         return DockPlacement.reachingScreenEdge(zone, of: screen.frame, edge: edge).contains(NSEvent.mouseLocation)
     }
 
-    /// The pointer is watched everywhere while there's an edge that can reveal the dock.
+    /// The pointer is watched everywhere while there's an edge that can reveal the dock:
+    /// always with auto-hide on; otherwise only on a full-screen Space (where the dock isn't
+    /// shown and the edge can call it up), and while it's revealed over one, so it can be
+    /// seen to leave. On a regular Space with auto-hide off, nothing watches the pointer.
+    /// Checked again whenever a setting or the Space changes.
     func updateEdgeMonitors() {
-        if store.settings.autoHide || store.settings.revealInFullScreen {
+        let wanted =
+            store.settings.autoHide || isRevealedOverFullScreen
+            || (store.settings.revealInFullScreen && isOnFullScreenSpace)
+        if wanted {
             if globalMouseMonitor == nil { installEdgeMonitors() }
         } else {
             removeEdgeMonitors()
@@ -533,8 +543,10 @@ public final class DockController {
         // the dock's edge of its screen reveals it. On a full-screen Space the pointer has
         // to stay there a moment; elsewhere only an auto-hidden dock has anything to show.
         let atEdge = DockPlacement.isAtRevealEdge(location, of: screen.frame, edge: edge)
-        if atEdge, store.settings.revealInFullScreen, isOnFullScreenSpace {
-            edgeHoldChanged(atEdge: true)
+        if atEdge, isOnFullScreenSpace {
+            // Only the hold brings the dock up here; an auto-hidden dock revealed the usual
+            // way wouldn't be displayed on this Space, and would only hide again.
+            if store.settings.revealInFullScreen { edgeHoldChanged(atEdge: true) }
         } else {
             edgeHoldChanged(atEdge: false)
             if atEdge, store.settings.autoHide { reveal() }
