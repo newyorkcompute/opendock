@@ -418,10 +418,10 @@ public final class DockController {
         // The window is larger than the dock (room for magnification), so use the
         // dock's own hit zone once the layout has produced one.
         var zone = (hitZoneOnScreen ?? panel.frame).insetBy(dx: -4, dy: -4)
-        let extension_ = zone.minY - screen.frame.minY
-        if extension_ > 0 {
+        let edgeGap = zone.minY - screen.frame.minY
+        if edgeGap > 0 {
             zone.origin.y = screen.frame.minY
-            zone.size.height += extension_
+            zone.size.height += edgeGap
         }
         return zone.contains(NSEvent.mouseLocation)
     }
