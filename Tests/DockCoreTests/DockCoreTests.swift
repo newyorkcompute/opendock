@@ -127,6 +127,17 @@ struct DockDocumentCodecTests {
         #expect(decoded.clickToMinimize)
     }
 
+    @Test func showBadgesDecodesTolerantly() throws {
+        let decoder = JSONDecoder()
+        #expect(try decoder.decode(DockSettings.self, from: Data("{}".utf8)).showBadges)
+        #expect(try decoder.decode(DockSettings.self, from: Data(#"{"showBadges": "no"}"#.utf8)).showBadges)
+
+        var settings = DockSettings.default
+        settings.showBadges = false
+        let decoded = try decoder.decode(DockSettings.self, from: JSONEncoder().encode(settings))
+        #expect(!decoded.showBadges)
+    }
+
     @Test func rejectsNewerVersions() throws {
         let profile = DockProfile(name: "X")
         let doc = DockDocument(

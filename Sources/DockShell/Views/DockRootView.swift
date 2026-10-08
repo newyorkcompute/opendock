@@ -31,6 +31,12 @@ struct DockRootView: View {
             .onChange(of: shellState.interactionDepth) { old, new in
                 if old > 0, new == 0 { controller.interactionEnded() }
             }
+            .onChange(of: store.settings.showBadges, initial: true) { _, enabled in
+                controller.badges.isEnabled = enabled
+            }
+            .onChange(of: shellState.isVisible, initial: true) { _, visible in
+                controller.badges.isDockVisible = visible
+            }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
     }
 }

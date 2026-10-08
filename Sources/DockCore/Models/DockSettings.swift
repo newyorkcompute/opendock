@@ -48,6 +48,8 @@ public struct DockSettings: Hashable, Codable, Sendable {
     /// Clicking the frontmost app's icon minimizes its windows, and clicking it again
     /// restores them. Needs Accessibility access.
     public var clickToMinimize: Bool
+    /// Show apps' badges (unread counts and the like) on their icons, read from Apple's Dock.
+    public var showBadges: Bool
 
     public init(
         edge: Edge = .bottom,
@@ -65,7 +67,8 @@ public struct DockSettings: Hashable, Codable, Sendable {
         previousProfileHotKey: HotKey? = nil,
         switchProfilesByScrolling: Bool = true,
         animateOpeningApps: Bool = true,
-        clickToMinimize: Bool = false
+        clickToMinimize: Bool = false,
+        showBadges: Bool = true
     ) {
         self.edge = edge
         self.display = display
@@ -83,6 +86,7 @@ public struct DockSettings: Hashable, Codable, Sendable {
         self.switchProfilesByScrolling = switchProfilesByScrolling
         self.animateOpeningApps = animateOpeningApps
         self.clickToMinimize = clickToMinimize
+        self.showBadges = showBadges
     }
 
     public static let `default` = DockSettings()
@@ -125,6 +129,7 @@ extension DockSettings {
             ?? d.switchProfilesByScrolling
         animateOpeningApps = (try? c.decodeIfPresent(Bool.self, forKey: .animateOpeningApps)) ?? d.animateOpeningApps
         clickToMinimize = (try? c.decodeIfPresent(Bool.self, forKey: .clickToMinimize)) ?? d.clickToMinimize
+        showBadges = (try? c.decodeIfPresent(Bool.self, forKey: .showBadges)) ?? d.showBadges
     }
 }
 

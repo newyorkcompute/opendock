@@ -81,6 +81,7 @@ struct AppItemView: View {
 
     @Environment(DockStore.self) private var store
     @Environment(RunningAppsMonitor.self) private var running
+    @Environment(DockBadgeMonitor.self) private var badges
     @Environment(DockShellState.self) private var shellState
     @Environment(\.dockIconSize) private var iconSize
 
@@ -88,6 +89,7 @@ struct AppItemView: View {
     private var exists: Bool { FileManager.default.fileExists(atPath: app.url.path) }
 
     var body: some View {
+        let badge = badges.label(for: app)
         VStack(spacing: 2) {
             Image(nsImage: AppIconProvider.shared.icon(for: app.url))
                 .dockIcon(restingSize: iconSize)
@@ -99,6 +101,7 @@ struct AppItemView: View {
                             .font(.system(size: iconSize * 0.3))
                     }
                 }
+                .dockBadge(badge)
                 .launchBounce(shellState.launchBounces.bounce(for: app))
             runningIndicator
         }
@@ -111,6 +114,7 @@ struct AppItemView: View {
         .accessibilityAction(.showMenu) {
             controller.showAppMenu(for: app, pinnedID: pinnedID)
         }
+        .accessibilityValue(badge ?? "")
     }
 
     @ViewBuilder
