@@ -121,8 +121,9 @@ change `App/project.yml` and regenerate. The project has:
 - An `OpenDock` app target that compiles `App/OpenDock` with the package's `Info.plist`,
   entitlements, and icon, and links every other module from `Package.swift` through its
   `OpenDockModules` product. Module settings, dependencies, and tests come from the package,
-  so `Package.swift` stays the single source of truth. Press ⌘R to run the app from Xcode and
-  ⌘U to run the package's tests.
+  so `Package.swift` stays the single source of truth. Select the **OpenDock App** scheme
+  (the plain **OpenDock** scheme Xcode also lists is the package's bare executable), then
+  press ⌘R to run the app and ⌘U to run the package's tests.
 - An `OpenDockNowPlayingHelper` target for `Sources/NowPlayingHelper`, copied into
   `Contents/Frameworks/libOpenDockNowPlayingHelper.dylib` the same way `build-app.sh` does it.
 
@@ -130,7 +131,8 @@ Sources are Xcode 16 synchronized folders, so adding or removing a Swift file do
 regeneration. Regenerate when you change `App/project.yml`. Adding a module to the app is done
 in `Package.swift` alone: put it in `appModules`, which feeds both the executable and
 `OpenDockModules` (widgets don't go there; they reach the app through `BuiltInWidgets`). A new
-test target needs one line in the scheme's `testTargets` in `App/project.yml` so ⌘U runs it.
+test target needs one line under the `OpenDock App` scheme's `test.targets` in
+`App/project.yml` so ⌘U runs it.
 `App/project.yml` also mirrors two package settings (`ExistentialAny` and main-actor default
 isolation); if those change in `Package.swift`, change them there too.
 
