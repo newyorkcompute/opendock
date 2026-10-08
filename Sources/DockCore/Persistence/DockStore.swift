@@ -32,7 +32,9 @@ public final class DockStore {
                 return DockStore(storage: storage, document: document)
             } catch {
                 Logger(subsystem: "com.newyorkcompute.opendock", category: "DockStore")
-                    .error("Failed to read \(storage.fileURL.path): \(error.localizedDescription). Backing up and starting fresh.")
+                    .error(
+                        "Failed to read \(storage.fileURL.path): \(error.localizedDescription). Backing up and starting fresh."
+                    )
                 storage.backupCorruptFile()
             }
         }
@@ -131,7 +133,7 @@ public final class DockStore {
 
     public func renameProfile(_ id: DockProfile.ID, to name: String) {
         guard let current = document.profile(id: id)?.name,
-              current != name.trimmingCharacters(in: .whitespacesAndNewlines)
+            current != name.trimmingCharacters(in: .whitespacesAndNewlines)
         else { return }
         update { $0.renameProfile(id, to: name) }
     }

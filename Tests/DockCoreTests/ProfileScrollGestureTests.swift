@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import DockCore
 
 @Suite("Profile scroll gesture")
@@ -7,7 +8,9 @@ struct ProfileScrollGestureTests {
     private typealias Event = ProfileScrollGesture.Event
 
     /// Feeds a trackpad gesture as `samples` (dx, dy) pairs and returns every step it produced.
-    private func swipe(_ samples: [(Double, Double)], command: Bool = false, gesture: inout ProfileScrollGesture) -> [Int] {
+    private func swipe(_ samples: [(Double, Double)], command: Bool = false, gesture: inout ProfileScrollGesture)
+        -> [Int]
+    {
         var steps: [Int] = []
         for (index, sample) in samples.enumerated() {
             let event = Event(

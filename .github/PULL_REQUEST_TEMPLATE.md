@@ -17,7 +17,7 @@ auto-hide, displays), include your macOS version and display setup.
 
 ## Checklist
 
-- [ ] `make test` passes and the build has no new warnings
+- [ ] `make test` and `make lint` pass, and the build has no new warnings
 - [ ] Follows the [code conventions](https://github.com/newyorkcompute/opendock/blob/main/CONTRIBUTING.md#code-conventions)
 - [ ] No persisted widget type IDs were renamed, and older `dock.json` files still load
 - [ ] The PR title works as the squash-merge commit message

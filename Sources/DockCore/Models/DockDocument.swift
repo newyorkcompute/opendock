@@ -54,7 +54,8 @@ extension DockDocument {
         version = try c.decode(Int.self, forKey: .version)
         var profiles = try c.decode([DockProfile].self, forKey: .profiles)
         guard !profiles.isEmpty else {
-            throw DecodingError.dataCorruptedError(forKey: .profiles, in: c, debugDescription: "A document needs at least one profile")
+            throw DecodingError.dataCorruptedError(
+                forKey: .profiles, in: c, debugDescription: "A document needs at least one profile")
         }
         var seen = Set<DockProfile.ID>()
         for index in profiles.indices where !seen.insert(profiles[index].id).inserted {
@@ -90,8 +91,9 @@ public extension DockDocument {
     @discardableResult
     mutating func addProfile(named name: String? = nil) -> DockProfile.ID {
         let requested = name.flatMap(Self.trimmedName)
-        let profile = DockProfile(name: requested.map { uniqueProfileName($0, numberFirst: false) }
-            ?? uniqueProfileName("Profile", numberFirst: true))
+        let profile = DockProfile(
+            name: requested.map { uniqueProfileName($0, numberFirst: false) }
+                ?? uniqueProfileName("Profile", numberFirst: true))
         profiles.append(profile)
         return profile.id
     }
@@ -113,7 +115,7 @@ public extension DockDocument {
     /// Blank names are ignored. Names don't have to be unique; IDs tell profiles apart.
     mutating func renameProfile(_ id: DockProfile.ID, to name: String) {
         guard let name = Self.trimmedName(name),
-              let index = profiles.firstIndex(where: { $0.id == id })
+            let index = profiles.firstIndex(where: { $0.id == id })
         else { return }
         profiles[index].name = name
     }

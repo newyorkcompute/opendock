@@ -127,9 +127,12 @@ public final class AppLaunchMonitor {
     /// it's done; otherwise it's the one to poll.
     private func processLaunched(_ process: LaunchedProcess) {
         if process.isFinishedLaunching {
-            processEnded(processIdentifier: process.pid, bundleIdentifier: process.bundleIdentifier, bundleURL: process.bundleURL)
+            processEnded(
+                processIdentifier: process.pid, bundleIdentifier: process.bundleIdentifier, bundleURL: process.bundleURL
+            )
         } else if let url = process.bundleURL {
-            tracker.launched(AppItem(url: url, bundleIdentifier: process.bundleIdentifier), processIdentifier: process.pid)
+            tracker.launched(
+                AppItem(url: url, bundleIdentifier: process.bundleIdentifier), processIdentifier: process.pid)
             update()
         }
     }
@@ -169,14 +172,18 @@ public final class AppLaunchMonitor {
     private func observe() {
         let center = NSWorkspace.shared.notificationCenter
         observers = [
-            center.addObserver(forName: NSWorkspace.didLaunchApplicationNotification, object: nil, queue: .main) { [weak self] note in
+            center.addObserver(forName: NSWorkspace.didLaunchApplicationNotification, object: nil, queue: .main) {
+                [weak self] note in
                 guard let process = LaunchedProcess(note) else { return }
                 MainActor.assumeIsolated { self?.processLaunched(process) }
             },
-            center.addObserver(forName: NSWorkspace.didTerminateApplicationNotification, object: nil, queue: .main) { [weak self] note in
+            center.addObserver(forName: NSWorkspace.didTerminateApplicationNotification, object: nil, queue: .main) {
+                [weak self] note in
                 guard let process = LaunchedProcess(note) else { return }
                 MainActor.assumeIsolated {
-                    self?.processEnded(processIdentifier: process.pid, bundleIdentifier: process.bundleIdentifier, bundleURL: process.bundleURL)
+                    self?.processEnded(
+                        processIdentifier: process.pid, bundleIdentifier: process.bundleIdentifier,
+                        bundleURL: process.bundleURL)
                 }
             },
         ]

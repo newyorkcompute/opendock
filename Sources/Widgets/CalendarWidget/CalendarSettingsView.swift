@@ -13,13 +13,15 @@ struct CalendarSettingsView: View {
 
     var body: some View {
         Form {
-            Toggle("Show next event", isOn: Binding(
-                get: { CalendarSettings.showNextEvent(in: instance) },
-                set: { newValue in
-                    instance.settings[CalendarSettings.showNextEvent] = newValue ? "true" : "false"
-                    updater(instance)
-                }
-            ))
+            Toggle(
+                "Show next event",
+                isOn: Binding(
+                    get: { CalendarSettings.showNextEvent(in: instance) },
+                    set: { newValue in
+                        instance.settings[CalendarSettings.showNextEvent] = newValue ? "true" : "false"
+                        updater(instance)
+                    }
+                ))
         }
     }
 }

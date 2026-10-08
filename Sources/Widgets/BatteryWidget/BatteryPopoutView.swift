@@ -82,11 +82,14 @@ private struct PowerSourceRow: View {
         if source.isCharged {
             lines.append("Fully charged")
         } else if source.isCharging {
-            lines.append(source.minutesToFull.map { "Charging · \(BatteryFormatting.duration(minutes: $0)) to full" } ?? "Charging")
+            lines.append(
+                source.minutesToFull.map { "Charging · \(BatteryFormatting.duration(minutes: $0)) to full" }
+                    ?? "Charging")
         } else if source.kind == .internalBattery, isPluggedIn {
             lines.append("Plugged in, not charging")
         } else {
-            lines.append(source.minutesToEmpty.map { "\(BatteryFormatting.duration(minutes: $0)) remaining" } ?? "On battery")
+            lines.append(
+                source.minutesToEmpty.map { "\(BatteryFormatting.duration(minutes: $0)) remaining" } ?? "On battery")
         }
         if let condition = source.condition ?? source.health {
             lines.append("Condition: \(condition)")

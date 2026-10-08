@@ -34,12 +34,18 @@ struct ClockPopoutView: View {
 
     /// "Oslo · GMT+2 (+6 hr)"
     private func zoneDescription(_ zone: TimeZone, at date: Date) -> String {
-        let name = zone.identifier.split(separator: "/").last.map { $0.replacingOccurrences(of: "_", with: " ") } ?? zone.identifier
+        let name =
+            zone.identifier.split(separator: "/").last.map { $0.replacingOccurrences(of: "_", with: " ") }
+            ?? zone.identifier
         let offsetSeconds = zone.secondsFromGMT(for: date)
         let hours = Double(offsetSeconds) / 3600
         let gmt = "GMT" + (hours == hours.rounded() ? String(format: "%+.0f", hours) : String(format: "%+.1f", hours))
         let delta = Double(offsetSeconds - TimeZone.current.secondsFromGMT(for: date)) / 3600
-        let relative = delta == 0 ? "" : " (" + (delta == delta.rounded() ? String(format: "%+.0f", delta) : String(format: "%+.1f", delta)) + " hr)"
+        let relative =
+            delta == 0
+            ? ""
+            : " (" + (delta == delta.rounded() ? String(format: "%+.0f", delta) : String(format: "%+.1f", delta))
+                + " hr)"
         return "\(name) · \(gmt)\(relative)"
     }
 }
@@ -65,7 +71,7 @@ private struct MonthGrid: View {
     private var cells: [Int?] {
         let calendar = calendar
         guard let monthStart = calendar.dateInterval(of: .month, for: now)?.start,
-              let days = calendar.range(of: .day, in: .month, for: now)
+            let days = calendar.range(of: .day, in: .month, for: now)
         else { return [] }
         let weekday = calendar.component(.weekday, from: monthStart)
         let leading = (weekday - calendar.firstWeekday + 7) % 7

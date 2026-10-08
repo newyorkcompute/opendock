@@ -45,7 +45,8 @@ enum DockItemActions {
     }
 
     @discardableResult
-    static func addSpacer(_ size: SpacerItem.Size, to store: DockStore, after anchor: DockItem.ID? = nil) -> DockItem.ID {
+    static func addSpacer(_ size: SpacerItem.Size, to store: DockStore, after anchor: DockItem.ID? = nil) -> DockItem.ID
+    {
         insert(.spacer(size), into: store, after: anchor)
     }
 
@@ -56,7 +57,9 @@ enum DockItemActions {
 
     /// Adds a new instance of the widget with its default settings.
     @discardableResult
-    static func addWidget(_ typeID: String, registry: WidgetRegistry, to store: DockStore, after anchor: DockItem.ID? = nil) -> DockItem.ID? {
+    static func addWidget(
+        _ typeID: String, registry: WidgetRegistry, to store: DockStore, after anchor: DockItem.ID? = nil
+    ) -> DockItem.ID? {
         guard let widget = registry.widget(for: typeID) else { return nil }
         return insert(DockItem(kind: .widget(widget.makeInstance())), into: store, after: anchor)
     }

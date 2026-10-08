@@ -1,19 +1,22 @@
 import DockCore
 import Foundation
 import Testing
+
 @testable import SystemServices
 
 @Suite("App launch tracker")
 struct AppLaunchTrackerTests {
     private let safari = AppItem(url: URL(filePath: "/Applications/Safari.app"), bundleIdentifier: "com.apple.Safari")
-    private let notes = AppItem(url: URL(filePath: "/System/Applications/Notes.app"), bundleIdentifier: "com.apple.Notes")
+    private let notes = AppItem(
+        url: URL(filePath: "/System/Applications/Notes.app"), bundleIdentifier: "com.apple.Notes")
 
     @Test func endsWhenTheLaunchedProcessFinishes() {
         var tracker = AppLaunchTracker()
         tracker.launchRequested(safari)
         tracker.launched(safari, processIdentifier: 42)
         #expect(tracker.processIdentifiers == [42])
-        let ended = tracker.processEnded(processIdentifier: 42, bundleIdentifier: "com.apple.Safari", bundleURL: safari.url)
+        let ended = tracker.processEnded(
+            processIdentifier: 42, bundleIdentifier: "com.apple.Safari", bundleURL: safari.url)
         #expect(ended == [safari])
         #expect(tracker.isEmpty)
     }
@@ -28,7 +31,8 @@ struct AppLaunchTrackerTests {
         #expect(tracker.isEmpty)
 
         tracker.launchRequested(safari)
-        let endedByPath = tracker.processEnded(processIdentifier: 42, bundleIdentifier: nil, bundleURL: URL(filePath: "/Applications/Safari.app/"))
+        let endedByPath = tracker.processEnded(
+            processIdentifier: 42, bundleIdentifier: nil, bundleURL: URL(filePath: "/Applications/Safari.app/"))
         #expect(endedByPath == [safari])
     }
 
@@ -36,7 +40,8 @@ struct AppLaunchTrackerTests {
         var tracker = AppLaunchTracker()
         tracker.launchRequested(safari)
         tracker.launched(safari, processIdentifier: 42)
-        let ended = tracker.processEnded(processIdentifier: 7, bundleIdentifier: "com.apple.Safari", bundleURL: safari.url)
+        let ended = tracker.processEnded(
+            processIdentifier: 7, bundleIdentifier: "com.apple.Safari", bundleURL: safari.url)
         #expect(ended.isEmpty)
         #expect(!tracker.isEmpty)
     }
@@ -45,9 +50,12 @@ struct AppLaunchTrackerTests {
         var tracker = AppLaunchTracker()
         tracker.launchRequested(safari)
         tracker.launchRequested(notes)
-        let endedNotes = tracker.processEnded(processIdentifier: 9, bundleIdentifier: "com.apple.Notes", bundleURL: notes.url)
+        let endedNotes = tracker.processEnded(
+            processIdentifier: 9, bundleIdentifier: "com.apple.Notes", bundleURL: notes.url)
         #expect(endedNotes == [notes])
-        let endedOther = tracker.processEnded(processIdentifier: 10, bundleIdentifier: "com.example.other", bundleURL: URL(filePath: "/Applications/Other.app"))
+        let endedOther = tracker.processEnded(
+            processIdentifier: 10, bundleIdentifier: "com.example.other",
+            bundleURL: URL(filePath: "/Applications/Other.app"))
         #expect(endedOther.isEmpty)
         #expect(!tracker.isEmpty)
     }

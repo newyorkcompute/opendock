@@ -71,8 +71,8 @@ public extension DockProfile {
     /// Moves the item with `id` to sit at the position currently occupied by `targetID`.
     mutating func move(id: DockItem.ID, before targetID: DockItem.ID) {
         guard id != targetID,
-              let source = items.firstIndex(where: { $0.id == id }),
-              let target = items.firstIndex(where: { $0.id == targetID })
+            let source = items.firstIndex(where: { $0.id == id }),
+            let target = items.firstIndex(where: { $0.id == targetID })
         else { return }
         let item = items.remove(at: source)
         let adjustedTarget = source < target ? target - 1 : target

@@ -31,7 +31,10 @@ public struct ProfileScrollGesture: Sendable {
         public var isCommandDown: Bool
         public var timestamp: TimeInterval
 
-        public init(deltaX: Double, deltaY: Double, phase: Phase, isMomentum: Bool = false, isCommandDown: Bool = false, timestamp: TimeInterval) {
+        public init(
+            deltaX: Double, deltaY: Double, phase: Phase, isMomentum: Bool = false, isCommandDown: Bool = false,
+            timestamp: TimeInterval
+        ) {
             self.deltaX = deltaX
             self.deltaY = deltaY
             self.phase = phase
@@ -70,7 +73,7 @@ public struct ProfileScrollGesture: Sendable {
             travelX += event.deltaX
             travelY += event.deltaY
             guard !switchedThisGesture, let travel = gestureTravel(isCommandDown: event.isCommandDown),
-                  abs(travel) >= Self.swipeDistance
+                abs(travel) >= Self.swipeDistance
             else { return nil }
             switchedThisGesture = true
             return Self.step(for: travel)

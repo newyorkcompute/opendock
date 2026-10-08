@@ -216,7 +216,9 @@ public final class DockController {
         let moved = old?.frame != new?.frame || old?.visibleFrame != new?.visibleFrame
         guard moved || force else { return }
         if moved {
-            log.debug("dock screen: \(new?.localizedName ?? "none", privacy: .public) \(String(describing: new?.frame), privacy: .public)")
+            log.debug(
+                "dock screen: \(new?.localizedName ?? "none", privacy: .public) \(String(describing: new?.frame), privacy: .public)"
+            )
             // Hover state refers to where the dock used to be.
             resetMagnification()
         }
@@ -253,7 +255,7 @@ public final class DockController {
                 queue: .main
             ) { [weak self] _ in
                 MainActor.assumeIsolated { self?.screensMayHaveChanged(force: true) }
-            },
+            }
         ]
 
         let workspace = NSWorkspace.shared.notificationCenter
@@ -266,18 +268,20 @@ public final class DockController {
             NSWorkspace.didActivateApplicationNotification,
             NSWorkspace.activeSpaceDidChangeNotification,
         ]
-        workspaceObservers = forced.map { name in
-            workspace.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated { self?.screensMayHaveChanged(force: true) }
-            }
-        } + focus.map { name in
-            workspace.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated {
-                    guard let self, self.store.settings.display == .active else { return }
-                    self.screensMayHaveChanged(force: false)
+        workspaceObservers =
+            forced.map { name in
+                workspace.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                    MainActor.assumeIsolated { self?.screensMayHaveChanged(force: true) }
                 }
             }
-        }
+            + focus.map { name in
+                workspace.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                    MainActor.assumeIsolated {
+                        guard let self, self.store.settings.display == .active else { return }
+                        self.screensMayHaveChanged(force: false)
+                    }
+                }
+            }
     }
 
     private func updateActiveDisplayMonitor() {
@@ -299,7 +303,8 @@ public final class DockController {
     private func observeMenus() {
         let center = NotificationCenter.default
         menuObservers = [
-            center.addObserver(forName: NSMenu.didBeginTrackingNotification, object: nil, queue: .main) { [weak self] _ in
+            center.addObserver(forName: NSMenu.didBeginTrackingNotification, object: nil, queue: .main) {
+                [weak self] _ in
                 MainActor.assumeIsolated {
                     self?.shellState.hoveredItemID = nil
                     self?.shellState.beginInteraction()
@@ -336,19 +341,21 @@ public final class DockController {
         panel.alphaValue = 0
         panel.orderFrontRegardless()
         shellState.isVisible = true
-        NSAnimationContext.runAnimationGroup({ context in
-            context.duration = 0.22
-            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-            panel.animator().setFrame(shownFrame(on: screen), display: true)
-            panel.animator().alphaValue = 1
-        }, completionHandler: {
-            // The dock slid in under a pointer that may not move again for a while
-            // (it's resting on the edge that revealed it); magnify without waiting.
-            MainActor.assumeIsolated {
-                guard self.shellState.isVisible else { return }
-                self.pointerMoved(to: self.layoutPoint(fromScreen: NSEvent.mouseLocation))
-            }
-        })
+        NSAnimationContext.runAnimationGroup(
+            { context in
+                context.duration = 0.22
+                context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                panel.animator().setFrame(shownFrame(on: screen), display: true)
+                panel.animator().alphaValue = 1
+            },
+            completionHandler: {
+                // The dock slid in under a pointer that may not move again for a while
+                // (it's resting on the edge that revealed it); magnify without waiting.
+                MainActor.assumeIsolated {
+                    guard self.shellState.isVisible else { return }
+                    self.pointerMoved(to: self.layoutPoint(fromScreen: NSEvent.mouseLocation))
+                }
+            })
     }
 
     /// Reveal and keep the dock on screen until the pointer has entered it once.
@@ -367,16 +374,18 @@ public final class DockController {
         guard !shellState.isInteracting, shellState.draggingItemID == nil else { return }
         shellState.isVisible = false
         resetMagnification()
-        NSAnimationContext.runAnimationGroup({ context in
-            context.duration = 0.2
-            context.timingFunction = CAMediaTimingFunction(name: .easeIn)
-            panel.animator().setFrame(self.hiddenFrame(on: screen), display: true)
-            panel.animator().alphaValue = 0
-        }, completionHandler: {
-            MainActor.assumeIsolated {
-                if !self.shellState.isVisible { panel.orderOut(nil) }
-            }
-        })
+        NSAnimationContext.runAnimationGroup(
+            { context in
+                context.duration = 0.2
+                context.timingFunction = CAMediaTimingFunction(name: .easeIn)
+                panel.animator().setFrame(self.hiddenFrame(on: screen), display: true)
+                panel.animator().alphaValue = 0
+            },
+            completionHandler: {
+                MainActor.assumeIsolated {
+                    if !self.shellState.isVisible { panel.orderOut(nil) }
+                }
+            })
     }
 
     /// Start the countdown to hide, after the auto-hide delay unless `delay` (in seconds)
@@ -388,7 +397,10 @@ public final class DockController {
         hideTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(delay))
             guard !Task.isCancelled, let self else { return }
-            if pointerIsOverDock { scheduleHide(); return }
+            if pointerIsOverDock {
+                scheduleHide()
+                return
+            }
             hide()
         }
     }
@@ -418,10 +430,10 @@ public final class DockController {
         // The window is larger than the dock (room for magnification), so use the
         // dock's own hit zone once the layout has produced one.
         var zone = (hitZoneOnScreen ?? panel.frame).insetBy(dx: -4, dy: -4)
-        let extension_ = zone.minY - screen.frame.minY
-        if extension_ > 0 {
+        let edgeGap = zone.minY - screen.frame.minY
+        if edgeGap > 0 {
             zone.origin.y = screen.frame.minY
-            zone.size.height += extension_
+            zone.size.height += edgeGap
         }
         return zone.contains(NSEvent.mouseLocation)
     }
@@ -432,7 +444,8 @@ public final class DockController {
         let handler: @Sendable (NSEvent) -> Void = { [weak self] _ in
             MainActor.assumeIsolated { self?.pointerMoved() }
         }
-        globalMouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved, .leftMouseDragged], handler: handler)
+        globalMouseMonitor = NSEvent.addGlobalMonitorForEvents(
+            matching: [.mouseMoved, .leftMouseDragged], handler: handler)
         localMouseMonitor = NSEvent.addLocalMonitorForEvents(matching: [.mouseMoved]) { event in
             handler(event)
             return event

@@ -29,9 +29,10 @@ struct ProfilesTab: View {
             Button("Delete", role: .destructive) { switcher.delete(profile.id) }
             Button("Cancel", role: .cancel) {}
         } message: { profile in
-            Text(profile.items.isEmpty
-                ? "This profile is empty."
-                : "Its \(itemCount(profile)) will be removed. Other profiles aren’t affected.")
+            Text(
+                profile.items.isEmpty
+                    ? "This profile is empty."
+                    : "Its \(itemCount(profile)) will be removed. Other profiles aren’t affected.")
         }
     }
 
@@ -50,17 +51,21 @@ struct ProfilesTab: View {
         } header: {
             Text("Profiles")
         } footer: {
-            Text("Each profile is its own set of dock items and widgets. The dock shows the checked one; Dock Items edits it. Settings in General apply to every profile.")
-                .settingsFootnote()
+            Text(
+                "Each profile is its own set of dock items and widgets. The dock shows the checked one; Dock Items edits it. Settings in General apply to every profile."
+            )
+            .settingsFootnote()
         }
     }
 
     private var switchingSection: some View {
         Section {
-            Toggle("Swipe on the dock to switch profiles", isOn: Binding(
-                get: { store.settings.switchProfilesByScrolling },
-                set: { value in store.updateSettings { $0.switchProfilesByScrolling = value } }
-            ))
+            Toggle(
+                "Swipe on the dock to switch profiles",
+                isOn: Binding(
+                    get: { store.settings.switchProfilesByScrolling },
+                    set: { value in store.updateSettings { $0.switchProfilesByScrolling = value } }
+                ))
             LabeledContent("Next profile") {
                 HotKeyRecorder(hotKey: hotKey(\.nextProfileHotKey))
             }
@@ -70,8 +75,10 @@ struct ProfilesTab: View {
         } header: {
             Text("Switching")
         } footer: {
-            Text("Swipe left or right with two fingers on the dock, or hold ⌘ and scroll over it. The shortcuts work in any app and wrap around at the ends of the list. You can also switch from the menu bar.")
-                .settingsFootnote()
+            Text(
+                "Swipe left or right with two fingers on the dock, or hold ⌘ and scroll over it. The shortcuts work in any app and wrap around at the ends of the list. You can also switch from the menu bar."
+            )
+            .settingsFootnote()
         }
     }
 
@@ -150,7 +157,7 @@ struct ProfilesTab: View {
                     settings[keyPath: keyPath] = value
                     guard let value else { return }
                     for other in [\DockSettings.nextProfileHotKey, \DockSettings.previousProfileHotKey]
-                        where other != keyPath && settings[keyPath: other] == value {
+                    where other != keyPath && settings[keyPath: other] == value {
                         settings[keyPath: other] = nil
                     }
                 }

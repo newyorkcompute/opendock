@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import DockCore
 
 /// Profiles and their settings add no format version: files written before them must load
@@ -9,47 +10,47 @@ struct ProfileFileFormatTests {
     /// A v2 `dock.json` as written by builds before profile switching: two profiles (only
     /// reachable by hand-editing back then), and settings without the switching keys.
     private let v2JSON = #"""
-    {
-      "activeProfileID" : "6F0C9E4B-2B57-4C1F-9C55-3C7A8E1D0A02",
-      "profiles" : [
         {
-          "id" : "6F0C9E4B-2B57-4C1F-9C55-3C7A8E1D0A01",
-          "items" : [
+          "activeProfileID" : "6F0C9E4B-2B57-4C1F-9C55-3C7A8E1D0A02",
+          "profiles" : [
             {
-              "id" : "0B0B6C2E-8F6E-4B8A-A3B1-7E6F0C1D2A01",
-              "kind" : { "app" : { "_0" : { "bundleIdentifier" : "com.apple.Safari", "url" : "file:///Applications/Safari.app/" } } }
+              "id" : "6F0C9E4B-2B57-4C1F-9C55-3C7A8E1D0A01",
+              "items" : [
+                {
+                  "id" : "0B0B6C2E-8F6E-4B8A-A3B1-7E6F0C1D2A01",
+                  "kind" : { "app" : { "_0" : { "bundleIdentifier" : "com.apple.Safari", "url" : "file:///Applications/Safari.app/" } } }
+                },
+                {
+                  "id" : "0B0B6C2E-8F6E-4B8A-A3B1-7E6F0C1D2A02",
+                  "kind" : { "divider" : { } }
+                }
+              ],
+              "name" : "Work"
             },
             {
-              "id" : "0B0B6C2E-8F6E-4B8A-A3B1-7E6F0C1D2A02",
-              "kind" : { "divider" : { } }
+              "id" : "6F0C9E4B-2B57-4C1F-9C55-3C7A8E1D0A02",
+              "items" : [
+                {
+                  "id" : "0B0B6C2E-8F6E-4B8A-A3B1-7E6F0C1D2A03",
+                  "kind" : { "widget" : { "_0" : { "settings" : { "style" : "analog" }, "typeID" : "com.newyorkcompute.opendock.widget.clock" } } }
+                },
+                {
+                  "id" : "0B0B6C2E-8F6E-4B8A-A3B1-7E6F0C1D2A04",
+                  "kind" : { "spacer" : { "_0" : { "size" : "small" } } }
+                }
+              ],
+              "name" : "Home"
             }
           ],
-          "name" : "Work"
-        },
-        {
-          "id" : "6F0C9E4B-2B57-4C1F-9C55-3C7A8E1D0A02",
-          "items" : [
-            {
-              "id" : "0B0B6C2E-8F6E-4B8A-A3B1-7E6F0C1D2A03",
-              "kind" : { "widget" : { "_0" : { "settings" : { "style" : "analog" }, "typeID" : "com.newyorkcompute.opendock.widget.clock" } } }
-            },
-            {
-              "id" : "0B0B6C2E-8F6E-4B8A-A3B1-7E6F0C1D2A04",
-              "kind" : { "spacer" : { "_0" : { "size" : "small" } } }
-            }
-          ],
-          "name" : "Home"
+          "settings" : {
+            "autoHide" : true,
+            "hideAppleDock" : true,
+            "iconSize" : 64,
+            "magnification" : 1.8
+          },
+          "version" : 2
         }
-      ],
-      "settings" : {
-        "autoHide" : true,
-        "hideAppleDock" : true,
-        "iconSize" : 64,
-        "magnification" : 1.8
-      },
-      "version" : 2
-    }
-    """#
+        """#
 
     private func decode(_ json: String) throws -> DockDocument {
         try DockStorage.decode(Data(json.utf8))
@@ -62,15 +63,18 @@ struct ProfileFileFormatTests {
         #expect(doc.profiles.map(\.name) == ["Work", "Home"])
         #expect(doc.activeProfileID == UUID(uuidString: "6F0C9E4B-2B57-4C1F-9C55-3C7A8E1D0A02"))
         #expect(doc.activeProfile.name == "Home")
-        #expect(doc.profiles.flatMap(\.items).map(\.id.uuidString) == [
-            "0B0B6C2E-8F6E-4B8A-A3B1-7E6F0C1D2A01",
-            "0B0B6C2E-8F6E-4B8A-A3B1-7E6F0C1D2A02",
-            "0B0B6C2E-8F6E-4B8A-A3B1-7E6F0C1D2A03",
-            "0B0B6C2E-8F6E-4B8A-A3B1-7E6F0C1D2A04",
-        ])
+        #expect(
+            doc.profiles.flatMap(\.items).map(\.id.uuidString) == [
+                "0B0B6C2E-8F6E-4B8A-A3B1-7E6F0C1D2A01",
+                "0B0B6C2E-8F6E-4B8A-A3B1-7E6F0C1D2A02",
+                "0B0B6C2E-8F6E-4B8A-A3B1-7E6F0C1D2A03",
+                "0B0B6C2E-8F6E-4B8A-A3B1-7E6F0C1D2A04",
+            ])
         #expect(doc.profiles[0].items[0].appItem?.bundleIdentifier == "com.apple.Safari")
         #expect(doc.profiles[0].items[1].isDivider)
-        #expect(doc.profiles[1].items[0].widgetInstance == WidgetInstance(typeID: BuiltInWidgetID.clock, settings: ["style": "analog"]))
+        #expect(
+            doc.profiles[1].items[0].widgetInstance
+                == WidgetInstance(typeID: BuiltInWidgetID.clock, settings: ["style": "analog"]))
         #expect(doc.profiles[1].items[1].spacerItem?.size == .small)
 
         #expect(doc.settings.autoHide)
@@ -99,7 +103,8 @@ struct ProfileFileFormatTests {
     }
 
     @Test func switchingSettingsDecodeTolerantly() throws {
-        let json = #"{"nextProfileHotKey": {"keyCode": "right"}, "previousProfileHotKey": 7, "switchProfilesByScrolling": "no"}"#
+        let json =
+            #"{"nextProfileHotKey": {"keyCode": "right"}, "previousProfileHotKey": 7, "switchProfilesByScrolling": "no"}"#
         let settings = try JSONDecoder().decode(DockSettings.self, from: Data(json.utf8))
         #expect(settings.nextProfileHotKey == nil)
         #expect(settings.previousProfileHotKey == nil)
@@ -133,7 +138,8 @@ struct ProfileFileFormatTests {
     }
 
     @Test func aFileWithoutProfilesIsRejected() {
-        let json = #"{"activeProfileID": "6F0C9E4B-2B57-4C1F-9C55-3C7A8E1D0A01", "profiles": [], "settings": {}, "version": 2}"#
+        let json =
+            #"{"activeProfileID": "6F0C9E4B-2B57-4C1F-9C55-3C7A8E1D0A01", "profiles": [], "settings": {}, "version": 2}"#
         #expect(throws: DecodingError.self) { try decode(json) }
     }
 

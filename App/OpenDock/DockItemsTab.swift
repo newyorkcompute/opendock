@@ -18,10 +18,13 @@ struct DockItemsTab: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             if store.profiles.count > 1 {
-                Picker("Profile", selection: Binding(
-                    get: { store.activeProfileID },
-                    set: { profiles.select($0) }
-                )) {
+                Picker(
+                    "Profile",
+                    selection: Binding(
+                        get: { store.activeProfileID },
+                        set: { profiles.select($0) }
+                    )
+                ) {
                     ForEach(store.profiles) { profile in
                         Text(profile.name).tag(profile.id)
                     }
@@ -115,7 +118,8 @@ struct DockItemsTab: View {
         Menu("Widget") {
             ForEach(registry.descriptors) { descriptor in
                 Button {
-                    selection = DockItemActions.addWidget(descriptor.typeID, registry: registry, to: store, after: selection)
+                    selection = DockItemActions.addWidget(
+                        descriptor.typeID, registry: registry, to: store, after: selection)
                 } label: {
                     Label(descriptor.displayName, systemImage: descriptor.systemImage)
                 }

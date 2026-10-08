@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import DockCore
 
 @Suite("Drag reordering geometry")
@@ -25,7 +26,7 @@ struct ReorderTests {
     @Test func pointerOverGapKeepsItThere() {
         // The insertion point under the pointer is where the gap already is, at every index:
         // opening the gap never moves it out from under the pointer.
-        for gap in 0...4 {
+        for gap in 0 ... 4 {
             #expect(index(pointerOverGap(at: gap, count: 4)) == gap)
         }
     }
@@ -97,7 +98,7 @@ struct ReorderTests {
         let pieces = DockReorder.gapPieces(position: 1.25, width: 60)
         #expect(pieces == [.init(index: 1, width: 45), .init(index: 2, width: 15)])
         // The total never changes, so the row's width holds steady while the gap moves.
-        for step in 0...20 {
+        for step in 0 ... 20 {
             let total = DockReorder.gapPieces(position: Double(step) / 10, width: 60).map(\.width).reduce(0, +)
             #expect(abs(total - 60) < 1e-9)
         }

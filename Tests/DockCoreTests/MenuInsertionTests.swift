@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import DockCore
 
 /// Where items added from a context menu or the Settings list go.
@@ -8,9 +9,12 @@ struct MenuInsertionTests {
     /// Four 50-point slots: the row spans -100 ... 100 around its center.
     private let fourSlots: [Double] = [50, 50, 50, 50]
 
-    private func index(after anchor: Int? = nil, pointer: Double? = nil, slots: [Double]? = nil, limit: Int? = nil) -> Int {
+    private func index(after anchor: Int? = nil, pointer: Double? = nil, slots: [Double]? = nil, limit: Int? = nil)
+        -> Int
+    {
         let slots = slots ?? fourSlots
-        return DockReorder.menuInsertionIndex(afterItemAt: anchor, pointer: pointer, slots: slots, limit: limit ?? slots.count)
+        return DockReorder.menuInsertionIndex(
+            afterItemAt: anchor, pointer: pointer, slots: slots, limit: limit ?? slots.count)
     }
 
     @Test func appendsWithoutAnchorOrPointer() {

@@ -30,9 +30,11 @@ Building needs macOS with Xcode 26 or later (Swift 6.2+, macOS 26 SDK).
 | `make run` | Debug build, then (re)launch the app |
 | `make test` | Unit tests (`swift test`) |
 | `make release-native` | Optimized (`-O`) build and bundle for this Mac's architecture |
+| `make format` | Format Swift sources in place (swift-format, per `.swift-format`) |
+| `make lint` | Check formatting and lint rules, as CI does |
 
-Before you open or update a PR, run `make test` and `make release-native`, and make sure
-neither adds warnings. CI also builds with `-O`, and some compiler crashes only show up there.
+Before you open or update a PR, run `make format`, `make lint`, `make test`, and
+`make release-native`, and make sure none of them adds warnings. CI also builds with `-O`, and some compiler crashes only show up there.
 If several agents share a checkout, give each its own build directory
 (`swift build --scratch-path .build-<name>`, same for `swift test`) and its own set of files.
 

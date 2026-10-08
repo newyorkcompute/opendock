@@ -1,6 +1,7 @@
 import DockCore
 import Foundation
 import Testing
+
 @testable import SystemServices
 
 private typealias App = RunningAppsMonitor.AppDescriptor
@@ -52,7 +53,10 @@ struct RunningDockAppTests {
             .widget("com.newyorkcompute.opendock.widget.clock"),
             .divider(),
         ]
-        #expect(running.unpinnedApps(pinned: items, excludingBundleID: nil).map(\.app.bundleIdentifier) == ["com.example.notes"])
+        #expect(
+            running.unpinnedApps(pinned: items, excludingBundleID: nil).map(\.app.bundleIdentifier) == [
+                "com.example.notes"
+            ])
     }
 
     @Test func skipsItselfButKeepsAppsWithoutBundleIdentifier() {
@@ -69,7 +73,11 @@ struct RunningDockAppTests {
 
     @Test func skipsAppsWithoutBundleURL() {
         var running = RunningAppsMonitor.Snapshot()
-        running.regularApps = [App(processIdentifier: 10, bundleIdentifier: "com.example.x", bundleURL: nil, localizedName: nil, launchDate: nil)]
+        running.regularApps = [
+            App(
+                processIdentifier: 10, bundleIdentifier: "com.example.x", bundleURL: nil, localizedName: nil,
+                launchDate: nil)
+        ]
         #expect(running.unpinnedApps(pinned: [], excludingBundleID: nil).isEmpty)
     }
 
@@ -87,8 +95,10 @@ struct RunningDockAppTests {
     }
 
     @Test func aReusedPidIsANewApp() {
-        let first = snapshot([app(10, "com.example.mail", launched: 1)]).unpinnedApps(pinned: [], excludingBundleID: nil)
-        let second = snapshot([app(10, "com.example.notes", launched: 50)]).unpinnedApps(pinned: [], excludingBundleID: nil)
+        let first = snapshot([app(10, "com.example.mail", launched: 1)]).unpinnedApps(
+            pinned: [], excludingBundleID: nil)
+        let second = snapshot([app(10, "com.example.notes", launched: 50)]).unpinnedApps(
+            pinned: [], excludingBundleID: nil)
         #expect(first[0].id != second[0].id)
     }
 
@@ -109,7 +119,8 @@ struct RunningDockAppTests {
             app(30, "com.example.music", launched: 3),
         ])
         let all = running.unpinnedApps(pinned: [], excludingBundleID: nil)
-        let whilePinned = running.unpinnedApps(pinned: [pinned("com.example.notes", path: "/x/Notes.app")], excludingBundleID: nil)
+        let whilePinned = running.unpinnedApps(
+            pinned: [pinned("com.example.notes", path: "/x/Notes.app")], excludingBundleID: nil)
         #expect(whilePinned.map(\.id) == [all[0].id, all[2].id])
         #expect(running.unpinnedApps(pinned: [], excludingBundleID: nil) == all)
     }
@@ -128,7 +139,7 @@ struct RunningDockAppTests {
     }
 
     @Test func launchOrderDoesNotDependOnInputOrder() {
-        let apps = (1...8).map { app(pid_t($0), "app\($0)", launched: $0.isMultiple(of: 3) ? nil : Double(9 - $0)) }
+        let apps = (1 ... 8).map { app(pid_t($0), "app\($0)", launched: $0.isMultiple(of: 3) ? nil : Double(9 - $0)) }
         let expected = apps.sorted(by: App.launchedBefore)
         #expect(apps.reversed().sorted(by: App.launchedBefore) == expected)
         #expect(apps.shuffled().sorted(by: App.launchedBefore) == expected)

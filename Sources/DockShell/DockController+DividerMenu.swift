@@ -21,12 +21,14 @@ extension DockController {
         let menu = NSMenu()
         menu.autoenablesItems = false
 
-        menu.addItem(actionMenuItem(settings.autoHide ? "Turn Hiding Off" : "Turn Hiding On") { [store] in
-            store.updateSettings { $0.autoHide.toggle() }
-        })
-        menu.addItem(actionMenuItem(settings.hoverEffect ? "Turn Magnification Off" : "Turn Magnification On") { [store] in
-            store.updateSettings { $0.hoverEffect.toggle() }
-        })
+        menu.addItem(
+            actionMenuItem(settings.autoHide ? "Turn Hiding Off" : "Turn Hiding On") { [store] in
+                store.updateSettings { $0.autoHide.toggle() }
+            })
+        menu.addItem(
+            actionMenuItem(settings.hoverEffect ? "Turn Magnification Off" : "Turn Magnification On") { [store] in
+                store.updateSettings { $0.hoverEffect.toggle() }
+            })
 
         let positions = NSMenu()
         positions.autoenablesItems = false
@@ -47,13 +49,15 @@ extension DockController {
         display.submenu = displayMenu(current: settings.display)
         menu.addItem(display)
 
-        menu.addItem(actionMenuItem("Remove Divider") { [store] in
-            store.remove(id: id)
-        })
+        menu.addItem(
+            actionMenuItem("Remove Divider") { [store] in
+                store.remove(id: id)
+            })
         menu.addItem(.separator())
-        menu.addItem(actionMenuItem("Dock Settings…") { [weak self] in
-            self?.actions.openSettings()
-        })
+        menu.addItem(
+            actionMenuItem("Dock Settings…") { [weak self] in
+                self?.actions.openSettings()
+            })
         return menu
     }
 
@@ -98,7 +102,8 @@ extension DockController {
     /// `.contextMenu` would be a second copy of the menu.
     func installContextClickMonitor() {
         guard contextClickMonitor == nil else { return }
-        contextClickMonitor = NSEvent.addLocalMonitorForEvents(matching: [.rightMouseDown, .leftMouseDown]) { [weak self] event in
+        contextClickMonitor = NSEvent.addLocalMonitorForEvents(matching: [.rightMouseDown, .leftMouseDown]) {
+            [weak self] event in
             guard event.type == .rightMouseDown || event.modifierFlags.contains(.control) else { return event }
             let windowNumber = event.windowNumber
             let handled = MainActor.assumeIsolated { self?.handleContextClick(inWindow: windowNumber) ?? false }
@@ -114,7 +119,7 @@ extension DockController {
     /// Returns true when the click opened the divider menu and should go no further.
     private func handleContextClick(inWindow windowNumber: Int) -> Bool {
         guard let panel, panel.windowNumber == windowNumber,
-              let point = layoutPoint(fromScreen: NSEvent.mouseLocation)
+            let point = layoutPoint(fromScreen: NSEvent.mouseLocation)
         else { return false }
         shellState.contextClickX = point.x - shellState.geometry.rowCenterX
         guard let id = dividerID(at: point) else { return false }
@@ -139,9 +144,10 @@ extension DockController {
     private func dividerID(at point: CGPoint) -> DockItem.ID? {
         let geometry = shellState.geometry
         let margin = geometry.halfGap
-        guard let hit = geometry.itemFrames.first(where: { $0.frame.insetBy(dx: -margin, dy: -margin).contains(point) }),
-              let id = hit.id.pinnedID,
-              store.profile.item(id: id)?.isDivider == true
+        guard
+            let hit = geometry.itemFrames.first(where: { $0.frame.insetBy(dx: -margin, dy: -margin).contains(point) }),
+            let id = hit.id.pinnedID,
+            store.profile.item(id: id)?.isDivider == true
         else { return nil }
         return id
     }

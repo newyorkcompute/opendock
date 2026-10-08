@@ -48,7 +48,8 @@ struct DockSurfaceView: View {
 
     var body: some View {
         let metrics = DockRowMetrics(settings: store.settings)
-        let extras = store.settings.showRunningApps
+        let extras =
+            store.settings.showRunningApps
             ? running.snapshot.unpinnedApps(pinned: store.items, excludingBundleID: Bundle.main.bundleIdentifier)
             : []
         DockMagnifyingLayout(
@@ -70,11 +71,12 @@ struct DockSurfaceView: View {
             ForEach(store.items) { item in
                 DockItemView(item: item, controller: controller)
                     .transition(profileSwap(metrics))
-                    .dockLayoutRole(.item(
-                        .pinned(item.id),
-                        growth: DockMagnification.growth(for: item),
-                        hoverable: !item.isSpacer && !item.isDivider
-                    ))
+                    .dockLayoutRole(
+                        .item(
+                            .pinned(item.id),
+                            growth: DockMagnification.growth(for: item),
+                            hoverable: !item.isSpacer && !item.isDivider
+                        ))
             }
 
             if store.items.isEmpty {
@@ -118,7 +120,8 @@ struct DockSurfaceView: View {
     }
 
     private func profileSwap(_ metrics: DockRowMetrics) -> AnyTransition {
-        .dockProfileSwap(direction: shellState.profileSwapDirection, distance: metrics.iconSize, reduceMotion: reduceMotion)
+        .dockProfileSwap(
+            direction: shellState.profileSwapDirection, distance: metrics.iconSize, reduceMotion: reduceMotion)
     }
 
     private func label(for id: DockRowItemID?, extras: [RunningDockApp]) -> String? {

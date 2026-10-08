@@ -40,7 +40,8 @@ nonisolated struct DockRowMetrics: Equatable {
     init(settings: DockSettings) {
         iconSize = settings.iconSize
         peakScale = settings.peakMagnification
-        launchBounceHeight = settings.animateOpeningApps
+        launchBounceHeight =
+            settings.animateOpeningApps
             ? LaunchBounce.peakOffset(iconHeight: settings.iconSize * settings.peakMagnification)
             : 0
     }
@@ -160,7 +161,9 @@ nonisolated struct DockMagnifyingLayout: Layout {
         var dragged: (index: Int, size: CGSize)?
         var resting: [DockGeometry.Slot] = []
 
-        mutating func append(_ index: Int?, id: DockRowItemID?, size: CGSize, slot: DockMagnification.Slot, hoverable: Bool) {
+        mutating func append(
+            _ index: Int?, id: DockRowItemID?, size: CGSize, slot: DockMagnification.Slot, hoverable: Bool
+        ) {
             itemIndices.append(index)
             sizes.append(size)
             slots.append(slot)
@@ -178,7 +181,8 @@ nonisolated struct DockMagnifyingLayout: Layout {
         func appendGap(at index: Int) {
             for piece in pieces where piece.index == index {
                 let size = CGSize(width: max(0, piece.width - metrics.spacing), height: metrics.iconSize)
-                row.append(nil, id: nil, size: size, slot: .init(width: piece.width, growth: gap.growth), hoverable: false)
+                row.append(
+                    nil, id: nil, size: size, slot: .init(width: piece.width, growth: gap.growth), hoverable: false)
             }
         }
         for index in subviews.indices {
@@ -218,8 +222,11 @@ nonisolated struct DockMagnifyingLayout: Layout {
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout Cache) -> CGSize {
         let row = measure(subviews, withGap: false)
         if cache.slots != row.slots || cache.peakScale != metrics.peakScale || cache.radius != metrics.radius {
-            let overhang = DockMagnification.maximumOverhang(row.slots, peakScale: metrics.peakScale, radius: metrics.radius)
-            cache = Cache(slots: row.slots, peakScale: metrics.peakScale, radius: metrics.radius, overhang: max(overhang.leading, overhang.trailing))
+            let overhang = DockMagnification.maximumOverhang(
+                row.slots, peakScale: metrics.peakScale, radius: metrics.radius)
+            cache = Cache(
+                slots: row.slots, peakScale: metrics.peakScale, radius: metrics.radius,
+                overhang: max(overhang.leading, overhang.trailing))
         }
         let side = cache.overhang + metrics.horizontalPadding + metrics.shadowMargin
         // No item grows taller than an icon at the peak (see `DockMagnification.itemSize`).
@@ -251,9 +258,11 @@ nonisolated struct DockMagnifyingLayout: Layout {
         for (k, index) in row.itemIndices.enumerated() {
             let size = DockMagnification.itemSize(row.sizes[k], scale: magnified.scales[k], iconSize: metrics.iconSize)
             let midX = rowLeft + magnified.origins[k] + magnified.widths[k] / 2
-            frames.append(CGRect(x: midX - size.width / 2, y: rowBottom - size.height, width: size.width, height: size.height))
+            frames.append(
+                CGRect(x: midX - size.width / 2, y: rowBottom - size.height, width: size.width, height: size.height))
             if let index {
-                subviews[index].place(at: CGPoint(x: midX, y: rowBottom), anchor: .bottom, proposal: ProposedViewSize(size))
+                subviews[index].place(
+                    at: CGPoint(x: midX, y: rowBottom), anchor: .bottom, proposal: ProposedViewSize(size))
             }
         }
 
@@ -266,7 +275,8 @@ nonisolated struct DockMagnifyingLayout: Layout {
             let scale = gapSlot.map { magnified.scales[$0] } ?? 1
             let midX = gapSlot.map { frames[$0].midX } ?? bounds.midX
             let size = DockMagnification.itemSize(dragged.size, scale: scale, iconSize: metrics.iconSize)
-            subviews[dragged.index].place(at: CGPoint(x: midX, y: rowBottom), anchor: .bottom, proposal: ProposedViewSize(size))
+            subviews[dragged.index].place(
+                at: CGPoint(x: midX, y: rowBottom), anchor: .bottom, proposal: ProposedViewSize(size))
         }
 
         // Edges of what's drawn in each slot, with the slot's share of the spacing taken off.
@@ -304,7 +314,8 @@ nonisolated struct DockMagnifyingLayout: Layout {
                 let halfWidth = size.width / 2
                 let midX = min(max(anchor.midX, bounds.minX + halfWidth), bounds.maxX - halfWidth)
                 let bottom = max(anchor.minY - DockRowMetrics.labelGap, bounds.minY + size.height)
-                subviews[index].place(at: CGPoint(x: midX, y: bottom), anchor: .bottom, proposal: ProposedViewSize(size))
+                subviews[index].place(
+                    at: CGPoint(x: midX, y: bottom), anchor: .bottom, proposal: ProposedViewSize(size))
             case .item:
                 break
             }

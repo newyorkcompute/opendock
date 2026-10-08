@@ -92,8 +92,8 @@ extension DockController {
     private func beginReorder(at location: CGPoint) -> Bool {
         let geometry = shellState.geometry
         guard let id = geometry.anyItem(atX: location.x)?.pinnedID,
-              let index = store.items.firstIndex(where: { $0.id == id }),
-              let slot = geometry.restingSlots.first(where: { $0.id == .pinned(id) })
+            let index = store.items.firstIndex(where: { $0.id == id }),
+            let slot = geometry.restingSlots.first(where: { $0.id == .pinned(id) })
         else { return false }
         // The gap opens in the item's own slot, so nothing moves until the pointer does.
         shellState.draggingItemID = id
@@ -142,7 +142,9 @@ extension DockController {
         shellState.dropIndex = nil
         pointerMoved(to: nil)
         if let dragged = shellState.draggingItemID {
-            if let index = store.items.firstIndex(where: { $0.id == dragged }), shellState.dropGap.position != CGFloat(index) {
+            if let index = store.items.firstIndex(where: { $0.id == dragged }),
+                shellState.dropGap.position != CGFloat(index)
+            {
                 withAnimation(.dockDropGap) { shellState.dropGap.position = CGFloat(index) }
             }
             watchForDragEnd()
@@ -191,7 +193,8 @@ extension DockController {
     }
 
     private func droppedFileURLs(_ info: any NSDraggingInfo) -> [URL] {
-        info.draggingPasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
+        info.draggingPasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true])
+            as? [URL] ?? []
     }
 
     /// Items chosen in the open panel are inserted at `index` among the items, or appended.

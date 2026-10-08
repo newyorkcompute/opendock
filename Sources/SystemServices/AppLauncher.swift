@@ -70,11 +70,12 @@ public struct SystemAppWorkspace: AppWorkspace {
             if let error {
                 NSLog("OpenDock: failed to open \(url.path): \(error.localizedDescription)")
             }
-            let result: AppLaunchResult = if let app, error == nil {
-                .launched(processIdentifier: app.processIdentifier)
-            } else {
-                .failed
-            }
+            let result: AppLaunchResult =
+                if let app, error == nil {
+                    .launched(processIdentifier: app.processIdentifier)
+                } else {
+                    .failed
+                }
             Task { @MainActor in completion(result) }
         }
     }
@@ -110,7 +111,8 @@ public enum AppLauncher {
         launchCompleted: @escaping @MainActor @Sendable (AppLaunchResult) -> Void = { _ in }
     ) -> AppOpenOutcome {
         guard let runningApp = running.runningApp(bundleIdentifier: app.bundleIdentifier, bundleURL: app.url) else {
-            workspace.openApplication(at: app.url, configuration: activatingConfiguration(), completion: launchCompleted)
+            workspace.openApplication(
+                at: app.url, configuration: activatingConfiguration(), completion: launchCompleted)
             return .launching
         }
         if runningApp.isHidden {
@@ -131,7 +133,8 @@ public enum AppLauncher {
     }
 
     public static func quit(_ app: AppItem, running: RunningAppsMonitor, force: Bool = false) {
-        guard let runningApp = running.runningApplication(bundleIdentifier: app.bundleIdentifier, bundleURL: app.url) else { return }
+        guard let runningApp = running.runningApplication(bundleIdentifier: app.bundleIdentifier, bundleURL: app.url)
+        else { return }
         if force {
             runningApp.forceTerminate()
         } else {

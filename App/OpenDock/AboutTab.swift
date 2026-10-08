@@ -48,7 +48,8 @@ struct AboutTab: View {
     /// Selects `dock.json` in Finder, or its folder if it hasn't been written yet.
     private func revealDataFile() {
         let fileURL = DockStorage.default().fileURL
-        let target = FileManager.default.fileExists(atPath: fileURL.path)
+        let target =
+            FileManager.default.fileExists(atPath: fileURL.path)
             ? fileURL
             : fileURL.deletingLastPathComponent()
         AppLauncher.revealInFinder(target)

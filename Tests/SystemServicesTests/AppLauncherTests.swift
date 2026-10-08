@@ -1,6 +1,7 @@
 import AppKit
 import DockCore
 import Testing
+
 @testable import SystemServices
 
 private enum LaunchEvent: Equatable {
@@ -26,11 +27,12 @@ private struct FakeWorkspace: AppWorkspace {
         configuration: NSWorkspace.OpenConfiguration,
         completion: @escaping @MainActor @Sendable (AppLaunchResult) -> Void
     ) {
-        recorder.events.append(.openApplication(
-            url,
-            activates: configuration.activates,
-            newInstance: configuration.createsNewApplicationInstance
-        ))
+        recorder.events.append(
+            .openApplication(
+                url,
+                activates: configuration.activates,
+                newInstance: configuration.createsNewApplicationInstance
+            ))
         recorder.launchCompletions.append(completion)
     }
 
@@ -111,10 +113,11 @@ struct AppLauncherTests {
         let running = FakeRunningApp(recorder: recorder, bundleURL: safari.url)
         let outcome = AppLauncher.open(safari, running: FakeLookup(app: running), workspace: workspace)
         #expect(outcome == .activated)
-        #expect(recorder.events == [
-            .activate(allWindows: true),
-            .openApplication(safari.url, activates: true, newInstance: false),
-        ])
+        #expect(
+            recorder.events == [
+                .activate(allWindows: true),
+                .openApplication(safari.url, activates: true, newInstance: false),
+            ])
     }
 
     @Test func activatingARunningAppReportsNoLaunch() {
@@ -135,11 +138,12 @@ struct AppLauncherTests {
     @Test func unhidesHiddenAppBeforeActivating() {
         let running = FakeRunningApp(recorder: recorder, bundleURL: safari.url, isHidden: true)
         AppLauncher.open(safari, running: FakeLookup(app: running), workspace: workspace)
-        #expect(recorder.events == [
-            .unhide,
-            .activate(allWindows: true),
-            .openApplication(safari.url, activates: true, newInstance: false),
-        ])
+        #expect(
+            recorder.events == [
+                .unhide,
+                .activate(allWindows: true),
+                .openApplication(safari.url, activates: true, newInstance: false),
+            ])
         #expect(!running.isHidden)
     }
 

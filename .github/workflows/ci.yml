@@ -40,6 +40,10 @@ jobs:
         id: xcode
         run: ./.github/scripts/select-xcode.sh
 
+      # swift-format ships with Xcode 16 and later, so there's nothing to install.
+      - name: swift format lint
+        run: make lint
+
       - name: Cache SwiftPM build
         uses: actions/cache@v6
         with:
