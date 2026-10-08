@@ -90,6 +90,35 @@ struct DockDocumentCodecTests {
         #expect(settings.material == DockSettings.default.material)
     }
 
+    /// Every setting falls back to its default on its own; one bad value never takes the
+    /// rest of the file (and the user's layout) with it.
+    @Test func settingsDecodeWithMalformedValues() throws {
+        let json = Data(
+            #"""
+            {"iconSize": "big", "autoHide": "yes", "autoHideDelay": null, "material": "velvet",
+             "showRunningIndicators": 1, "showRunningApps": true, "hoverEffect": "no", "edge": "top"}
+            """#.utf8)
+        let settings = try JSONDecoder().decode(DockSettings.self, from: json)
+        let d = DockSettings.default
+        #expect(settings.iconSize == d.iconSize)
+        #expect(settings.autoHide == d.autoHide)
+        #expect(settings.autoHideDelay == d.autoHideDelay)
+        #expect(settings.material == d.material)
+        #expect(settings.showRunningIndicators == d.showRunningIndicators)
+        #expect(settings.showRunningApps)
+        #expect(settings.hoverEffect == d.hoverEffect)
+        #expect(settings.edge == d.edge)
+    }
+
+    @Test func rangedSettingsAreClampedOnDecode() throws {
+        let json = Data(#"{"iconSize": 500, "autoHideDelay": 0, "magnification": 9, "recentAppsCount": 99}"#.utf8)
+        let settings = try JSONDecoder().decode(DockSettings.self, from: json)
+        #expect(settings.iconSize == DockSettings.iconSizeRange.upperBound)
+        #expect(settings.autoHideDelay == DockSettings.autoHideDelayRange.lowerBound)
+        #expect(settings.magnification == DockSettings.magnificationRange.upperBound)
+        #expect(settings.recentAppsCount == DockSettings.recentAppsCountRange.upperBound)
+    }
+
     @Test func hideAppleDockDecodesTolerantly() throws {
         let decoder = JSONDecoder()
         #expect(try decoder.decode(DockSettings.self, from: Data("{}".utf8)).hideAppleDock == false)

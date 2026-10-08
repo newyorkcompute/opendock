@@ -239,6 +239,33 @@ struct ScriptedPlayersProviderTests {
         provider.stop()
     }
 
+    /// Shown again after a hidden stretch, the provider reads right away instead of at the
+    /// end of the long hidden interval.
+    @Test func readsAgainAsSoonAsTheDockIsShown() async {
+        let runner = FakeRunner()
+        runner.outputs[ScriptedPlayer.music.bundleID] = statusLine("playing", "Music song", artwork: "")
+        let provider = ScriptedPlayersProvider(
+            runner: runner, runningBundleIDs: { [ScriptedPlayer.music.bundleID] }, fetchURL: { _ in nil })
+        provider.start { _ in }
+        await eventually { !runner.scripts.isEmpty }
+        let readsWhileShown = runner.scripts.count
+
+        provider.setDockVisible(false)
+        provider.setDockVisible(true)
+        await eventually { runner.scripts.count > readsWhileShown }
+        #expect(runner.scripts.count > readsWhileShown)
+        provider.stop()
+    }
+
+    /// Waits for the provider's own polling to catch up, well within one visible interval.
+    private func eventually(_ condition: () -> Bool) async {
+        var attempts = 0
+        while !condition(), attempts < 100 {
+            attempts += 1
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+    }
+
     @Test func sendsCommandsToTheShownPlayerOrAnyRunningOne() async {
         let runner = FakeRunner()
         let provider = ScriptedPlayersProvider(

@@ -84,8 +84,9 @@ public final class NowPlayingMonitor {
         sourceName = provider.sourceName
         isUnavailable = false
         provider.setDockVisible(isDockVisible)
-        provider.start { [weak self] event in
-            guard let self, self.runningProvider === provider else { return }
+        // The provider keeps this handler, so it mustn't keep the provider.
+        provider.start { [weak self, weak provider] event in
+            guard let self, let provider, self.runningProvider === provider else { return }
             switch event {
             case .track(let track):
                 self.apply(track)

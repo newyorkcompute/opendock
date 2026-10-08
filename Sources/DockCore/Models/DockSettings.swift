@@ -96,9 +96,9 @@ public struct DockSettings: Hashable, Codable, Sendable {
     ) {
         self.edge = edge
         self.display = display
-        self.iconSize = iconSize
+        self.iconSize = iconSize.clamped(to: Self.iconSizeRange)
         self.autoHide = autoHide
-        self.autoHideDelay = autoHideDelay
+        self.autoHideDelay = autoHideDelay.clamped(to: Self.autoHideDelayRange)
         self.material = material
         self.showRunningIndicators = showRunningIndicators
         self.showRunningApps = showRunningApps
@@ -137,6 +137,7 @@ public struct DockSettings: Hashable, Codable, Sendable {
 
     public static let iconSizeRange: ClosedRange<Double> = 32 ... 96
     public static let magnificationRange: ClosedRange<Double> = 1.2 ... 2.0
+    public static let autoHideDelayRange: ClosedRange<Double> = 0.1 ... 2.0
     public static let recentAppsCountRange: ClosedRange<Int> = 1 ... 10
 
     /// Scale of the item under the pointer: 1 when magnification is off.
@@ -148,21 +149,24 @@ public struct DockSettings: Hashable, Codable, Sendable {
 // MARK: - Tolerant decoding
 
 extension DockSettings {
-    /// Decode with defaults for any missing keys so adding a setting never
-    /// invalidates an existing settings file.
+    /// Decode with defaults for any missing or malformed keys, so adding a setting never
+    /// invalidates an existing settings file and one bad value never throws the whole file
+    /// away. Values with a range are clamped to it, as the sliders would.
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         let d = DockSettings.default
         edge = (try? c.decodeIfPresent(Edge.self, forKey: .edge)) ?? d.edge
         display = (try? c.decodeIfPresent(Display.self, forKey: .display)) ?? d.display
-        iconSize = try c.decodeIfPresent(Double.self, forKey: .iconSize) ?? d.iconSize
-        autoHide = try c.decodeIfPresent(Bool.self, forKey: .autoHide) ?? d.autoHide
-        autoHideDelay = try c.decodeIfPresent(Double.self, forKey: .autoHideDelay) ?? d.autoHideDelay
-        material = try c.decodeIfPresent(Material.self, forKey: .material) ?? d.material
+        iconSize = ((try? c.decodeIfPresent(Double.self, forKey: .iconSize)) ?? d.iconSize)
+            .clamped(to: Self.iconSizeRange)
+        autoHide = (try? c.decodeIfPresent(Bool.self, forKey: .autoHide)) ?? d.autoHide
+        autoHideDelay = ((try? c.decodeIfPresent(Double.self, forKey: .autoHideDelay)) ?? d.autoHideDelay)
+            .clamped(to: Self.autoHideDelayRange)
+        material = (try? c.decodeIfPresent(Material.self, forKey: .material)) ?? d.material
         showRunningIndicators =
-            try c.decodeIfPresent(Bool.self, forKey: .showRunningIndicators) ?? d.showRunningIndicators
-        showRunningApps = try c.decodeIfPresent(Bool.self, forKey: .showRunningApps) ?? d.showRunningApps
-        hoverEffect = try c.decodeIfPresent(Bool.self, forKey: .hoverEffect) ?? d.hoverEffect
+            (try? c.decodeIfPresent(Bool.self, forKey: .showRunningIndicators)) ?? d.showRunningIndicators
+        showRunningApps = (try? c.decodeIfPresent(Bool.self, forKey: .showRunningApps)) ?? d.showRunningApps
+        hoverEffect = (try? c.decodeIfPresent(Bool.self, forKey: .hoverEffect)) ?? d.hoverEffect
         magnification = ((try? c.decodeIfPresent(Double.self, forKey: .magnification)) ?? d.magnification)
             .clamped(to: Self.magnificationRange)
         hideAppleDock = (try? c.decodeIfPresent(Bool.self, forKey: .hideAppleDock)) ?? d.hideAppleDock
