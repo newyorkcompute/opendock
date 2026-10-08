@@ -65,7 +65,7 @@ extension DockController {
 
     // MARK: - Joining and leaving the full-screen Space
 
-    private func revealOverFullScreen() {
+    func revealOverFullScreen() {
         guard let panel, !isRevealedOverFullScreen else { return }
         isRevealedOverFullScreen = true
         panel.collectionBehavior.insert(.fullScreenAuxiliary)

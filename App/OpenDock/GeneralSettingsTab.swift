@@ -16,6 +16,7 @@ struct GeneralSettingsTab: View {
         Form {
             appearanceSection
             behaviorSection
+            keyboardSection
             windowsSection
             badgesSection
             appleDockSection
@@ -156,6 +157,25 @@ struct GeneralSettingsTab: View {
                     )
                 }
             }
+            .settingsFootnote()
+        }
+    }
+
+    private var keyboardSection: some View {
+        Section {
+            LabeledContent("Control the dock") {
+                HotKeyRecorder(
+                    hotKey: Binding(
+                        get: { store.settings.keyboardNavigationHotKey },
+                        set: { value in store.updateSettings { $0.setHotKey(value, for: \.keyboardNavigationHotKey) } }
+                    ))
+            }
+        } header: {
+            Text("Keyboard")
+        } footer: {
+            Text(
+                "The shortcut shows the dock and selects an item. Use the arrow keys to move along the dock, Return to open, Space to browse a folder or open a widget, Delete to remove an item, and Escape when you’re done."
+            )
             .settingsFootnote()
         }
     }

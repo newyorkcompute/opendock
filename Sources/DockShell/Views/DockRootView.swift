@@ -66,9 +66,13 @@ struct DockSurfaceView: View {
         let metrics = DockRowMetrics(settings: store.settings)
         let extras = controller.runningSection
         let recents = controller.recentSection
+        let rowIDs =
+            store.items.map { DockRowItemID.pinned($0.id) } + extras.map { DockRowItemID.running($0.id) }
+            + recents.map { DockRowItemID.recent($0.id) }
         DockMagnifyingLayout(
             metrics: metrics,
             pointer: shellState.pointer,
+            selectedID: shellState.isPointerInside ? nil : shellState.keyboardSelection,
             amount: shellState.magnification,
             // A profile's name is centered over the dock rather than over an item.
             hoveredID: shellState.profileBanner == nil ? shellState.hoveredItemID : nil,
@@ -84,6 +88,7 @@ struct DockSurfaceView: View {
 
             ForEach(store.items) { item in
                 DockItemView(item: item, controller: controller)
+                    .keyboardSelection(shellState.keyboardSelection == .pinned(item.id))
                     .transition(profileSwap(metrics))
                     .dockLayoutRole(
                         .item(
@@ -105,6 +110,7 @@ struct DockSurfaceView: View {
                     .transition(.dockRunningApp(edge: metrics.edge))
                 ForEach(extras) { extra in
                     AppItemView(app: extra.app, rowID: .running(extra.id), controller: controller)
+                        .keyboardSelection(shellState.keyboardSelection == .running(extra.id))
                         .dockLayoutRole(.item(.running(extra.id), growth: 1, hoverable: true))
                         .transition(.dockRunningApp(edge: metrics.edge))
                 }
@@ -116,6 +122,7 @@ struct DockSurfaceView: View {
                     .transition(.dockRunningApp(edge: metrics.edge))
                 ForEach(recents) { recent in
                     AppItemView(app: recent.app, rowID: .recent(recent.id), controller: controller)
+                        .keyboardSelection(shellState.keyboardSelection == .recent(recent.id))
                         .dockLayoutRole(.item(.recent(recent.id), growth: 1, hoverable: true))
                         .transition(.dockRunningApp(edge: metrics.edge))
                 }
@@ -134,6 +141,9 @@ struct DockSurfaceView: View {
             .dockRunningApps,
             value: extras.map { DockRowItemID.running($0.id) } + recents.map { DockRowItemID.recent($0.id) }
         )
+        .onChange(of: rowIDs) {
+            controller.keyboardRowChanged()
+        }
         .onContinuousHover { phase in
             controller.pointerHoverChanged(phase)
         }
@@ -221,6 +231,35 @@ struct EmptyProfilePlaceholder: View {
             .help("Add apps to this profile")
             .accessibilityLabel("Add App")
             .accessibilityAddTraits(.isButton)
+    }
+}
+
+extension View {
+    /// Marks the item the keyboard has selected: a ring around it, and the selected trait
+    /// for VoiceOver.
+    func keyboardSelection(_ isSelected: Bool) -> some View {
+        modifier(DockKeyboardSelectionModifier(isSelected: isSelected))
+    }
+}
+
+private struct DockKeyboardSelectionModifier: ViewModifier {
+    let isSelected: Bool
+
+    @Environment(\.dockIconSize) private var iconSize
+
+    func body(content: Content) -> some View {
+        content
+            .overlay {
+                if isSelected {
+                    RoundedRectangle(cornerRadius: iconSize * 0.22 + 3, style: .continuous)
+                        .strokeBorder(Color.accentColor, lineWidth: 2)
+                        .shadow(color: .black.opacity(0.25), radius: 1)
+                        .padding(-3)
+                        .allowsHitTesting(false)
+                        .transition(.opacity)
+                }
+            }
+            .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 

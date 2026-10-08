@@ -33,6 +33,10 @@ extension DockController {
         if shellState.hoveredItemID != hovered {
             shellState.hoveredItemID = hovered
         }
+        // While the keyboard is in control, the pointer moves its selection along.
+        if let hovered, keyboard.isActive {
+            keyboardSelectionFollowedPointer(to: hovered)
+        }
 
         guard !shellState.isPointerInside else { return }
         shellState.isPointerInside = true
@@ -46,6 +50,11 @@ extension DockController {
         removeHoverMonitor()
         guard shellState.isPointerInside else { return }
         shellState.isPointerInside = false
+        if keyboard.isActive {
+            // The keyboard's selection stays magnified and labeled where the pointer left it.
+            presentKeyboardSelection()
+            return
+        }
         shellState.hoveredItemID = nil
         withAnimation(.dockDemagnify) { shellState.magnification = 0 }
         scheduleHide()
@@ -58,6 +67,18 @@ extension DockController {
         shellState.hoveredItemID = nil
         shellState.pointer = nil
         shellState.magnification = 0
+    }
+
+    /// Resting center of `id` along the row, in the layout's coordinates, for magnifying it
+    /// as if the pointer were there.
+    func restingCenter(of id: DockRowItemID) -> CGFloat? {
+        let slots = shellState.geometry.restingSlots
+        var position = shellState.geometry.rowCenter - slots.reduce(0) { $0 + $1.width } / 2
+        for slot in slots {
+            if slot.id == id { return position + slot.width / 2 }
+            position += slot.width
+        }
+        return nil
     }
 
     // MARK: - Leaving through transparent areas

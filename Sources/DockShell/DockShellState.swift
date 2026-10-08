@@ -57,6 +57,20 @@ public final class DockShellState {
     /// Icons bouncing while their apps launch.
     var launchBounces = LaunchBounces()
 
+    /// The item the keyboard has selected, highlighted and labeled like the hovered one.
+    /// Nil while the keyboard isn't controlling the dock.
+    var keyboardSelection: DockRowItemID?
+
+    /// Asks an item's view to show its popover (a folder's contents, a widget's popout) for
+    /// the keyboard, which can't click it. Views compare the `item` and watch for changes.
+    var popoverRequest: PopoverRequest?
+
+    nonisolated struct PopoverRequest: Equatable, Sendable {
+        var item: DockItem.ID
+        /// Distinguishes repeated requests for the same item.
+        var serial: Int
+    }
+
     let geometry = DockGeometry()
 
     var isInteracting: Bool { interactionDepth > 0 }
