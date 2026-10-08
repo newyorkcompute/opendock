@@ -96,10 +96,14 @@ extension DockController {
         withAnimation(.dockMagnify) { shellState.magnification = 1 }
     }
 
-    /// The items the keyboard can select, in row order: everything that gets a label.
+    /// The items the keyboard can select, in row order: everything that gets a label, less
+    /// the items the layout found nothing to show for (see `DockGeometry.hiddenItemIDs`).
     private var keyboardRowItems: [DockRowItemID] {
-        store.items.filter { !$0.isSpacer && !$0.isDivider }.map { DockRowItemID.pinned($0.id) }
-            + runningSection.map { .running($0.id) } + recentSection.map { .recent($0.id) }
+        let hidden = shellState.geometry.hiddenItemIDs
+        return
+            (store.items.filter { !$0.isSpacer && !$0.isDivider }.map { DockRowItemID.pinned($0.id) }
+            + runningSection.map { .running($0.id) } + recentSection.map { .recent($0.id) })
+            .filter { !hidden.contains($0) }
     }
 
     /// The app `id` stands for, when it's one of the apps after the pinned items.
