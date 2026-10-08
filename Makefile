@@ -36,12 +36,10 @@ dist:         ## Zip build/OpenDock.app + SHA-256 into build/dist
 	scripts/package-app.sh
 
 xcodeproj:    ## Generate App/OpenDock.xcodeproj from App/project.yml (needs XcodeGen)
-	@command -v xcodegen >/dev/null \
-	    || { echo "xcodegen not found. Install it with: brew install xcodegen" >&2; exit 1; }
-	xcodegen generate --spec App/project.yml
+	scripts/xcodeproj.sh
 
-xcode: xcodeproj ## Generate the Xcode project and open it
-	open App/OpenDock.xcodeproj
+xcode:        ## Generate the Xcode project and open it
+	scripts/xcodeproj.sh --open
 
 clean:
 	rm -rf .build build App/OpenDock.xcodeproj

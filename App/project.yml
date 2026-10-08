@@ -32,9 +32,11 @@ settings:
     SWIFT_VERSION: "6.0"
     # Package.swift: .enableUpcomingFeature("ExistentialAny")
     SWIFT_UPCOMING_FEATURE_EXISTENTIAL_ANY: YES
-    # Ad-hoc signing, like scripts/build-app.sh by default. Nothing here needs a team.
+    # scripts/xcodeproj.sh sets this from OPENDOCK_SIGN_IDENTITY (or .env.local), the same
+    # variable scripts/build-app.sh uses: "-" (ad hoc) by default, or a certificate such as
+    # "OpenDock Dev" to keep permissions across builds. Nothing here needs a team.
     CODE_SIGN_STYLE: Manual
-    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_IDENTITY: "${OPENDOCK_SIGN_IDENTITY}"
     DEVELOPMENT_TEAM: ""
     ENABLE_HARDENED_RUNTIME: YES
     # Xcode's recommended settings, so it doesn't offer to "update" the generated project.

@@ -134,6 +134,13 @@ test target needs one line in the scheme's `testTargets` in `App/project.yml` so
 `App/project.yml` also mirrors two package settings (`ExistentialAny` and main-actor default
 isolation); if those change in `Package.swift`, change them there too.
 
+Builds from Xcode are ad-hoc signed unless `OPENDOCK_SIGN_IDENTITY` is set when you run
+`make xcodeproj`, in the environment or in `.env.local`, exactly as for `build-app.sh`. With
+the `OpenDock Dev` certificate from
+[Installing your build](#installing-your-build-and-keeping-its-permissions), permissions
+survive rebuilds from Xcode too. The identity is baked into the generated project, so
+regenerate after changing it.
+
 CI, releases, and `make build` all still use SwiftPM and `scripts/build-app.sh`, so run
 `make test` and `make lint` before you push even if you did everything in Xcode. Why XcodeGen:
 it's a single Homebrew install and a small YAML file, Xcode reads the local package directly so
