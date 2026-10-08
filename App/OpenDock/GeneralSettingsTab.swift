@@ -88,7 +88,7 @@ struct GeneralSettingsTab: View {
     }
 
     private var behaviorSection: some View {
-        Section("Behavior") {
+        Section {
             Toggle("Automatically hide and show the dock", isOn: setting(\.autoHide))
 
             if store.settings.autoHide {
@@ -108,6 +108,16 @@ struct GeneralSettingsTab: View {
 
             Toggle("Show indicators for running apps", isOn: setting(\.showRunningIndicators))
             Toggle("Show running apps that aren’t in the dock", isOn: setting(\.showRunningApps))
+            Toggle("Show recent apps that aren’t in the dock", isOn: setting(\.showRecentApps))
+
+            if store.settings.showRecentApps {
+                Picker("Number of recent apps", selection: setting(\.recentAppsCount)) {
+                    ForEach(DockSettings.recentAppsCountRange, id: \.self) { count in
+                        Text("\(count)").tag(count)
+                    }
+                }
+            }
+
             Toggle("Animate opening applications", isOn: setting(\.animateOpeningApps))
             Toggle("Magnification", isOn: setting(\.hoverEffect))
 
@@ -128,6 +138,15 @@ struct GeneralSettingsTab: View {
                             .frame(width: 44, alignment: .trailing)
                     }
                 }
+            }
+        } header: {
+            Text("Behavior")
+        } footer: {
+            if store.settings.showRecentApps {
+                Text(
+                    "Recent apps are the ones you switched to last that aren’t in the dock and aren’t running. They’re only noted while this is on, and are kept across relaunches."
+                )
+                .settingsFootnote()
             }
         }
     }

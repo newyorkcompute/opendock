@@ -34,6 +34,21 @@ public extension RunningAppsMonitor.Snapshot {
             )
         }
     }
+
+    /// The recent apps to show after the running ones: the first `limit` of `recents` that
+    /// aren't pinned among `items`, aren't running, and aren't OpenDock itself
+    /// (`ownBundleID`). See `RecentApps.shown`.
+    func recentApps(
+        from recents: RecentApps, pinned items: [DockItem], excludingBundleID ownBundleID: String?, limit: Int
+    ) -> [RecentDockApp] {
+        recents.shown(
+            pinned: items,
+            runningBundleIDs: runningBundleIDs,
+            runningBundlePaths: runningBundlePaths,
+            excludingBundleID: ownBundleID,
+            limit: limit
+        )
+    }
 }
 
 extension RunningAppsMonitor.AppDescriptor {

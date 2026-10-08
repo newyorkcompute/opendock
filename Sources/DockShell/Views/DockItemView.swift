@@ -25,7 +25,7 @@ struct DockItemView: View {
     private var content: some View {
         switch item.kind {
         case let .app(app):
-            AppItemView(app: app, pinnedID: item.id, controller: controller)
+            AppItemView(app: app, rowID: .pinned(item.id), controller: controller)
         case let .folder(folder):
             FolderItemView(item: item, folder: folder, controller: controller)
         case let .spacer(spacer):
@@ -75,8 +75,8 @@ extension Image {
 
 struct AppItemView: View {
     let app: AppItem
-    /// Nil for a running app that isn't pinned.
-    let pinnedID: DockItem.ID?
+    /// Which row item this is: a pinned app, a running app, or a recent app.
+    let rowID: DockRowItemID
     let controller: DockController
 
     @Environment(DockStore.self) private var store
@@ -112,7 +112,7 @@ struct AppItemView: View {
         .accessibilityLabel(app.displayName)
         // Right-clicks open the menu through the controller (see `installContextClickMonitor`).
         .accessibilityAction(.showMenu) {
-            controller.showAppMenu(for: app, pinnedID: pinnedID)
+            controller.showAppMenu(for: app, id: rowID)
         }
         .accessibilityValue(badge ?? "")
     }

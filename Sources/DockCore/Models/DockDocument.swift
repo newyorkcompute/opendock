@@ -10,7 +10,8 @@ public struct DockDocument: Hashable, Codable, Sendable {
     ///
     /// New item kinds (such as `divider`) don't need a bump: they need no migration, and
     /// `DockProfile` skips kinds it doesn't know rather than rejecting the file. Neither do
-    /// new settings, which decode with defaults, so older builds can still open the file.
+    /// new settings or top-level fields (such as `recentApps`), which decode with defaults,
+    /// so older builds can still open the file.
     public static let currentVersion = 2
 
     public var version: Int
@@ -20,13 +21,17 @@ public struct DockDocument: Hashable, Codable, Sendable {
     /// Whether the welcome window has been shown and closed. Only a fresh install starts
     /// without it; a file saved before the welcome window existed decodes as seen.
     public var hasSeenWelcome: Bool
+    /// The apps used most recently, for the recent apps section. Shared by all profiles:
+    /// they're about what the user did, not about a layout.
+    public var recentApps: RecentApps
 
     public init(
         version: Int = DockDocument.currentVersion,
         profiles: [DockProfile],
         activeProfileID: DockProfile.ID,
         settings: DockSettings = .default,
-        hasSeenWelcome: Bool = true
+        hasSeenWelcome: Bool = true,
+        recentApps: RecentApps = RecentApps()
     ) {
         precondition(!profiles.isEmpty, "A document needs at least one profile")
         self.version = version
@@ -34,6 +39,7 @@ public struct DockDocument: Hashable, Codable, Sendable {
         self.activeProfileID = profiles.contains { $0.id == activeProfileID } ? activeProfileID : profiles[0].id
         self.settings = settings
         self.hasSeenWelcome = hasSeenWelcome
+        self.recentApps = recentApps
     }
 
     public var activeProfile: DockProfile {
@@ -71,6 +77,7 @@ extension DockDocument {
         activeProfileID = active.flatMap { id in profiles.contains { $0.id == id } ? id : nil } ?? profiles[0].id
         settings = try c.decodeIfPresent(DockSettings.self, forKey: .settings) ?? .default
         hasSeenWelcome = (try? c.decodeIfPresent(Bool.self, forKey: .hasSeenWelcome)) ?? true
+        recentApps = (try? c.decodeIfPresent(RecentApps.self, forKey: .recentApps)) ?? RecentApps()
     }
 }
 

@@ -53,7 +53,8 @@ Dock. You can keep both, or have OpenDock hide Apple's while it runs. Inspired b
   quick settings (hiding, magnification, position), like the Dock's separators
 - Click and hold a folder (or choose Browse from its menu) to see what's in it: open items,
   step into subfolders, drag files out, and sort by name, date, or kind
-- Running-app indicators, with an option to show running apps that aren't pinned
+- Running-app indicators, with options to show running apps that aren't pinned and, after
+  those, the apps you used last (like the Dock's recent apps)
 - Magnification like the Dock's: icons near the pointer grow with a smooth falloff and
   push their neighbors aside, with an adjustable size and a name label above the hovered item.
   Widget tiles grow along with them, more gently, and stay sharp

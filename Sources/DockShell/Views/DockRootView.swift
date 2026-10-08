@@ -35,6 +35,9 @@ struct DockRootView: View {
             .onChange(of: store.settings.showBadges, initial: true) { _, enabled in
                 controller.badges.isEnabled = enabled
             }
+            .onChange(of: store.settings.showRecentApps, initial: true) { _, enabled in
+                controller.recentAppsSettingChanged(enabled)
+            }
             .onChange(of: shellState.isVisible, initial: true) { _, visible in
                 controller.badges.isDockVisible = visible
             }
@@ -49,16 +52,13 @@ struct DockSurfaceView: View {
 
     @Environment(DockStore.self) private var store
     @Environment(WidgetRegistry.self) private var registry
-    @Environment(RunningAppsMonitor.self) private var running
     @Environment(DockShellState.self) private var shellState
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         let metrics = DockRowMetrics(settings: store.settings)
-        let extras =
-            store.settings.showRunningApps
-            ? running.snapshot.unpinnedApps(pinned: store.items, excludingBundleID: Bundle.main.bundleIdentifier)
-            : []
+        let extras = controller.runningSection
+        let recents = controller.recentSection
         DockMagnifyingLayout(
             metrics: metrics,
             pointerX: shellState.pointerX,
@@ -97,16 +97,35 @@ struct DockSurfaceView: View {
                     .dockLayoutRole(.item(nil, growth: 0, hoverable: false))
                     .transition(.dockRunningApp)
                 ForEach(extras) { extra in
-                    AppItemView(app: extra.app, pinnedID: nil, controller: controller)
+                    AppItemView(app: extra.app, rowID: .running(extra.id), controller: controller)
                         .dockLayoutRole(.item(.running(extra.id), growth: 1, hoverable: true))
                         .transition(.dockRunningApp)
                 }
             }
 
-            DockItemLabel(title: shellState.profileBanner ?? label(for: shellState.hoveredItemID, extras: extras))
-                .dockLayoutRole(.label)
+            if !recents.isEmpty {
+                DockDivider()
+                    .dockLayoutRole(.item(nil, growth: 0, hoverable: false))
+                    .transition(.dockRunningApp)
+                ForEach(recents) { recent in
+                    AppItemView(app: recent.app, rowID: .recent(recent.id), controller: controller)
+                        .dockLayoutRole(.item(.recent(recent.id), growth: 1, hoverable: true))
+                        .transition(.dockRunningApp)
+                }
+            }
+
+            DockItemLabel(
+                title: shellState.profileBanner
+                    ?? label(for: shellState.hoveredItemID, extras: extras, recents: recents)
+            )
+            .dockLayoutRole(.label)
         }
-        .animation(.dockRunningApps, value: extras.map(\.id))
+        // Running and recent apps come and go with the same animation; one value covers both
+        // sections, so an app moving from one to the other is a single change.
+        .animation(
+            .dockRunningApps,
+            value: extras.map { DockRowItemID.running($0.id) } + recents.map { DockRowItemID.recent($0.id) }
+        )
         .onContinuousHover { phase in
             controller.pointerHoverChanged(phase)
         }
@@ -131,7 +150,7 @@ struct DockSurfaceView: View {
             direction: shellState.profileSwapDirection, distance: metrics.iconSize, reduceMotion: reduceMotion)
     }
 
-    private func label(for id: DockRowItemID?, extras: [RunningDockApp]) -> String? {
+    private func label(for id: DockRowItemID?, extras: [RunningDockApp], recents: [RecentDockApp]) -> String? {
         switch id {
         case nil:
             return nil
@@ -144,13 +163,15 @@ struct DockSurfaceView: View {
             }
         case let .running(id):
             return extras.first { $0.id == id }?.app.displayName
+        case let .recent(id):
+            return recents.first { $0.id == id }?.app.displayName
         }
     }
 }
 
 extension AnyTransition {
     /// Running apps grow in from the baseline as they launch and shrink away as they quit,
-    /// while their neighbors slide over.
+    /// while their neighbors slide over. Recent apps come and go the same way.
     static let dockRunningApp = AnyTransition.scale(scale: 0.4, anchor: .bottom).combined(with: .opacity)
 }
 

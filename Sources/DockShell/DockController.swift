@@ -62,6 +62,8 @@ public final class DockController {
     var profileBannerTask: Task<Void, Never>?
     /// Tells when apps launched from the dock are up, so their icons stop bouncing.
     let launchMonitor = AppLaunchMonitor()
+    /// Tells which app the user switched to, for the recent apps section.
+    let activationMonitor = AppActivationMonitor()
     /// Clears the next bounce to finish, once it has landed.
     var launchBounceTask: Task<Void, Never>?
 
@@ -132,6 +134,7 @@ public final class DockController {
         profileBannerTask?.cancel()
         launchBounceTask?.cancel()
         launchMonitor.onLaunchEnded = nil
+        activationMonitor.onActivate = nil
         badges.isDockVisible = false
         removeScrollMonitor()
         removeEdgeMonitors()
