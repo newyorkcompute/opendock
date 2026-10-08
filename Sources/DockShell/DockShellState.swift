@@ -42,6 +42,13 @@ public final class DockShellState {
     /// to the row's center, so items added from the menu it opened go there.
     @ObservationIgnored var contextClickOffset: CGFloat?
 
+    /// True while a drag is over the Trash, which highlights it and takes the drop: a
+    /// reordered item leaves the dock, files go to the Trash.
+    var isDragOverTrash = false
+
+    /// Counts the drops the Trash has refused; the Trash shakes its head each time it goes up.
+    var trashShakes = 0
+
     var isDragging: Bool { draggingItemID != nil || dropIndex != nil }
 
     /// The item under the pointer, for its label.

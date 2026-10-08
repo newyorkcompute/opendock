@@ -102,14 +102,15 @@ extension DockController {
         let hidden = shellState.geometry.hiddenItemIDs
         return
             (store.items.filter { !$0.isSpacer && !$0.isDivider }.map { DockRowItemID.pinned($0.id) }
-            + runningSection.map { .running($0.id) } + recentSection.map { .recent($0.id) })
+            + runningSection.map { .running($0.id) } + recentSection.map { .recent($0.id) }
+            + (store.showsTrash ? [.trash] : []))
             .filter { !hidden.contains($0) }
     }
 
     /// The app `id` stands for, when it's one of the apps after the pinned items.
     private func sectionApp(for id: DockRowItemID) -> AppItem? {
         switch id {
-        case .pinned: return nil
+        case .pinned, .trash: return nil
         case let .running(appID): return runningSection.first { $0.id == appID }?.app
         case let .recent(appID): return recentSection.first { $0.id == appID }?.app
         }
@@ -153,18 +154,21 @@ extension DockController {
                 AppLauncher.open(folder)
             case .widget:
                 openSecondary(id)
-            case .spacer, .divider, nil:
+            case .spacer, .divider, .trash, nil:
                 break
             }
         case .running, .recent:
             guard let app = sectionApp(for: id) else { return }
             endKeyboardNavigation()
             open(app)
+        case .trash:
+            endKeyboardNavigation()
+            openTrash()
         }
     }
 
     /// Space: a folder's contents or a widget's popover, which the item's view presents, or
-    /// an app's menu, with its windows.
+    /// an app's menu, with its windows, or the Trash's menu.
     private func openSecondary(_ id: DockRowItemID) {
         switch id {
         case let .pinned(itemID):
@@ -174,17 +178,20 @@ extension DockController {
             case .folder, .widget:
                 popoverRequestSerial += 1
                 shellState.popoverRequest = .init(item: itemID, serial: popoverRequestSerial)
-            case .spacer, .divider, nil:
+            case .spacer, .divider, .trash, nil:
                 break
             }
         case .running, .recent:
             guard let app = sectionApp(for: id) else { return }
             showAppMenu(for: app, id: id, at: menuLocation(for: id))
+        case .trash:
+            showTrashMenu(at: menuLocation(for: id))
         }
     }
 
     /// Delete: a menu over the item with Remove from Dock, so a slip of the finger doesn't
-    /// remove anything. Running apps that aren't in the dock have nothing to remove.
+    /// remove anything. Running apps that aren't in the dock have nothing to remove, and
+    /// the Trash is taken away in Settings.
     private func offerRemoval(_ id: DockRowItemID) {
         guard let itemID = id.pinnedID, let name = displayName(for: id) else { return }
         let location = menuLocation(for: id)
@@ -226,10 +233,12 @@ extension DockController {
             case let .app(app): return app.displayName
             case let .folder(folder): return folder.displayName
             case let .widget(instance): return registry.displayName(for: instance)
-            case .spacer, .divider, nil: return nil
+            case .spacer, .divider, .trash, nil: return nil
             }
         case .running, .recent:
             return sectionApp(for: id)?.displayName
+        case .trash:
+            return "Trash"
         }
     }
 

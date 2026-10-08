@@ -45,6 +45,13 @@ struct DockRootView: View {
             .onChange(of: store.settings.showRecentApps, initial: true) { _, enabled in
                 controller.recentAppsSettingChanged(enabled)
             }
+            .onChange(of: store.showsTrash, initial: true) { _, shown in
+                controller.trashShownChanged(shown)
+            }
+            .onChange(of: store.needsWelcome, initial: true) { _, needsWelcome in
+                // Like widgets, the Trash doesn't prompt for anything before the welcome window closes.
+                controller.trash.setMayAskFinder(!needsWelcome)
+            }
             .onChange(of: shellState.isVisible, initial: true) { _, visible in
                 controller.badges.isDockVisible = visible
             }
@@ -66,9 +73,12 @@ struct DockSurfaceView: View {
         let metrics = DockRowMetrics(settings: store.settings)
         let extras = controller.runningSection
         let recents = controller.recentSection
+        let showsTrash = store.showsTrash
         let rowIDs =
             store.items.map { DockRowItemID.pinned($0.id) } + extras.map { DockRowItemID.running($0.id) }
-            + recents.map { DockRowItemID.recent($0.id) }
+            + recents.map { DockRowItemID.recent($0.id) } + (showsTrash ? [DockRowItemID.trash] : [])
+        // The Trash has a divider before it unless the row already ends with one.
+        let trashDivider = showsTrash && !(extras.isEmpty && recents.isEmpty && store.items.last?.isDivider == true)
         DockMagnifyingLayout(
             metrics: metrics,
             pointer: shellState.pointer,
@@ -128,6 +138,18 @@ struct DockSurfaceView: View {
                 }
             }
 
+            if trashDivider {
+                DockDivider()
+                    .dockLayoutRole(.item(nil, growth: 0, hoverable: false))
+                    .transition(.dockRunningApp(edge: metrics.edge))
+            }
+            if showsTrash {
+                TrashItemView(controller: controller)
+                    .keyboardSelection(shellState.keyboardSelection == .trash)
+                    .dockLayoutRole(.item(.trash, growth: 1, hoverable: true))
+                    .transition(.dockRunningApp(edge: metrics.edge))
+            }
+
             DockItemLabel(
                 title: shellState.profileBanner
                     ?? label(for: shellState.hoveredItemID, extras: extras, recents: recents),
@@ -136,10 +158,11 @@ struct DockSurfaceView: View {
             .dockLayoutRole(.label)
         }
         // Running and recent apps come and go with the same animation; one value covers both
-        // sections, so an app moving from one to the other is a single change.
+        // sections (and the Trash), so an app moving from one to the other is a single change.
         .animation(
             .dockRunningApps,
             value: extras.map { DockRowItemID.running($0.id) } + recents.map { DockRowItemID.recent($0.id) }
+                + (showsTrash ? [DockRowItemID.trash] : [])
         )
         .onChange(of: rowIDs) {
             controller.keyboardRowChanged()
@@ -178,12 +201,14 @@ struct DockSurfaceView: View {
             case let .app(app): return app.displayName
             case let .folder(folder): return folder.displayName
             case let .widget(instance): return registry.displayName(for: instance)
-            case .spacer, .divider, nil: return nil
+            case .spacer, .divider, .trash, nil: return nil
             }
         case let .running(id):
             return extras.first { $0.id == id }?.app.displayName
         case let .recent(id):
             return recents.first { $0.id == id }?.app.displayName
+        case .trash:
+            return "Trash"
         }
     }
 }

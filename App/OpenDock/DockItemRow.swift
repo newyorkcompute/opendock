@@ -73,6 +73,7 @@ struct DockItemRow: View {
         case .app, .folder: "questionmark.app.dashed"
         case .spacer: "rectangle.dashed"
         case .divider: "rectangle.split.2x1"
+        case .trash: "trash"
         case let .widget(instance): registry.widget(for: instance)?.systemImage ?? "questionmark.square.dashed"
         }
     }
@@ -83,6 +84,7 @@ struct DockItemRow: View {
         case let .folder(folder): folder.displayName
         case .spacer: "Spacer"
         case .divider: "Divider"
+        case .trash: "Trash"
         case let .widget(instance): registry.displayName(for: instance)
         }
     }
@@ -98,6 +100,8 @@ struct DockItemRow: View {
             spacer.size == .small ? "Small spacer" : "Regular spacer"
         case .divider:
             "Separator line"
+        case .trash:
+            "The Trash, at the end of the dock"
         case let .widget(instance):
             registry.widget(for: instance) == nil ? "Widget not available in this build" : "Widget"
         }

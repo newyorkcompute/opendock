@@ -217,9 +217,10 @@ public extension DockDocument {
 
 public extension DockDocument {
     /// What a fresh install gets: a handful of common apps, the three built-in widgets,
-    /// and Downloads, with dividers between the groups, so the dock is useful before the
-    /// user touches anything. Only used when there's no `dock.json`; existing layouts are
-    /// never rewritten to match.
+    /// then Downloads and the Trash, with dividers between the groups, so the dock is
+    /// useful before the user touches anything. Only used when there's no `dock.json`;
+    /// existing layouts are never rewritten to match (Settings > Dock Items can add the
+    /// Trash to one).
     static func firstRun(fileManager: FileManager = .default) -> DockDocument {
         var items: [DockItem] = []
 
@@ -246,6 +247,7 @@ public extension DockDocument {
             items.append(.divider())
             items.append(.folder(at: downloads))
         }
+        items.append(.trash())
 
         let profile = DockProfile(name: "Default", items: items)
         return DockDocument(profiles: [profile], activeProfileID: profile.id)

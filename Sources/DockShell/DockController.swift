@@ -71,6 +71,8 @@ public final class DockController {
     let launchMonitor = AppLaunchMonitor()
     /// Tells which app the user switched to, for the recent apps section.
     let activationMonitor = AppActivationMonitor()
+    /// Whether the Trash is empty, for the Trash item at the end of the dock.
+    let trash = TrashMonitor()
     /// Clears the next bounce to finish, once it has landed.
     var launchBounceTask: Task<Void, Never>?
     /// Follows a pinned item dragged off the dock, and shows the poof when it's let go
@@ -112,6 +114,7 @@ public final class DockController {
             .environment(registry)
             .environment(running)
             .environment(badges)
+            .environment(trash)
             .environment(shellState)
         let hosting = DockHostingView(rootView: root)
         hosting.sizingOptions = []
@@ -154,6 +157,7 @@ public final class DockController {
         launchBounceTask?.cancel()
         launchMonitor.onLaunchEnded = nil
         activationMonitor.onActivate = nil
+        trash.stop()
         badges.isDockVisible = false
         _ = keyboard.end()
         shellState.keyboardSelection = nil

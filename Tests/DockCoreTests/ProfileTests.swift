@@ -152,7 +152,7 @@ struct ProfileStoreTests {
 
         store.append(.divider())
         #expect(store.items.count == 1)
-        #expect(store.document.profile(id: first)?.items == firstItems)
+        #expect(store.document.profile(id: first)?.pinnedItems == firstItems)
 
         store.selectProfile(first)
         #expect(store.items == firstItems)

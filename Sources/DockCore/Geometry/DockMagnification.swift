@@ -37,7 +37,7 @@ public enum DockMagnification {
     /// Share of the peak growth an item's slot gets.
     public static func growth(for item: DockItem) -> Double {
         switch item.kind {
-        case .app, .folder, .spacer: 1
+        case .app, .folder, .spacer, .trash: 1
         case .widget: widgetGrowth
         case .divider: 0
         }

@@ -18,6 +18,10 @@ public struct DockItem: Identifiable, Hashable, Codable, Sendable {
         /// A thin vertical line between groups of items, like the Dock's separators.
         /// Persisted as `{"divider": {}}`.
         case divider
+        /// The Trash, which the dock keeps at its end, after the running and recent apps,
+        /// whatever its place among the items (see `DockProfile.trashItem`). A profile has at
+        /// most one. Persisted as `{"trash": {}}`; builds that don't know it skip it.
+        case trash
     }
 }
 
@@ -42,6 +46,10 @@ public extension DockItem {
 
     static func divider() -> DockItem {
         DockItem(kind: .divider)
+    }
+
+    static func trash() -> DockItem {
+        DockItem(kind: .trash)
     }
 }
 
@@ -71,6 +79,7 @@ public extension DockItem {
     var isWidget: Bool { widgetInstance != nil }
     var isSpacer: Bool { spacerItem != nil }
     var isDivider: Bool { kind == .divider }
+    var isTrash: Bool { kind == .trash }
 }
 
 /// An application bundle pinned to the dock.

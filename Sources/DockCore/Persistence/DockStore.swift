@@ -50,8 +50,11 @@ public final class DockStore {
     // MARK: - Reading
 
     public var profile: DockProfile { document.activeProfile }
-    public var items: [DockItem] { document.activeProfile.items }
+    /// The active profile's items in the order the user arranges them, without the Trash
+    /// (see `DockProfile.pinnedItems`); `showsTrash` says whether the dock ends with that.
+    public var items: [DockItem] { document.activeProfile.pinnedItems }
     public var settings: DockSettings { document.settings }
+    public var showsTrash: Bool { document.activeProfile.showsTrash }
 
     // MARK: - Mutations
 
@@ -111,6 +114,12 @@ public final class DockStore {
     /// Swaps the active profile's apps for `urls`, leaving its other items in place.
     public func replaceApps(with urls: [URL]) {
         updateProfile { $0.replaceApps(with: urls) }
+    }
+
+    /// Puts the Trash at the end of the active profile's dock, or takes it away.
+    public func setShowsTrash(_ shown: Bool) {
+        guard shown != showsTrash else { return }
+        updateProfile { $0.showsTrash = shown }
     }
 
     // MARK: - Recent apps
