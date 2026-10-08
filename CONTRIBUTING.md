@@ -74,6 +74,9 @@ pstack doesn't change how OpenDock is built or tested. Verification still means 
 plus the manual testing described under [Tests](#tests), and agents running in parallel should
 each use their own `--scratch-path`, as described above.
 
+Agents other than Cursor's (Codex, Claude Code, Copilot, and so on) pick up the essentials
+from [AGENTS.md](AGENTS.md).
+
 ## Code conventions
 
 These keep the codebase consistent and avoid known pitfalls. If you think one of them should
@@ -97,6 +100,9 @@ change, open an issue to discuss it.
 - Use `@Observable` for observable state. Don't use `ObservableObject` or Combine.
 - Use `isolated deinit` when a `@MainActor` class owns non-Sendable state that its deinit
   has to clean up.
+- Generic classes in UI targets are the exception: give them an explicit, empty `deinit {}`
+  (see `DockHostingView`). Swift 6.3.3 crashes in `-O` builds on their implicit deinit, and on
+  `isolated deinit` too.
 
 **Persistence**
 
@@ -123,7 +129,7 @@ Dockset's (or any other app's) icons, artwork, or marketing copy.
 
 - Write tests with [Swift Testing](https://developer.apple.com/documentation/testing)
   (`import Testing`, `@Suite`, `@Test`, `#expect`). Don't use XCTest.
-- Unit tests live in `Tests/DockCoreTests`. Logic that can run without a screen (models,
+- Unit tests live in `Tests/DockCoreTests` and `Tests/SystemServicesTests`. Logic that can run without a screen (models,
   persistence, geometry) belongs in `DockCore`, where it can be tested.
 - Much of the dock panel's behavior (hover, drag and drop, auto-hide, multiple displays)
   can't be covered by unit tests yet. For changes there, describe in your pull request how you
@@ -140,6 +146,25 @@ Dockset's (or any other app's) icons, artwork, or marketing copy.
   Write it as a short summary in the imperative mood, for example "Add a Weather widget".
   You don't need to tidy up your branch's individual commits.
 - Expect review comments. Pushing follow-up commits to the same branch is fine.
+
+## AI-assisted contributions
+
+AI-assisted contributions are welcome. Much of OpenDock is written with coding agents. Whatever
+tools you use, you're the author of your pull request:
+
+- You're responsible for every line in it, whoever or whatever wrote it.
+- You understand the change and can explain it, including how it fits the existing code.
+  Answer review comments yourself.
+- You built it and tested it: `make test` passes, and you ran the app and tried what you
+  changed. Passing CI isn't testing, because CI can't use the dock.
+- If AI did a notable part of the work, say so in the PR: which tool, and what it did.
+  Autocomplete and quick questions don't need a mention.
+
+The same goes for issues: read and trim what you post, and check that it's true.
+
+We may close low-effort pull requests and issues made of unreviewed generated output without
+a review. That includes code that doesn't build, testing claims that aren't true, and PRs an
+agent opened with no human behind it.
 
 ## License
 
