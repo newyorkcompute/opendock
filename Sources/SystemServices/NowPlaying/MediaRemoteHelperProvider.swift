@@ -69,7 +69,9 @@ public final class MediaRemoteHelperProvider: NowPlayingProvider {
     }
 
     /// `nil` when Perl or the helper library can't be found; the monitor then skips this provider.
-    public init?(libraryURL: URL? = MediaRemoteHelperProvider.locateLibrary(), perlURL: URL = perlURL) {
+    public init?(
+        libraryURL: URL? = MediaRemoteHelperProvider.locateLibrary(), perlURL: URL = MediaRemoteHelperProvider.perlURL
+    ) {
         guard let libraryURL, FileManager.default.isExecutableFile(atPath: perlURL.path) else { return nil }
         self.libraryURL = libraryURL
         self.perlURL = perlURL
