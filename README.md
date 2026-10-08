@@ -25,7 +25,11 @@
 
 > [!NOTE]
 > OpenDock is an early MVP. It requires macOS 15 or later, and there are no prebuilt
-> releases yet, so for now you [build it from source](#build-and-run).
+> releases yet, so for now you [build it from source](#build-and-run). Releases won't be
+> notarized at first, so macOS blocks them until you allow them. Before you do, you can check
+> that a zip was built by this repo's CI with
+> `gh attestation verify OpenDock-*.zip --repo newyorkcompute/opendock`
+> (see [Releasing](RELEASING.md#verifying-a-download)).
 
 OpenDock is a floating dock panel at the bottom of your screen. It holds apps, folders,
 spacers, and small live widgets. It runs as a menu bar app and does not replace Apple's

@@ -2,8 +2,8 @@
 
 Releases are built by the [Release workflow](.github/workflows/release.yml) on GitHub's
 macOS runner. Pushing a `v*` tag builds a universal (Apple silicon + Intel) `OpenDock.app`,
-zips it, and publishes a GitHub Release with the zip, its SHA-256 checksum, and
-auto-generated notes.
+zips it, attests the zip's [build provenance](#verifying-a-download), and publishes a GitHub
+Release with the zip, its SHA-256 checksum, and auto-generated notes.
 
 ## Cutting a release
 
@@ -28,7 +28,24 @@ only ever goes up.
 To check the pipeline without publishing anything, run **Actions > Release > Run workflow**
 on any branch, optionally with a version. Pull requests that touch `scripts/`, the
 `Makefile`, `App/Resources/`, or the workflow also run it. A dry run does the same build
-and uploads the zip and checksum as a workflow artifact instead of creating a release.
+and uploads the zip and checksum as a workflow artifact instead of creating a release. It
+doesn't attest the zip, so only released zips have attestations.
+
+## Verifying a download
+
+Every release zip has a [build provenance attestation](https://docs.github.com/en/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds):
+a Sigstore-signed record that the zip was built by this repository's Release workflow, from
+a given tag and commit. While releases aren't notarized, it's the way to check that a zip
+really came from this repo's CI before clearing its quarantine flag. With the
+[GitHub CLI](https://cli.github.com):
+
+```sh
+gh attestation verify OpenDock-*.zip --repo newyorkcompute/opendock
+```
+
+It shows the workflow and tag that built the zip (add `--format json` for the full record,
+including the commit), and fails if the zip was modified or built anywhere else. The attestations are also listed under the repository's
+**Actions > Attestations**.
 
 ## Building locally
 
@@ -64,7 +81,8 @@ notarized**, so Gatekeeper blocks them on first launch. Users have to either:
   is no Open button, click **Open Anyway** in **System Settings > Privacy & Security**), or
 - remove the quarantine flag: `xattr -dr com.apple.quarantine /Applications/OpenDock.app`.
 
-The release notes of unnotarized builds say this automatically.
+The release notes of unnotarized builds say this automatically. Users can
+[verify the zip](#verifying-a-download) first.
 
 The workflow signs and notarizes as soon as these repository secrets exist
 (**Settings > Secrets and variables > Actions**); no workflow changes are needed. Without

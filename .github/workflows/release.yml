@@ -1,10 +1,11 @@
 name: Release
 
 # Pushing a `v*` tag (e.g. v0.1.0, or v0.2.0-beta.1 for a pre-release) builds the
-# universal app, zips it, and publishes a GitHub Release with the zip, its SHA-256,
-# and auto-generated notes. Pull requests that touch the release tooling, and manual
-# runs (Actions > Release > Run workflow), do the same build as a dry run: the zip
-# is uploaded as a workflow artifact and no release is created.
+# universal app, zips it, attests its build provenance, and publishes a GitHub Release
+# with the zip, its SHA-256, and auto-generated notes. Pull requests that touch the
+# release tooling, and manual runs (Actions > Release > Run workflow), do the same build
+# as a dry run: the zip is uploaded as a workflow artifact, and nothing is attested or
+# released.
 #
 # Signing and notarization run only when their secrets exist (see RELEASING.md);
 # without them the app is ad-hoc signed.
@@ -178,11 +179,19 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/download-artifact@v8
         with:
           name: OpenDock-${{ needs.build.outputs.version }}
           path: dist
+
+      # Before the release exists, so a published zip always has an attestation.
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: dist/OpenDock-${{ needs.build.outputs.version }}.zip
 
       - name: Create release
         env:
@@ -209,6 +218,8 @@ jobs:
               echo
             fi
             echo "SHA-256: \`$SHA\`"
+            echo
+            echo "Verify the zip was built by this repo's CI: \`gh attestation verify $ZIP --repo $GITHUB_REPOSITORY\`"
           } > notes.md
           FLAGS=()
           if [[ "$PRERELEASE" == true ]]; then FLAGS+=(--prerelease); fi
