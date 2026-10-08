@@ -128,7 +128,7 @@ extension DockController {
             return true
         }
         if let target = appMenuTarget(at: point) {
-            showAppMenu(for: target.app, pinnedID: target.pinnedID, processIdentifier: target.processIdentifier)
+            showAppMenu(for: target.app, id: target.id)
             return true
         }
         return false

@@ -2,10 +2,12 @@ import DockCore
 import SwiftUI
 import SystemServices
 
-/// An item in the dock row: one of the pinned items, or a running app shown after them.
+/// An item in the dock row: one of the pinned items, a running app shown after them, or a
+/// recently used app shown after those.
 nonisolated enum DockRowItemID: Hashable, Sendable {
     case pinned(DockItem.ID)
     case running(RunningDockApp.ID)
+    case recent(RecentDockApp.ID)
 
     var pinnedID: DockItem.ID? {
         if case let .pinned(id) = self { return id }

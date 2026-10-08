@@ -19,19 +19,20 @@ extension DockController {
         open(app)
     }
 
-    /// Opens the app's menu at the pointer. `processIdentifier` picks the instance whose
-    /// windows to list; without it, it's the first running instance of `app`.
-    func showAppMenu(for app: AppItem, pinnedID: DockItem.ID?, processIdentifier: pid_t? = nil) {
+    /// Opens the app's menu at the pointer. `id` is the row item the menu is for: for a
+    /// running app it picks the instance whose windows to list; otherwise that's the first
+    /// running instance of `app`.
+    func showAppMenu(for app: AppItem, id: DockRowItemID) {
         let location = NSEvent.mouseLocation
         // Start the menu's tracking loop after the event that asked for it has finished.
         Task { [weak self] in
             guard let self else { return }
-            let menu = appMenu(for: app, pinnedID: pinnedID, processIdentifier: processIdentifier)
+            let menu = appMenu(for: app, id: id)
             _ = menu.popUp(positioning: nil, at: location, in: nil)
         }
     }
 
-    func appMenu(for app: AppItem, pinnedID: DockItem.ID?, processIdentifier: pid_t?) -> NSMenu {
+    func appMenu(for app: AppItem, id: DockRowItemID) -> NSMenu {
         let menu = NSMenu()
         menu.autoenablesItems = false
 
@@ -41,7 +42,9 @@ extension DockController {
         menu.addItem(.separator())
 
         let runningApp = running.runningApplication(bundleIdentifier: app.bundleIdentifier, bundleURL: app.url)
-        if let processIdentifier = processIdentifier ?? runningApp?.processIdentifier {
+        var processIdentifier = runningApp?.processIdentifier
+        if case let .running(runningID) = id { processIdentifier = runningID.processIdentifier }
+        if let processIdentifier {
             addWindowItems(to: menu, app: app, processIdentifier: processIdentifier)
         }
         if runningApp != nil {
@@ -54,10 +57,14 @@ extension DockController {
         menu.addItem(.separator())
         menu.addItem(actionMenuItem("Show in Finder") { AppLauncher.revealInFinder(app.url) })
         menu.addItem(.separator())
-        if let pinnedID {
+        switch id {
+        case let .pinned(pinnedID):
             menu.addItem(actionMenuItem("Remove from Dock") { [store] in store.remove(id: pinnedID) })
-        } else {
+        case .running:
             menu.addItem(actionMenuItem("Keep in Dock") { [store] in store.addApp(at: app.url) })
+        case .recent:
+            menu.addItem(actionMenuItem("Keep in Dock") { [store] in store.addApp(at: app.url) })
+            menu.addItem(actionMenuItem("Remove from Recents") { [store] in store.removeRecentApp(app) })
         }
         return menu
     }
@@ -95,20 +102,21 @@ extension DockController {
     )?
     .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 7, weight: .regular))
 
-    /// The app under `point` (layout coordinates), pinned or running, for its menu.
-    func appMenuTarget(at point: CGPoint) -> (app: AppItem, pinnedID: DockItem.ID?, processIdentifier: pid_t?)? {
+    /// The app under `point` (layout coordinates), pinned, running, or recent, for its menu.
+    func appMenuTarget(at point: CGPoint) -> (app: AppItem, id: DockRowItemID)? {
         guard let hit = shellState.geometry.itemFrames.first(where: { $0.frame.contains(point) })?.id else {
             return nil
         }
         switch hit {
         case let .pinned(id):
             guard let app = store.profile.item(id: id)?.appItem else { return nil }
-            return (app, id, nil)
+            return (app, hit)
         case let .running(id):
-            let extras = running.snapshot.unpinnedApps(
-                pinned: store.items, excludingBundleID: Bundle.main.bundleIdentifier)
-            guard let extra = extras.first(where: { $0.id == id }) else { return nil }
-            return (extra.app, nil, id.processIdentifier)
+            guard let extra = runningSection.first(where: { $0.id == id }) else { return nil }
+            return (extra.app, hit)
+        case let .recent(id):
+            guard let recent = recentSection.first(where: { $0.id == id }) else { return nil }
+            return (recent.app, hit)
         }
     }
 }
