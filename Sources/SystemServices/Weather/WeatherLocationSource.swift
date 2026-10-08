@@ -37,13 +37,15 @@ public final class CoreLocationWeatherSource: NSObject, WeatherLocationSource, C
     public static let fallbackName = "Current Location"
 
     public private(set) var authorization: WeatherLocationAuthorization
-    private let manager = CLLocationManager()
+    private let manager: CLLocationManager
     private var authorizationWaiters: [CheckedContinuation<Void, Never>] = []
     private var locationWaiters: [CheckedContinuation<(latitude: Double, longitude: Double), any Error>] = []
     private let log = Logger(subsystem: "com.newyorkcompute.opendock", category: "WeatherLocation")
 
     public override init() {
-        authorization = Self.authorization(for: manager.authorizationStatus)
+        let manager = CLLocationManager()
+        self.manager = manager
+        authorization = CoreLocationWeatherSource.authorization(for: manager.authorizationStatus)
         super.init()
         manager.desiredAccuracy = kCLLocationAccuracyKilometer
         manager.delegate = self
