@@ -66,7 +66,7 @@ Dock. You can keep both, or have OpenDock hide Apple's while it runs. Inspired b
   the active app's icon to minimize its windows (see [Window management](#window-management))
 - Profiles: keep several layouts (say, Work and Home) and switch between them from the menu
   bar, with your own global shortcuts, or by swiping sideways on the dock (⌘-scroll works
-  with a mouse)
+  with a mouse). A Focus mode can switch profiles too (see [Focus modes](#focus-modes))
 - Widgets: Clock, Battery, Calendar, and System Activity
 - Settings window with General, Profiles, Dock Items, Widgets, and About tabs
 - Export and import your layout as JSON
@@ -110,6 +110,21 @@ turn on click-to-minimize, or choose "Allow Access to Windows…" in an app's me
 can allow it in System Settings > Privacy & Security > Accessibility at any time. OpenDock
 only reads window titles and whether a window is minimized; it doesn't read what's in your
 windows. Without access, the dock works as before.
+
+## Focus modes
+
+In Settings > Profiles > Focus, pick a profile for each Focus mode (Work, Sleep, Do Not
+Disturb, and any you've made). When that Focus turns on, the dock switches to the profile;
+"Don't change" leaves the dock alone.
+When Focus turns off, the dock goes back to the profile it showed before, or stays, as you
+choose. If you switch profiles yourself while a Focus is on, that choice stands.
+
+macOS doesn't offer apps a way to ask which Focus is on, so OpenDock reads it from the
+Focus database in `~/Library/DoNotDisturb/DB`, which macOS protects: reading it needs
+Full Disk Access. The Focus section explains this and opens System Settings > Privacy &
+Security > Full Disk Access for you; after allowing OpenDock there, quit and reopen it.
+OpenDock only reads your Focus settings and never changes them. Without access, profiles
+work as before and Focus modes just don't switch them.
 
 ## Build and run
 
@@ -212,7 +227,6 @@ Then add a target under `Sources/Widgets/` in `Package.swift`, add it as a depen
 Tracked as [GitHub issues](https://github.com/newyorkcompute/opendock/issues); the ones
 labeled `good first issue` are self-contained. Highlights:
 
-- Switching profiles automatically with Focus modes
 - More widgets: Now Playing, Weather, Reminders, System Activity, Network, Timer, Sticky
   Note, Stocks
 - Left and right screen edges

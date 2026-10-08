@@ -24,6 +24,8 @@ public struct DockDocument: Hashable, Codable, Sendable {
     /// The apps used most recently, for the recent apps section. Shared by all profiles:
     /// they're about what the user did, not about a layout.
     public var recentApps: RecentApps
+    /// Set while a Focus mode has switched the profile; nil otherwise. See `FocusProfileSwitch`.
+    public var focusSwitch: FocusProfileSwitch?
 
     public init(
         version: Int = DockDocument.currentVersion,
@@ -31,7 +33,8 @@ public struct DockDocument: Hashable, Codable, Sendable {
         activeProfileID: DockProfile.ID,
         settings: DockSettings = .default,
         hasSeenWelcome: Bool = true,
-        recentApps: RecentApps = RecentApps()
+        recentApps: RecentApps = RecentApps(),
+        focusSwitch: FocusProfileSwitch? = nil
     ) {
         precondition(!profiles.isEmpty, "A document needs at least one profile")
         self.version = version
@@ -40,6 +43,7 @@ public struct DockDocument: Hashable, Codable, Sendable {
         self.settings = settings
         self.hasSeenWelcome = hasSeenWelcome
         self.recentApps = recentApps
+        self.focusSwitch = focusSwitch
     }
 
     public var activeProfile: DockProfile {
@@ -78,6 +82,7 @@ extension DockDocument {
         settings = try c.decodeIfPresent(DockSettings.self, forKey: .settings) ?? .default
         hasSeenWelcome = (try? c.decodeIfPresent(Bool.self, forKey: .hasSeenWelcome)) ?? true
         recentApps = (try? c.decodeIfPresent(RecentApps.self, forKey: .recentApps)) ?? RecentApps()
+        focusSwitch = try? c.decodeIfPresent(FocusProfileSwitch.self, forKey: .focusSwitch)
     }
 }
 
@@ -134,7 +139,8 @@ public extension DockDocument {
     }
 
     /// Deletes a profile unless it's the only one. Deleting the active profile activates the
-    /// one after it (or before it, if it was last). Returns whether anything was deleted.
+    /// one after it (or before it, if it was last). Focus modes that showed the profile stop
+    /// changing the profile. Returns whether anything was deleted.
     @discardableResult
     mutating func deleteProfile(_ id: DockProfile.ID) -> Bool {
         guard profiles.count > 1, let index = profiles.firstIndex(where: { $0.id == id }) else { return false }
@@ -142,6 +148,10 @@ public extension DockDocument {
             activeProfileID = profiles[index + 1 < profiles.count ? index + 1 : index - 1].id
         }
         profiles.remove(at: index)
+        settings.focusRules.profileByMode = settings.focusRules.profileByMode.filter { $0.value != id }
+        if let focusSwitch, focusSwitch.focusProfileID == id || focusSwitch.previousProfileID == id {
+            self.focusSwitch = nil
+        }
         return true
     }
 

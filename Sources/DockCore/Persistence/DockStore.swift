@@ -191,6 +191,23 @@ public final class DockStore {
         update { $0.moveProfile(id, by: offset) }
     }
 
+    // MARK: - Focus modes
+
+    /// Sets the profile a Focus mode shows, or none when `id` is nil.
+    public func setFocusProfile(_ id: DockProfile.ID?, for mode: String) {
+        guard document.settings.focusRules.profile(for: mode) != id else { return }
+        updateSettings { $0.focusRules.setProfile(id, for: mode) }
+    }
+
+    /// Records that the active Focus changed to `mode` (nil when Focus turned off) and returns
+    /// the profile the dock should switch to, if any. See `DockDocument.profileForFocusChange`.
+    public func profileForFocusChange(to mode: String?) -> DockProfile.ID? {
+        var changed = document
+        let target = changed.profileForFocusChange(to: mode)
+        if changed != document { update { $0 = changed } }
+        return target
+    }
+
     /// Keeps whether the welcome window was seen: that's about this install, not the layout.
     public func resetToFirstRun() {
         var fresh = DockDocument.firstRun()

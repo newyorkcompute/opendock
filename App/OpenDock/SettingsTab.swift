@@ -36,7 +36,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         let width: CGFloat = 520
         return switch self {
         case .general: CGSize(width: width, height: 640)
-        case .profiles: CGSize(width: width, height: 560)
+        case .profiles: CGSize(width: width, height: 640)
         case .dockItems: CGSize(width: width, height: 560)
         case .widgets: CGSize(width: width, height: 380)
         case .about: CGSize(width: width, height: 360)
