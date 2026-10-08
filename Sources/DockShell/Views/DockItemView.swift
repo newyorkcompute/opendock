@@ -25,7 +25,7 @@ struct DockItemView: View {
     private var content: some View {
         switch item.kind {
         case let .app(app):
-            AppItemView(item: item, app: app, controller: controller, isPinned: true)
+            AppItemView(app: app, pinnedID: item.id, controller: controller)
         case let .folder(folder):
             FolderItemView(item: item, folder: folder, controller: controller)
         case let .spacer(spacer):
@@ -74,10 +74,10 @@ extension Image {
 // MARK: - App
 
 struct AppItemView: View {
-    let item: DockItem
     let app: AppItem
+    /// Nil for a running app that isn't pinned.
+    let pinnedID: DockItem.ID?
     let controller: DockController
-    let isPinned: Bool
 
     @Environment(DockStore.self) private var store
     @Environment(RunningAppsMonitor.self) private var running
@@ -131,8 +131,8 @@ struct AppItemView: View {
         Divider()
         Button("Show in Finder") { AppLauncher.revealInFinder(app.url) }
         Divider()
-        if isPinned {
-            Button("Remove from Dock", role: .destructive) { store.remove(id: item.id) }
+        if let pinnedID {
+            Button("Remove from Dock", role: .destructive) { store.remove(id: pinnedID) }
         } else {
             Button("Keep in Dock") { store.addApp(at: app.url) }
         }

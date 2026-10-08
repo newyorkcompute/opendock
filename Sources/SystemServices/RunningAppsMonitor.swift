@@ -12,7 +12,8 @@ public final class RunningAppsMonitor {
         /// Normalized bundle paths (see `URL.normalizedPath`).
         public var runningBundlePaths: Set<String> = []
         public var frontmostBundleID: String?
-        /// Running GUI apps that aren't hidden from the Dock (activationPolicy == .regular).
+        /// Running GUI apps that aren't hidden from the Dock (activationPolicy == .regular),
+        /// in launch order.
         public var regularApps: [AppDescriptor] = []
     }
 
@@ -23,6 +24,7 @@ public final class RunningAppsMonitor {
         public let bundleIdentifier: String?
         public let bundleURL: URL?
         public let localizedName: String?
+        public let launchDate: Date?
     }
 
     public private(set) var snapshot = Snapshot()
@@ -62,9 +64,12 @@ public final class RunningAppsMonitor {
                 processIdentifier: app.processIdentifier,
                 bundleIdentifier: app.bundleIdentifier,
                 bundleURL: app.bundleURL?.standardizedFileURL,
-                localizedName: app.localizedName
+                localizedName: app.localizedName,
+                launchDate: app.launchDate
             ))
         }
+        // `runningApplications` comes in no particular order.
+        next.regularApps.sort(by: AppDescriptor.launchedBefore)
         next.frontmostBundleID = workspace.frontmostApplication?.bundleIdentifier
         if next != snapshot { snapshot = next }
     }

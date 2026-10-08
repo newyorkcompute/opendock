@@ -91,9 +91,9 @@ extension DockController {
     /// a few points from where the mouse went down on it.
     private func beginReorder(at location: CGPoint) -> Bool {
         let geometry = shellState.geometry
-        guard let id = geometry.anyItem(atX: location.x),
+        guard let id = geometry.anyItem(atX: location.x)?.pinnedID,
               let index = store.items.firstIndex(where: { $0.id == id }),
-              let slot = geometry.restingSlots.first(where: { $0.id == id })
+              let slot = geometry.restingSlots.first(where: { $0.id == .pinned(id) })
         else { return false }
         // The gap opens in the item's own slot, so nothing moves until the pointer does.
         shellState.draggingItemID = id
@@ -106,10 +106,9 @@ extension DockController {
     /// dragged one. Running apps that aren't pinned come after those and take no drops.
     private func dropIndex(at location: CGPoint, gapWidth: CGFloat) -> Int {
         let geometry = shellState.geometry
-        let dragged = shellState.draggingItemID
+        let dragged = shellState.draggingItemID.map(DockRowItemID.pinned)
         let slots = geometry.restingSlots.filter { $0.id == nil || $0.id != dragged }
-        let pinned = Set(store.items.map(\.id))
-        let limit = slots.prefix { slot in slot.id.map { pinned.contains($0) } ?? false }.count
+        let limit = slots.prefix { $0.id?.pinnedID != nil }.count
         return DockReorder.insertionIndex(
             pointer: Double(location.x - geometry.rowCenterX),
             slots: slots.map { Double($0.width) },
