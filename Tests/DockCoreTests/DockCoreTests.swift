@@ -266,7 +266,7 @@ struct DockStoreTests {
         store.saveNow()
 
         let reloaded = try storage.load()
-        #expect(reloaded.activeProfile.items.count == before + 1)
+        #expect(reloaded.activeProfile.pinnedItems.count == before + 1)
     }
 
     @Test func importReplacesDocument() throws {

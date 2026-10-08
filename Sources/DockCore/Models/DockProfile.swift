@@ -5,12 +5,15 @@ import Foundation
 public struct DockProfile: Identifiable, Hashable, Codable, Sendable {
     public var id: UUID
     public var name: String
+    /// Every item, in order, with the Trash (if the profile has one) last. The mutations
+    /// below keep it there, so an index among `pinnedItems` is an index here too.
     public var items: [DockItem]
 
     public init(id: UUID = UUID(), name: String, items: [DockItem] = []) {
         self.id = id
         self.name = name
         self.items = items
+        keepTrashLast()
     }
 }
 
@@ -36,6 +39,7 @@ extension DockProfile {
             }
         }
         items = decoded
+        keepTrashLast()
     }
 
     private struct SkippedElement: Decodable {
@@ -43,16 +47,56 @@ extension DockProfile {
     }
 }
 
+// MARK: - Trash
+
+public extension DockProfile {
+    /// The items the user arranges, in order: everything but the Trash, which sits at the
+    /// end of the dock after the running and recent apps rather than among them.
+    var pinnedItems: [DockItem] {
+        items.filter { !$0.isTrash }
+    }
+
+    /// The profile's Trash item, if it shows one.
+    var trashItem: DockItem? {
+        items.first { $0.isTrash }
+    }
+
+    /// Whether the dock ends with the Trash. Turning it on keeps an existing Trash item, so
+    /// its ID doesn't change.
+    var showsTrash: Bool {
+        get { trashItem != nil }
+        set {
+            if newValue {
+                guard trashItem == nil else { return }
+                items.append(.trash())
+            } else {
+                items.removeAll { $0.isTrash }
+            }
+        }
+    }
+
+    /// Moves the Trash to the end, and drops any beyond the first, so the invariant on
+    /// `items` holds after every change (and for files written by hand or by other builds).
+    private mutating func keepTrashLast() {
+        guard let trash = trashItem, items.count { $0.isTrash } > 1 || items.last?.isTrash != true else { return }
+        items.removeAll { $0.isTrash }
+        items.append(trash)
+    }
+}
+
 // MARK: - Mutations
 
 public extension DockProfile {
+    /// Adds `item` after the other items (and before the Trash).
     mutating func append(_ item: DockItem) {
         items.append(item)
+        keepTrashLast()
     }
 
     mutating func insert(_ item: DockItem, at index: Int) {
         let clamped = min(max(index, 0), items.count)
         items.insert(item, at: clamped)
+        keepTrashLast()
     }
 
     mutating func remove(id: DockItem.ID) {
@@ -66,6 +110,7 @@ public extension DockProfile {
         let item = items.remove(at: source)
         let clamped = min(max(destination, 0), items.count)
         items.insert(item, at: clamped)
+        keepTrashLast()
     }
 
     /// Moves the item with `id` to sit at the position currently occupied by `targetID`.
@@ -77,12 +122,13 @@ public extension DockProfile {
         let item = items.remove(at: source)
         let adjustedTarget = source < target ? target - 1 : target
         items.insert(item, at: adjustedTarget)
+        keepTrashLast()
     }
 
     /// Index just after the item with `id`: where an item added "after" it goes. The end
-    /// when `id` is nil or not in the profile.
+    /// of the pinned items when `id` is nil or not in the profile.
     func index(after id: DockItem.ID?) -> Int {
-        guard let id, let index = items.firstIndex(where: { $0.id == id }) else { return items.count }
+        guard let id, let index = items.firstIndex(where: { $0.id == id }) else { return pinnedItems.count }
         return index + 1
     }
 
@@ -93,6 +139,7 @@ public extension DockProfile {
     mutating func update(_ item: DockItem) {
         guard let index = items.firstIndex(where: { $0.id == item.id }) else { return }
         items[index] = item
+        keepTrashLast()
     }
 
     /// True if an app with this bundle URL is already pinned.
@@ -114,6 +161,7 @@ public extension DockProfile {
         var seen = Set<String>()
         let apps = urls.filter { seen.insert($0.normalizedPath).inserted }.map(DockItem.app(at:))
         items.insert(contentsOf: apps, at: index)
+        keepTrashLast()
     }
 }
 
