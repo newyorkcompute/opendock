@@ -99,11 +99,12 @@ struct AppItemView: View {
                             .font(.system(size: iconSize * 0.3))
                     }
                 }
+                .launchBounce(shellState.launchBounces.bounce(for: app))
             runningIndicator
         }
         .contentShape(Rectangle())
         .onTapGesture {
-            AppLauncher.open(app, running: running)
+            controller.open(app)
         }
         .accessibilityLabel(app.displayName)
         .contextMenu { menu }
@@ -125,7 +126,7 @@ struct AppItemView: View {
             Button("Hide") { AppLauncher.hide(app, running: running) }
             Button("Quit") { AppLauncher.quit(app, running: running) }
         } else {
-            Button("Open") { AppLauncher.open(app, running: running) }
+            Button("Open") { controller.open(app) }
         }
         Button("New Window") { AppLauncher.openNewInstance(app) }
         Divider()

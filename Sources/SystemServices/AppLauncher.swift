@@ -24,22 +24,58 @@ extension RunningAppsMonitor: RunningAppLookup {
     }
 }
 
+/// What Launch Services reported back after opening an app.
+public enum AppLaunchResult: Hashable, Sendable {
+    case launched(processIdentifier: pid_t)
+    case failed
+}
+
+/// What opening an app from the dock did.
+public enum AppOpenOutcome: Hashable, Sendable {
+    /// It wasn't running, and Launch Services is launching it.
+    case launching
+    /// It was already running, and was brought forward.
+    case activated
+}
+
 /// The `NSWorkspace` calls `AppLauncher` makes.
 @MainActor
 public protocol AppWorkspace {
-    func openApplication(at url: URL, configuration: NSWorkspace.OpenConfiguration)
+    /// Calls `completion` on the main actor once Launch Services has opened the app, or
+    /// failed to.
+    func openApplication(
+        at url: URL,
+        configuration: NSWorkspace.OpenConfiguration,
+        completion: @escaping @MainActor @Sendable (AppLaunchResult) -> Void
+    )
     func open(_ url: URL, configuration: NSWorkspace.OpenConfiguration)
     func activateFileViewerSelecting(_ urls: [URL])
+}
+
+extension AppWorkspace {
+    func openApplication(at url: URL, configuration: NSWorkspace.OpenConfiguration) {
+        openApplication(at: url, configuration: configuration) { _ in }
+    }
 }
 
 public struct SystemAppWorkspace: AppWorkspace {
     public init() {}
 
-    public func openApplication(at url: URL, configuration: NSWorkspace.OpenConfiguration) {
-        NSWorkspace.shared.openApplication(at: url, configuration: configuration) { _, error in
+    public func openApplication(
+        at url: URL,
+        configuration: NSWorkspace.OpenConfiguration,
+        completion: @escaping @MainActor @Sendable (AppLaunchResult) -> Void
+    ) {
+        NSWorkspace.shared.openApplication(at: url, configuration: configuration) { app, error in
             if let error {
                 NSLog("OpenDock: failed to open \(url.path): \(error.localizedDescription)")
             }
+            let result: AppLaunchResult = if let app, error == nil {
+                .launched(processIdentifier: app.processIdentifier)
+            } else {
+                .failed
+            }
+            Task { @MainActor in completion(result) }
         }
     }
 
@@ -63,14 +99,19 @@ public enum AppLauncher {
     /// otherwise unhides it, brings all its windows forward, and sends it the reopen event
     /// so an app with no visible windows shows one (a new window, a deminiaturized one,
     /// or for Finder a new browser window).
+    ///
+    /// `launchCompleted` is called with Launch Services' result when this launches the app,
+    /// and never when the app was already running.
+    @discardableResult
     public static func open(
         _ app: AppItem,
         running: some RunningAppLookup,
-        workspace: any AppWorkspace = SystemAppWorkspace()
-    ) {
+        workspace: any AppWorkspace = SystemAppWorkspace(),
+        launchCompleted: @escaping @MainActor @Sendable (AppLaunchResult) -> Void = { _ in }
+    ) -> AppOpenOutcome {
         guard let runningApp = running.runningApp(bundleIdentifier: app.bundleIdentifier, bundleURL: app.url) else {
-            workspace.openApplication(at: app.url, configuration: activatingConfiguration())
-            return
+            workspace.openApplication(at: app.url, configuration: activatingConfiguration(), completion: launchCompleted)
+            return .launching
         }
         if runningApp.isHidden {
             runningApp.unhide()
@@ -81,6 +122,7 @@ public enum AppLauncher {
         // `activate` alone never sends kAEReopenApplication. LaunchServices does when an
         // already-running app is opened, which is also how Finder and Apple's Dock do it.
         workspace.openApplication(at: runningApp.bundleURL ?? app.url, configuration: activatingConfiguration())
+        return .activated
     }
 
     /// Opens a new instance even if one is running (⌘-click behaviour).

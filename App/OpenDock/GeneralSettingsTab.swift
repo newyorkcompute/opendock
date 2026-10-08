@@ -94,6 +94,7 @@ struct GeneralSettingsTab: View {
 
             Toggle("Show indicators for running apps", isOn: setting(\.showRunningIndicators))
             Toggle("Show running apps that aren’t in the dock", isOn: setting(\.showRunningApps))
+            Toggle("Animate opening applications", isOn: setting(\.animateOpeningApps))
             Toggle("Magnification", isOn: setting(\.hoverEffect))
 
             if store.settings.hoverEffect {

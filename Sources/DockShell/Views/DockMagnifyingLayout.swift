@@ -17,6 +17,9 @@ nonisolated enum DockRowItemID: Hashable, Sendable {
 nonisolated struct DockRowMetrics: Equatable {
     var iconSize: CGFloat
     var peakScale: CGFloat
+    /// How high above its magnified size an icon can hop while its app launches: the top
+    /// of a hop of an icon at the peak scale. Zero when launches aren't animated.
+    var launchBounceHeight: CGFloat
 
     var spacing: CGFloat { max(6, iconSize * 0.14) }
     var horizontalPadding: CGFloat { 10 }
@@ -37,6 +40,9 @@ nonisolated struct DockRowMetrics: Equatable {
     init(settings: DockSettings) {
         iconSize = settings.iconSize
         peakScale = settings.peakMagnification
+        launchBounceHeight = settings.animateOpeningApps
+            ? LaunchBounce.peakOffset(iconHeight: settings.iconSize * settings.peakMagnification)
+            : 0
     }
 }
 
@@ -217,8 +223,10 @@ nonisolated struct DockMagnifyingLayout: Layout {
         }
         let side = cache.overhang + metrics.horizontalPadding + metrics.shadowMargin
         // No item grows taller than an icon at the peak (see `DockMagnification.itemSize`).
+        // Above that, room for the label, or for the top of a launch bounce if that's higher.
         let growth = metrics.iconSize * (metrics.peakScale - 1)
-        let above = max(metrics.verticalPadding + metrics.shadowMargin / 2, growth + Self.labelSpace)
+        let headroom = max(Self.labelSpace, metrics.launchBounceHeight)
+        let above = max(metrics.verticalPadding + metrics.shadowMargin / 2, growth + headroom)
         let height = metrics.bottomInset + metrics.verticalPadding + row.height + above
         return CGSize(width: ceil(row.restingWidth + metrics.dropGapWidth + 2 * side), height: ceil(height))
     }

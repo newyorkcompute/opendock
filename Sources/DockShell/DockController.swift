@@ -55,6 +55,10 @@ public final class DockController {
     private var frameHold: CGSize?
     private var frameHoldTask: Task<Void, Never>?
     var profileBannerTask: Task<Void, Never>?
+    /// Tells when apps launched from the dock are up, so their icons stop bouncing.
+    let launchMonitor = AppLaunchMonitor()
+    /// Clears the next bounce to finish, once it has landed.
+    var launchBounceTask: Task<Void, Never>?
 
     private let log = Logger(subsystem: "com.newyorkcompute.opendock", category: "DockController")
 
@@ -108,6 +112,7 @@ public final class DockController {
 
         installContextClickMonitor()
         installScrollMonitor()
+        launchMonitor.onLaunchEnded = { [weak self] app in self?.launchEnded(app) }
     }
 
     public func stop() {
@@ -115,6 +120,8 @@ public final class DockController {
         settleTask?.cancel()
         frameHoldTask?.cancel()
         profileBannerTask?.cancel()
+        launchBounceTask?.cancel()
+        launchMonitor.onLaunchEnded = nil
         removeScrollMonitor()
         removeEdgeMonitors()
         removeHoverMonitor()
