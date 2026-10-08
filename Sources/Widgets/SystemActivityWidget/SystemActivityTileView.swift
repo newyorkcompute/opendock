@@ -11,6 +11,7 @@ struct SystemActivityTileView: View {
 
     @Environment(\.dockIconSize) private var iconSize
     @Environment(\.dockIsVisible) private var isVisible
+    @Environment(\.dockEdge) private var edge
     @State private var monitor = SystemActivityMonitor.shared
 
     private var metrics: [SystemActivityMetric] { SystemActivitySettings.metrics(in: instance) }
@@ -18,7 +19,8 @@ struct SystemActivityTileView: View {
 
     var body: some View {
         WidgetTile {
-            HStack(spacing: iconSize * 0.16) {
+            // Gauges side by side along the bottom edge, one above the other on a side edge.
+            WidgetStack(spacing: iconSize * (edge.isVertical ? 0.1 : 0.16)) {
                 ForEach(metrics) { metric in
                     switch metric {
                     case .cpu where showsHistory: cpuHistory
@@ -59,15 +61,16 @@ struct SystemActivityTileView: View {
     }
 
     private var cpuHistory: some View {
-        VStack(alignment: .leading, spacing: iconSize * 0.04) {
+        VStack(alignment: edge.isVertical ? .center : .leading, spacing: iconSize * 0.04) {
             HStack(spacing: iconSize * 0.08) {
                 Image(systemName: SystemActivityMetric.cpu.systemImage)
                     .font(.system(size: WidgetMetrics.secondaryFontSize(for: iconSize), weight: .semibold))
                     .foregroundStyle(.secondary)
                 WidgetPrimaryText(snapshot.cpu.map { SystemActivityFormatting.percent($0.total) } ?? "—%")
             }
+            // On a side edge the sparkline fits the icon-wide tile.
             Sparkline(samples: monitor.history.samples, capacity: monitor.history.capacity, color: cpuColor)
-                .frame(width: iconSize * 1.1, height: iconSize * 0.3)
+                .frame(width: iconSize * (edge.isVertical ? 0.8 : 1.1), height: iconSize * 0.3)
         }
         .help(helpText(for: .cpu, progress: snapshot.cpu?.total))
     }

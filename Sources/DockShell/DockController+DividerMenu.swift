@@ -4,9 +4,6 @@ import DockCore
 /// The menu on divider items, modeled on the one on the Dock's separators. It opens on
 /// click, right-click, and control-click.
 extension DockController {
-    /// Edges the shell can actually place the dock on. Others show in the menu, disabled.
-    static let supportedEdges: Set<DockSettings.Edge> = [.bottom]
-
     func showDividerMenu(for id: DockItem.ID) {
         let location = NSEvent.mouseLocation
         // Start the menu's tracking loop after the event that asked for it has finished.
@@ -32,13 +29,11 @@ extension DockController {
 
         let positions = NSMenu()
         positions.autoenablesItems = false
-        let currentEdge = Self.supportedEdges.contains(settings.edge) ? settings.edge : .bottom
         for edge in [DockSettings.Edge.left, .bottom, .right] {
             let item = actionMenuItem(edge.menuTitle) { [store] in
                 store.updateSettings { $0.edge = edge }
             }
-            item.state = edge == currentEdge ? .on : .off
-            item.isEnabled = Self.supportedEdges.contains(edge)
+            item.state = edge == settings.edge ? .on : .off
             positions.addItem(item)
         }
         let position = NSMenuItem(title: "Position on Screen", action: nil, keyEquivalent: "")
@@ -122,7 +117,7 @@ extension DockController {
         guard let panel, panel.windowNumber == windowNumber,
             let point = layoutPoint(fromScreen: NSEvent.mouseLocation)
         else { return false }
-        shellState.contextClickX = point.x - shellState.geometry.rowCenterX
+        shellState.contextClickOffset = shellState.geometry.along(point) - shellState.geometry.rowCenter
         if let id = dividerID(at: point) {
             showDividerMenu(for: id)
             return true
@@ -141,7 +136,7 @@ extension DockController {
         let items = store.items
         return DockReorder.menuInsertionIndex(
             afterItemAt: anchor.flatMap { id in items.firstIndex { $0.id == id } },
-            pointer: shellState.contextClickX.map(Double.init),
+            pointer: shellState.contextClickOffset.map(Double.init),
             slots: shellState.geometry.restingSlots.map { Double($0.width) },
             limit: items.count
         )

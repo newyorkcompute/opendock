@@ -16,30 +16,48 @@ nonisolated enum DockRowItemID: Hashable, Sendable {
 }
 
 /// Sizes and spacing of the dock row, derived from settings.
+///
+/// The row runs along the screen edge the dock is on, so its measurements are given
+/// *along* the edge and in *depth* away from it (see `DockEdgeSpace`), the same on every
+/// edge.
 nonisolated struct DockRowMetrics: Equatable {
+    var edge: DockSettings.Edge
     var iconSize: CGFloat
     var peakScale: CGFloat
-    /// How high above its magnified size an icon can hop while its app launches: the top
+    /// How far past its magnified size an icon can hop while its app launches: the top
     /// of a hop of an icon at the peak scale. Zero when launches aren't animated.
     var launchBounceHeight: CGFloat
 
+    var axis: DockAxis { edge.axis }
     var spacing: CGFloat { max(6, iconSize * 0.14) }
-    var horizontalPadding: CGFloat { 10 }
-    var verticalPadding: CGFloat { 8 }
-    /// Distance from the bottom of the surface to the bottom of the window (the screen edge).
-    var bottomInset: CGFloat { 10 }
+    /// Padding between the surface's ends and the first and last item.
+    var endPadding: CGFloat { 10 }
+    /// Padding between the surface's sides and the items.
+    var sidePadding: CGFloat { 8 }
+    /// Distance from the surface to the screen edge (the window reaches the edge).
+    var edgeInset: CGFloat { 10 }
     /// Room around the surface for its shadow.
     var shadowMargin: CGFloat { 24 }
     /// Pointer distance at which magnification fades to nothing, as in Apple's Dock.
     var radius: CGFloat { DockMagnification.dockRadiusInSlots * (iconSize + spacing) }
-    /// Width of the gap that previews where files dragged in from Finder will land.
+    /// Length of the gap that previews where files dragged in from Finder will land.
     var dropGapWidth: CGFloat { iconSize + spacing }
     var cornerRadius: CGFloat { max(16, iconSize * 0.42) }
 
     static let labelHeight: CGFloat = 24
+    /// The widest a label gets beside a side-edge dock; longer names are truncated. The
+    /// window sets this much aside, as it does `labelHeight` above a bottom dock.
+    static let labelMaxWidth: CGFloat = 240
     static let labelGap: CGFloat = 8
 
+    /// Room past the magnified icons for the label: its height above a bottom dock, its
+    /// width beside a side dock.
+    var labelSpace: CGFloat {
+        Self.labelGap + (edge.isVertical ? Self.labelMaxWidth : Self.labelHeight) + 4
+    }
+
     init(settings: DockSettings) {
+        edge = settings.edge
         iconSize = settings.iconSize
         peakScale = settings.peakMagnification
         launchBounceHeight =
@@ -55,7 +73,7 @@ nonisolated enum DockLayoutRole: Equatable {
     case hitZone
     /// The material background.
     case surface
-    /// The name shown above the hovered item.
+    /// The name shown beside the hovered item, away from the screen edge.
     case label
     /// An item in the row, with its share of the peak growth (see
     /// `DockMagnification.Slot.growth`). `hoverable` items get a label; spacers and
@@ -80,7 +98,7 @@ nonisolated struct DockDropGap: Equatable {
     var position: CGFloat = 0
     /// 0 ... 1, how far the gap is open.
     var open: CGFloat = 0
-    /// Resting width when fully open, spacing included.
+    /// Resting length along the row when fully open, spacing included.
     var width: CGFloat = 0
     var growth: Double = 1
 }
@@ -91,37 +109,56 @@ nonisolated struct DockDropGap: Equatable {
 final class DockGeometry {
     nonisolated struct Slot {
         var id: DockRowItemID?
+        /// Resting length along the row, spacing included.
         var width: CGFloat
         var growth: Double
     }
 
+    /// The edge the layout was for, which says which way the row runs.
+    var edge: DockSettings.Edge = .bottom
     var hitZone: CGRect = .zero
     var hoverTargets: [(id: DockRowItemID, frame: CGRect)] = []
     /// Every item with an ID (spacers included) except the one being dragged.
     var itemFrames: [(id: DockRowItemID, frame: CGRect)] = []
     /// Every item in the row at rest, in order, with no gap and nothing left out.
     var restingSlots: [Slot] = []
-    /// The row is centered here.
-    var rowCenterX: CGFloat = 0
+    /// The row is centered here, along the edge.
+    var rowCenter: CGFloat = 0
     var halfGap: CGFloat = 0
     /// Origin of the layout in the hosting view (top-left origin).
     var containerOrigin: CGPoint = .zero
 
-    func item(atX x: CGFloat) -> DockRowItemID? {
-        hoverTargets.first { x >= $0.frame.minX - halfGap && x < $0.frame.maxX + halfGap }?.id
+    /// `point`'s position along the row.
+    func along(_ point: CGPoint) -> CGFloat {
+        edge.axis.along(point)
     }
 
-    /// The item (spacers included) under `x`, if any.
-    func anyItem(atX x: CGFloat) -> DockRowItemID? {
-        itemFrames.first { x >= $0.frame.minX - halfGap && x < $0.frame.maxX + halfGap }?.id
+    /// The hoverable item whose slot `point` is in along the row, wherever it is across it.
+    func item(at point: CGPoint) -> DockRowItemID? {
+        hoverTargets.first { spans($0.frame, point) }?.id
+    }
+
+    /// The item (spacers included) whose slot `point` is in along the row, if any.
+    func anyItem(at point: CGPoint) -> DockRowItemID? {
+        itemFrames.first { spans($0.frame, point) }?.id
+    }
+
+    private func spans(_ frame: CGRect, _ point: CGPoint) -> Bool {
+        let span = edge.axis.span(of: frame)
+        let position = along(point)
+        return position >= span.lowerBound - halfGap && position < span.upperBound + halfGap
     }
 }
 
-/// Lays the dock out like Apple's Dock with magnification on: items grow upward from a
-/// shared baseline around the pointer, neighbors push outward, and the surface widens to
-/// fit. Widget tiles take part with a smaller share of the growth. The container's own
-/// size never changes with the pointer, so the window doesn't have to be resized while
-/// the user sweeps across it.
+/// Lays the dock out like Apple's Dock with magnification on: items grow away from the
+/// screen edge from a shared baseline around the pointer, neighbors push outward along the
+/// edge, and the surface lengthens to fit. Widget tiles take part with a smaller share of
+/// the growth. The container's own size never changes with the pointer, so the window
+/// doesn't have to be resized while the user sweeps across it.
+///
+/// The row runs along whichever edge the dock is on. The layout works in `DockEdgeSpace`
+/// coordinates (positions along the edge and depths away from it) and converts to the
+/// container's at the end, so the bottom and the sides share every line of it.
 ///
 /// While something is dragged over the dock, a gap opens where it would land, and the
 /// item being reordered leaves the row (the gap takes its place). The gap is laid out
@@ -132,8 +169,8 @@ final class DockGeometry {
 /// and the gap moving are each a single animation on one number.
 nonisolated struct DockMagnifyingLayout: Layout {
     var metrics: DockRowMetrics
-    /// Pointer x in the layout's local coordinates.
-    var pointerX: CGFloat?
+    /// Pointer position along the row, in the layout's local coordinates.
+    var pointer: CGFloat?
     var amount: CGFloat
     var hoveredID: DockRowItemID?
     /// Item being reordered: out of the row while the gap stands in for it.
@@ -157,8 +194,9 @@ nonisolated struct DockMagnifyingLayout: Layout {
         var slots: [DockMagnification.Slot] = []
         var hoverIDs: [DockRowItemID?] = []
         var ids: [DockRowItemID?] = []
-        var height: CGFloat = 0
-        var restingWidth: CGFloat = 0
+        /// The thickest item across the row.
+        var thickness: CGFloat = 0
+        var restingLength: CGFloat = 0
         /// The dragged item's subview and size, when it's out of the row.
         var dragged: (index: Int, size: CGSize)?
         var resting: [DockGeometry.Slot] = []
@@ -171,18 +209,19 @@ nonisolated struct DockMagnifyingLayout: Layout {
             slots.append(slot)
             hoverIDs.append(hoverable ? id : nil)
             ids.append(id)
-            restingWidth += slot.width
+            restingLength += slot.width
         }
     }
 
     /// The row's slots. With `withGap`, the dragged item is left out and the gap put in.
     private func measure(_ subviews: Subviews, withGap: Bool) -> Row {
+        let axis = metrics.axis
         var row = Row()
         let pieces = withGap ? DockReorder.gapPieces(position: gap.position, width: gap.width * gap.open) : []
         var position = 0
         func appendGap(at index: Int) {
             for piece in pieces where piece.index == index {
-                let size = CGSize(width: max(0, piece.width - metrics.spacing), height: metrics.iconSize)
+                let size = axis.size(length: max(0, piece.width - metrics.spacing), thickness: metrics.iconSize)
                 row.append(
                     nil, id: nil, size: size, slot: .init(width: piece.width, growth: gap.growth), hoverable: false)
             }
@@ -190,9 +229,9 @@ nonisolated struct DockMagnifyingLayout: Layout {
         for index in subviews.indices {
             guard case let .item(id, growth, hoverable) = subviews[index][DockLayoutRoleKey.self] else { continue }
             let size = subviews[index].sizeThatFits(.unspecified)
-            let slot = DockMagnification.Slot(width: size.width + metrics.spacing, growth: growth)
+            let slot = DockMagnification.Slot(width: axis.length(of: size) + metrics.spacing, growth: growth)
             row.resting.append(.init(id: id, width: slot.width, growth: growth))
-            row.height = max(row.height, size.height)
+            row.thickness = max(row.thickness, axis.thickness(of: size))
             if withGap, let draggedID, id == .pinned(draggedID) {
                 row.dragged = (index, size)
                 continue
@@ -218,7 +257,7 @@ nonisolated struct DockMagnifyingLayout: Layout {
 
     func updateCache(_ cache: inout Cache, subviews: Subviews) {}
 
-    /// Sized for the row at rest. A reordered item's gap is as wide as the item, and room
+    /// Sized for the row at rest. A reordered item's gap is as long as the item, and room
     /// for a Finder drop's gap is set aside up front, so the window keeps its size during a
     /// drag.
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout Cache) -> CGSize {
@@ -230,41 +269,51 @@ nonisolated struct DockMagnifyingLayout: Layout {
                 slots: row.slots, peakScale: metrics.peakScale, radius: metrics.radius,
                 overhang: max(overhang.leading, overhang.trailing))
         }
-        let side = cache.overhang + metrics.horizontalPadding + metrics.shadowMargin
-        // No item grows taller than an icon at the peak (see `DockMagnification.itemSize`).
-        // Above that, room for the label, or for the top of a launch bounce if that's higher.
+        let end = cache.overhang + metrics.endPadding + metrics.shadowMargin
+        // No item grows thicker than an icon at the peak (see `DockMagnification.itemSize`).
+        // Past that, room for the label, or for the top of a launch bounce if that's further.
         let growth = metrics.iconSize * (metrics.peakScale - 1)
-        let headroom = max(Self.labelSpace, metrics.launchBounceHeight)
-        let above = max(metrics.verticalPadding + metrics.shadowMargin / 2, growth + headroom)
-        let height = metrics.bottomInset + metrics.verticalPadding + row.height + above
-        return CGSize(width: ceil(row.restingWidth + metrics.dropGapWidth + 2 * side), height: ceil(height))
+        let headroom = max(metrics.labelSpace, metrics.launchBounceHeight)
+        let beyond = max(metrics.sidePadding + metrics.shadowMargin / 2, growth + headroom)
+        let depth = metrics.edgeInset + metrics.sidePadding + row.thickness + beyond
+        return metrics.axis.size(
+            length: ceil(row.restingLength + metrics.dropGapWidth + 2 * end),
+            thickness: ceil(depth)
+        )
     }
 
-    private static var labelSpace: CGFloat { DockRowMetrics.labelGap + DockRowMetrics.labelHeight + 4 }
-
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout Cache) {
+        let axis = metrics.axis
+        let space = DockEdgeSpace(edge: metrics.edge, bounds: bounds)
         let row = measure(subviews, withGap: true)
-        let rowLeft = bounds.midX - row.restingWidth / 2
-        let rowBottom = bounds.maxY - metrics.bottomInset - metrics.verticalPadding
+        let rowStart = space.middle - row.restingLength / 2
+        // The items' near sides all sit here; magnified, they grow away from the edge.
+        let baseline = metrics.edgeInset + metrics.sidePadding
 
         let magnified = DockMagnification.row(
             row.slots,
-            pointer: pointerX.map { bounds.minX + $0 - rowLeft },
+            pointer: pointer.map { space.span.lowerBound + $0 - rowStart },
             peakScale: metrics.peakScale,
             radius: metrics.radius,
             amount: amount
         )
 
+        func slotFrame(for size: CGSize, inSlot k: Int) -> CGRect {
+            let middle = rowStart + magnified.origins[k] + magnified.widths[k] / 2
+            return space.rect(
+                along: middle - axis.length(of: size) / 2, length: axis.length(of: size),
+                depth: baseline, thickness: axis.thickness(of: size))
+        }
+
         var frames: [CGRect] = []
         frames.reserveCapacity(row.itemIndices.count)
         for (k, index) in row.itemIndices.enumerated() {
-            let size = DockMagnification.itemSize(row.sizes[k], scale: magnified.scales[k], iconSize: metrics.iconSize)
-            let midX = rowLeft + magnified.origins[k] + magnified.widths[k] / 2
-            frames.append(
-                CGRect(x: midX - size.width / 2, y: rowBottom - size.height, width: size.width, height: size.height))
+            let size = DockMagnification.itemSize(
+                row.sizes[k], scale: magnified.scales[k], iconSize: metrics.iconSize, axis: axis)
+            let frame = slotFrame(for: size, inSlot: k)
+            frames.append(frame)
             if let index {
-                subviews[index].place(
-                    at: CGPoint(x: midX, y: rowBottom), anchor: .bottom, proposal: ProposedViewSize(size))
+                place(subviews[index], in: frame, space: space)
             }
         }
 
@@ -275,32 +324,39 @@ nonisolated struct DockMagnifyingLayout: Layout {
                 .filter { row.itemIndices[$0] == nil }
                 .max { magnified.widths[$0] < magnified.widths[$1] }
             let scale = gapSlot.map { magnified.scales[$0] } ?? 1
-            let midX = gapSlot.map { frames[$0].midX } ?? bounds.midX
-            let size = DockMagnification.itemSize(dragged.size, scale: scale, iconSize: metrics.iconSize)
-            subviews[dragged.index].place(
-                at: CGPoint(x: midX, y: rowBottom), anchor: .bottom, proposal: ProposedViewSize(size))
+            let size = DockMagnification.itemSize(dragged.size, scale: scale, iconSize: metrics.iconSize, axis: axis)
+            let frame =
+                gapSlot.map { slotFrame(for: size, inSlot: $0) }
+                ?? space.rect(
+                    along: space.middle - axis.length(of: size) / 2, length: axis.length(of: size),
+                    depth: baseline, thickness: axis.thickness(of: size))
+            place(subviews[dragged.index], in: frame, space: space)
         }
 
-        // Edges of what's drawn in each slot, with the slot's share of the spacing taken off.
+        // Ends of what's drawn in each slot, with the slot's share of the spacing taken off.
         // For icons that's their frame; for a piece of the gap it can be negative, so the
         // surface doesn't jump as the piece grows from nothing.
         var leading = CGFloat.infinity
         var trailing = -CGFloat.infinity
         for k in row.slots.indices {
-            let center = rowLeft + magnified.origins[k] + magnified.widths[k] / 2
+            let center = rowStart + magnified.origins[k] + magnified.widths[k] / 2
             let half = (magnified.widths[k] - metrics.spacing * magnified.scales[k]) / 2
             leading = min(leading, center - half)
             trailing = max(trailing, center + half)
         }
-        if row.slots.isEmpty { (leading, trailing) = (bounds.midX, bounds.midX) }
-        let surface = CGRect(
-            x: leading - metrics.horizontalPadding,
-            y: rowBottom - row.height - metrics.verticalPadding,
-            width: (trailing - leading) + 2 * metrics.horizontalPadding,
-            height: row.height + 2 * metrics.verticalPadding
+        if row.slots.isEmpty { (leading, trailing) = (space.middle, space.middle) }
+        let surface = space.rect(
+            along: leading - metrics.endPadding,
+            length: (trailing - leading) + 2 * metrics.endPadding,
+            depth: metrics.edgeInset,
+            thickness: row.thickness + 2 * metrics.sidePadding
         )
-        let zoneTop = min(surface.minY, frames.map(\.minY).min() ?? surface.minY)
-        let zone = CGRect(x: surface.minX, y: zoneTop, width: surface.width, height: bounds.maxY - zoneTop)
+        // From the screen edge to the far side of the surface or of the furthest-reaching
+        // magnified item.
+        let zoneDepth = max(space.farDepth(of: surface), frames.map { space.farDepth(of: $0) }.max() ?? 0)
+        let zone = space.rect(
+            along: axis.span(of: surface).lowerBound, length: axis.length(of: surface.size),
+            depth: 0, thickness: zoneDepth)
 
         let hoveredFrame = hoveredID.flatMap { id in row.hoverIDs.firstIndex(of: id).map { frames[$0] } }
 
@@ -311,13 +367,23 @@ nonisolated struct DockMagnifyingLayout: Layout {
             case .hitZone:
                 subviews[index].place(at: zone.origin, proposal: ProposedViewSize(zone.size))
             case .label:
-                let size = subviews[index].sizeThatFits(.unspecified)
-                let anchor = hoveredFrame ?? CGRect(x: bounds.midX, y: zoneTop, width: 0, height: 0)
-                let halfWidth = size.width / 2
-                let midX = min(max(anchor.midX, bounds.minX + halfWidth), bounds.maxX - halfWidth)
-                let bottom = max(anchor.minY - DockRowMetrics.labelGap, bounds.minY + size.height)
-                subviews[index].place(
-                    at: CGPoint(x: midX, y: bottom), anchor: .bottom, proposal: ProposedViewSize(size))
+                // Centered on the hovered item (or on the dock, for a profile's name), just
+                // past it away from the screen edge, and kept inside the window. Beside a
+                // side dock it's held to the width the window set aside for it.
+                let size = subviews[index].sizeThatFits(
+                    metrics.edge.isVertical
+                        ? ProposedViewSize(width: DockRowMetrics.labelMaxWidth, height: nil) : .unspecified)
+                let anchor =
+                    hoveredFrame ?? space.rect(along: space.middle, length: 0, depth: zoneDepth, thickness: 0)
+                let length = axis.length(of: size)
+                let thickness = axis.thickness(of: size)
+                let anchorSpan = axis.span(of: anchor)
+                let middle = min(
+                    max((anchorSpan.lowerBound + anchorSpan.upperBound) / 2, space.span.lowerBound + length / 2),
+                    space.span.upperBound - length / 2)
+                let depth = min(space.farDepth(of: anchor) + DockRowMetrics.labelGap, space.depth - thickness)
+                let frame = space.rect(along: middle - length / 2, length: length, depth: depth, thickness: thickness)
+                subviews[index].place(at: frame.origin, proposal: ProposedViewSize(frame.size))
             case .item:
                 break
             }
@@ -332,15 +398,63 @@ nonisolated struct DockMagnifyingLayout: Layout {
         }
         let halfGap = metrics.spacing / 2
         let resting = row.resting
-        let rowCenterX = bounds.midX - bounds.minX
+        let rowCenter = space.middle - space.span.lowerBound
+        let edge = metrics.edge
         // SwiftUI lays out on the main thread.
         MainActor.assumeIsolated {
+            geometry.edge = edge
             geometry.hitZone = zone.applying(local)
             geometry.halfGap = halfGap
             geometry.hoverTargets = targets
             geometry.itemFrames = allFrames
             geometry.restingSlots = resting
-            geometry.rowCenterX = rowCenterX
+            geometry.rowCenter = rowCenter
+        }
+    }
+
+    /// Places an item in `frame`, anchored to the middle of its side nearest the screen
+    /// edge, so an item that ends up smaller than its frame still sits on the baseline.
+    private func place(_ subview: LayoutSubview, in frame: CGRect, space: DockEdgeSpace) {
+        subview.place(
+            at: space.anchor(of: frame), anchor: metrics.edge.unitPoint, proposal: ProposedViewSize(frame.size))
+    }
+}
+
+nonisolated extension DockSettings.Edge {
+    /// The point of an item that sits on the dock's baseline: the middle of its side
+    /// nearest the screen edge.
+    var unitPoint: UnitPoint {
+        switch self {
+        case .bottom: .bottom
+        case .left: .leading
+        case .right: .trailing
+        }
+    }
+
+    /// The same, as an alignment.
+    var alignment: Alignment {
+        switch self {
+        case .bottom: .bottom
+        case .left: .leading
+        case .right: .trailing
+        }
+    }
+
+    /// The side of a view that faces the screen edge.
+    var facingSide: SwiftUI.Edge.Set {
+        switch self {
+        case .bottom: .bottom
+        case .left: .leading
+        case .right: .trailing
+        }
+    }
+
+    /// Where a popover's arrow goes so the popover opens away from the screen edge.
+    var popoverArrowEdge: SwiftUI.Edge {
+        switch self {
+        case .bottom: .top
+        case .left: .trailing
+        case .right: .leading
         }
     }
 }

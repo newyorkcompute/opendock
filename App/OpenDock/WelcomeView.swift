@@ -60,7 +60,7 @@ struct WelcomeView: View {
                     .frame(width: 72, height: 72)
                 title("Welcome to OpenDock")
                 subtitle(
-                    "Your new dock is at the bottom of the screen. OpenDock has no Dock icon of its own: it lives in the menu bar."
+                    "Your new dock is at the bottom of the screen (you can move it to a side in Settings). OpenDock has no Dock icon of its own: it lives in the menu bar."
                 )
             }
             WelcomeCard {

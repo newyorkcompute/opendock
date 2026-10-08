@@ -21,6 +21,7 @@ struct DockRootView: View {
                 controller.contentSizeChanged(frame.size)
             }
             .environment(\.dockIconSize, store.settings.iconSize)
+            .environment(\.dockEdge, store.settings.edge)
             .environment(\.dockIsVisible, shellState.isVisible)
             .environment(\.widgetsMayRequestAccess, !store.needsWelcome)
             .onChange(of: store.settings.autoHide) { _, enabled in
@@ -31,6 +32,9 @@ struct DockRootView: View {
             }
             .onChange(of: store.settings.display) {
                 controller.displaySettingChanged()
+            }
+            .onChange(of: store.settings.edge) {
+                controller.edgeSettingChanged()
             }
             .onChange(of: shellState.interactionDepth) { old, new in
                 if old > 0, new == 0 { controller.interactionEnded() }
@@ -44,7 +48,7 @@ struct DockRootView: View {
             .onChange(of: shellState.isVisible, initial: true) { _, visible in
                 controller.badges.isDockVisible = visible
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: store.settings.edge.alignment)
     }
 }
 
@@ -64,7 +68,7 @@ struct DockSurfaceView: View {
         let recents = controller.recentSection
         DockMagnifyingLayout(
             metrics: metrics,
-            pointerX: shellState.pointerX,
+            pointer: shellState.pointer,
             amount: shellState.magnification,
             // A profile's name is centered over the dock rather than over an item.
             hoveredID: shellState.profileBanner == nil ? shellState.hoveredItemID : nil,
@@ -98,28 +102,29 @@ struct DockSurfaceView: View {
             if !extras.isEmpty {
                 DockDivider()
                     .dockLayoutRole(.item(nil, growth: 0, hoverable: false))
-                    .transition(.dockRunningApp)
+                    .transition(.dockRunningApp(edge: metrics.edge))
                 ForEach(extras) { extra in
                     AppItemView(app: extra.app, rowID: .running(extra.id), controller: controller)
                         .dockLayoutRole(.item(.running(extra.id), growth: 1, hoverable: true))
-                        .transition(.dockRunningApp)
+                        .transition(.dockRunningApp(edge: metrics.edge))
                 }
             }
 
             if !recents.isEmpty {
                 DockDivider()
                     .dockLayoutRole(.item(nil, growth: 0, hoverable: false))
-                    .transition(.dockRunningApp)
+                    .transition(.dockRunningApp(edge: metrics.edge))
                 ForEach(recents) { recent in
                     AppItemView(app: recent.app, rowID: .recent(recent.id), controller: controller)
                         .dockLayoutRole(.item(.recent(recent.id), growth: 1, hoverable: true))
-                        .transition(.dockRunningApp)
+                        .transition(.dockRunningApp(edge: metrics.edge))
                 }
             }
 
             DockItemLabel(
                 title: shellState.profileBanner
-                    ?? label(for: shellState.hoveredItemID, extras: extras, recents: recents)
+                    ?? label(for: shellState.hoveredItemID, extras: extras, recents: recents),
+                truncates: metrics.edge.isVertical
             )
             .dockLayoutRole(.label)
         }
@@ -150,7 +155,8 @@ struct DockSurfaceView: View {
 
     private func profileSwap(_ metrics: DockRowMetrics) -> AnyTransition {
         .dockProfileSwap(
-            direction: shellState.profileSwapDirection, distance: metrics.iconSize, reduceMotion: reduceMotion)
+            direction: shellState.profileSwapDirection, distance: metrics.iconSize, edge: metrics.edge,
+            reduceMotion: reduceMotion)
     }
 
     private func label(for id: DockRowItemID?, extras: [RunningDockApp], recents: [RecentDockApp]) -> String? {
@@ -175,7 +181,9 @@ struct DockSurfaceView: View {
 extension AnyTransition {
     /// Running apps grow in from the baseline as they launch and shrink away as they quit,
     /// while their neighbors slide over. Recent apps come and go the same way.
-    static let dockRunningApp = AnyTransition.scale(scale: 0.4, anchor: .bottom).combined(with: .opacity)
+    static func dockRunningApp(edge: DockSettings.Edge) -> AnyTransition {
+        .scale(scale: 0.4, anchor: edge.unitPoint).combined(with: .opacity)
+    }
 }
 
 extension Animation {
@@ -196,6 +204,7 @@ struct EmptyProfilePlaceholder: View {
     let controller: DockController
 
     @Environment(\.dockIconSize) private var iconSize
+    @Environment(\.dockEdge) private var edge
 
     var body: some View {
         RoundedRectangle(cornerRadius: iconSize * 0.22, style: .continuous)
@@ -206,7 +215,7 @@ struct EmptyProfilePlaceholder: View {
                     .foregroundStyle(.secondary)
             }
             .frame(width: iconSize, height: iconSize)
-            .padding(.bottom, 6) // keep baseline aligned with apps
+            .padding(edge.facingSide, 6) // keep baseline aligned with apps
             .contentShape(Rectangle())
             .onTapGesture { controller.promptForApp() }
             .help("Add apps to this profile")
@@ -215,19 +224,24 @@ struct EmptyProfilePlaceholder: View {
     }
 }
 
-/// The item name above the hovered icon, like the Dock's labels.
+/// The item name beside the hovered icon, away from the screen edge, like the Dock's labels.
 struct DockItemLabel: View {
     let title: String?
+    /// Beside a side-edge dock the label can't grow without limit: the layout proposes
+    /// `DockRowMetrics.labelMaxWidth` and longer names are truncated in the middle. Above
+    /// a bottom dock it takes its natural width.
+    var truncates: Bool
 
     var body: some View {
         if let title {
             Text(title)
                 .font(.system(size: 13))
                 .lineLimit(1)
+                .truncationMode(.middle)
                 .padding(.horizontal, 11)
                 .frame(height: DockRowMetrics.labelHeight)
                 .background { DockLabelBackground() }
-                .fixedSize()
+                .fixedSize(horizontal: !truncates, vertical: true)
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
         }

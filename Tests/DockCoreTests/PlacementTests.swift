@@ -119,6 +119,124 @@ struct PlacementTests {
         }
     }
 
+    // MARK: - Side edges
+
+    @Test func shownFrameOnTheLeftIsCenteredUpTheVisibleFrame() {
+        let size = CGSize(width: 160, height: 600)
+        for screen in screens {
+            let frame = DockPlacement.shownFrame(contentSize: size, visibleFrame: screen.visibleFrame, edge: .left)
+            #expect(frame.size == size)
+            #expect(frame.minX == screen.visibleFrame.minX, "\(screen.name)")
+            #expect(abs(frame.midY - screen.visibleFrame.midY) <= 0.5, "\(screen.name)")
+            #expect(frame.minY == frame.minY.rounded())
+        }
+    }
+
+    @Test func shownFrameOnTheRightTouchesTheRightOfTheVisibleFrame() {
+        let size = CGSize(width: 160, height: 600)
+        for screen in screens {
+            let frame = DockPlacement.shownFrame(contentSize: size, visibleFrame: screen.visibleFrame, edge: .right)
+            #expect(frame.size == size)
+            #expect(frame.maxX == screen.visibleFrame.maxX, "\(screen.name)")
+            #expect(abs(frame.midY - screen.visibleFrame.midY) <= 0.5, "\(screen.name)")
+        }
+    }
+
+    /// Apple's Dock on the same side leaves a visible frame that doesn't start at the
+    /// display's edge; OpenDock sits inside it, not behind the Dock.
+    @Test func shownFrameOnASideStaysInsideTheVisibleFrame() {
+        let withDock = DockPlacement.Screen(
+            id: "DOCKED", name: "Docked",
+            frame: CGRect(x: 0, y: 0, width: 1512, height: 982),
+            visibleFrame: CGRect(x: 70, y: 0, width: 1442, height: 949))
+        let size = CGSize(width: 160, height: 600)
+        let frame = DockPlacement.shownFrame(contentSize: size, visibleFrame: withDock.visibleFrame, edge: .left)
+        #expect(frame.minX == 70)
+        #expect(withDock.visibleFrame.contains(frame))
+    }
+
+    @Test func oversizedSideWindowIsClampedToItsDisplay() {
+        let size = CGSize(width: 1800, height: 1200)
+        for edge in [DockSettings.Edge.left, .right] {
+            let frame = DockPlacement.shownFrame(contentSize: size, visibleFrame: laptop.visibleFrame, edge: edge)
+            #expect(frame == laptop.visibleFrame, "\(edge)")
+        }
+    }
+
+    @Test func hiddenSideFramesAreJustPastThePhysicalEdge() {
+        let size = CGSize(width: 160, height: 600)
+        for screen in screens {
+            let shownLeft = DockPlacement.shownFrame(contentSize: size, visibleFrame: screen.visibleFrame, edge: .left)
+            let hiddenLeft = DockPlacement.hiddenFrame(contentSize: size, on: screen, edge: .left)
+            #expect(hiddenLeft.maxX < screen.frame.minX, "\(screen.name)")
+            #expect(hiddenLeft.minY == shownLeft.minY)
+            #expect(hiddenLeft.size == shownLeft.size)
+
+            let shownRight = DockPlacement.shownFrame(
+                contentSize: size, visibleFrame: screen.visibleFrame, edge: .right)
+            let hiddenRight = DockPlacement.hiddenFrame(contentSize: size, on: screen, edge: .right)
+            #expect(hiddenRight.minX > screen.frame.maxX, "\(screen.name)")
+            #expect(hiddenRight.minY == shownRight.minY)
+            #expect(hiddenRight.size == shownRight.size)
+        }
+    }
+
+    @Test func bottomIsTheDefaultEdgeForEveryFrame() {
+        let size = CGSize(width: 600, height: 160)
+        #expect(
+            DockPlacement.shownFrame(contentSize: size, visibleFrame: laptop.visibleFrame)
+                == DockPlacement.shownFrame(contentSize: size, visibleFrame: laptop.visibleFrame, edge: .bottom))
+        #expect(
+            DockPlacement.hiddenFrame(contentSize: size, on: laptop)
+                == DockPlacement.hiddenFrame(contentSize: size, on: laptop, edge: .bottom))
+    }
+
+    @Test func revealEdgeOnTheLeftIsTheDisplaysLeftColumn() {
+        #expect(DockPlacement.isAtRevealEdge(CGPoint(x: 0, y: 500), of: laptop.frame, edge: .left))
+        #expect(DockPlacement.isAtRevealEdge(CGPoint(x: 0.5, y: 500), of: laptop.frame, edge: .left))
+        #expect(DockPlacement.isAtRevealEdge(CGPoint(x: -2560, y: 700), of: left.frame, edge: .left))
+        #expect(!DockPlacement.isAtRevealEdge(CGPoint(x: 3, y: 500), of: laptop.frame, edge: .left))
+        // The display to the left shares the edge's x but isn't this display.
+        #expect(!DockPlacement.isAtRevealEdge(CGPoint(x: -10, y: 500), of: laptop.frame, edge: .left))
+        #expect(!DockPlacement.isAtRevealEdge(CGPoint(x: 0, y: 1000), of: laptop.frame, edge: .left))
+        #expect(!DockPlacement.isAtRevealEdge(CGPoint(x: 0, y: -500), of: laptop.frame, edge: .left))
+    }
+
+    @Test func revealEdgeOnTheRightIsTheDisplaysLastColumn() {
+        // The pointer stops on the last pixel column, at maxX - 1.
+        #expect(DockPlacement.isAtRevealEdge(CGPoint(x: 1511, y: 500), of: laptop.frame, edge: .right))
+        #expect(DockPlacement.isAtRevealEdge(CGPoint(x: 1511.5, y: 500), of: laptop.frame, edge: .right))
+        #expect(DockPlacement.isAtRevealEdge(CGPoint(x: -1, y: 700), of: left.frame, edge: .right))
+        #expect(!DockPlacement.isAtRevealEdge(CGPoint(x: 1508, y: 500), of: laptop.frame, edge: .right))
+        // Past the edge, onto the laptop that sits to the right of the left display.
+        #expect(!DockPlacement.isAtRevealEdge(CGPoint(x: 10, y: 700), of: left.frame, edge: .right))
+        #expect(!DockPlacement.isAtRevealEdge(CGPoint(x: 1511, y: -100), of: laptop.frame, edge: .right))
+    }
+
+    @Test func sideEdgesDoNotRevealFromTheBottom() {
+        #expect(!DockPlacement.isAtRevealEdge(CGPoint(x: 700, y: 0), of: laptop.frame, edge: .left))
+        #expect(!DockPlacement.isAtRevealEdge(CGPoint(x: 700, y: 0), of: laptop.frame, edge: .right))
+        #expect(!DockPlacement.isAtRevealEdge(CGPoint(x: 0, y: 500), of: laptop.frame, edge: .bottom))
+    }
+
+    @Test func hitZoneReachesTheScreenEdgeOnEverySide() {
+        let zone = CGRect(x: 20, y: 20, width: 100, height: 100)
+        let bottom = DockPlacement.reachingScreenEdge(zone, of: laptop.frame, edge: .bottom)
+        #expect(bottom == CGRect(x: 20, y: 0, width: 100, height: 120))
+        let left = DockPlacement.reachingScreenEdge(zone, of: laptop.frame, edge: .left)
+        #expect(left == CGRect(x: 0, y: 20, width: 120, height: 100))
+        let right = DockPlacement.reachingScreenEdge(zone, of: laptop.frame, edge: .right)
+        #expect(right == CGRect(x: 20, y: 20, width: 1492, height: 100))
+    }
+
+    @Test func hitZoneAlreadyPastTheEdgeIsLeftAlone() {
+        let zone = CGRect(x: -5, y: -5, width: 100, height: 100)
+        #expect(DockPlacement.reachingScreenEdge(zone, of: laptop.frame, edge: .bottom) == zone)
+        #expect(DockPlacement.reachingScreenEdge(zone, of: laptop.frame, edge: .left) == zone)
+        let atRight = CGRect(x: 1420, y: 0, width: 100, height: 100)
+        #expect(DockPlacement.reachingScreenEdge(atRight, of: laptop.frame, edge: .right) == atRight)
+    }
+
     // MARK: - Reveal edge
 
     @Test func revealEdgeIsTheDisplaysBottomRow() {

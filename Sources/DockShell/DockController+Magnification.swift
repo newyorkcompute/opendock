@@ -4,8 +4,8 @@ import SwiftUI
 /// Pointer tracking for magnification and item labels.
 ///
 /// SwiftUI hover reports pointer moves over the dock. Magnification is on while the
-/// pointer is inside the layout's hit zone (the surface, the magnified icons above it,
-/// and the strip down to the screen edge). Nothing runs while the pointer is elsewhere:
+/// pointer is inside the layout's hit zone (the surface, the magnified icons past it,
+/// and the strip between it and the screen edge). Nothing runs while the pointer is elsewhere:
 /// the only global monitor is installed on entry and removed on exit.
 extension DockController {
     func pointerHoverChanged(_ phase: HoverPhase) {
@@ -24,11 +24,12 @@ extension DockController {
             return
         }
 
-        if store.settings.peakMagnification > 1, shellState.pointerX != location.x {
-            shellState.pointerX = location.x
+        let position = geometry.along(location)
+        if store.settings.peakMagnification > 1, shellState.pointer != position {
+            shellState.pointer = position
         }
         // No labels during a drag: the items are on the move.
-        let hovered = shellState.isDragging ? nil : geometry.item(atX: location.x)
+        let hovered = shellState.isDragging ? nil : geometry.item(at: location)
         if shellState.hoveredItemID != hovered {
             shellState.hoveredItemID = hovered
         }
@@ -55,7 +56,7 @@ extension DockController {
         removeHoverMonitor()
         shellState.isPointerInside = false
         shellState.hoveredItemID = nil
-        shellState.pointerX = nil
+        shellState.pointer = nil
         shellState.magnification = 0
     }
 

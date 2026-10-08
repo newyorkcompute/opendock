@@ -11,6 +11,9 @@ import Foundation
 /// Directions follow the scroll as the system reports it, with the user's scroll direction
 /// already applied: scrolling toward content on the right or below (with natural
 /// scrolling, fingers moving left or up) goes to the next profile, like turning a page.
+///
+/// "Sideways" means along the dock: on a side edge, where the dock runs up the screen,
+/// the swipe that switches is the vertical one.
 public struct ProfileScrollGesture: Sendable {
     public enum Phase: Sendable {
         /// Fingers touched down and started moving.
@@ -46,16 +49,26 @@ public struct ProfileScrollGesture: Sendable {
 
     /// How far, in points, a trackpad gesture has to travel before it switches.
     public static let swipeDistance: Double = 36
-    /// A swipe without ⌘ has to be at least this many times more sideways than vertical.
+    /// A swipe without ⌘ has to be at least this many times more along the dock than across it.
     public static let horizontalDominance: Double = 1.5
     public static let wheelInterval: TimeInterval = 0.3
+
+    /// The axis the dock runs along, which a swipe has to follow.
+    public var axis: DockAxis
 
     private var travelX: Double = 0
     private var travelY: Double = 0
     private var switchedThisGesture = false
     private var lastWheelSwitch: TimeInterval?
 
-    public init() {}
+    public init(axis: DockAxis = .horizontal) {
+        self.axis = axis
+    }
+
+    /// The parts of a scroll along and across the dock.
+    private func split(_ deltaX: Double, _ deltaY: Double) -> (along: Double, across: Double) {
+        axis == .vertical ? (deltaY, deltaX) : (deltaX, deltaY)
+    }
 
     /// +1 for the next profile, -1 for the previous one, nil to stay.
     public mutating func handle(_ event: Event) -> Int? {
@@ -88,17 +101,20 @@ public struct ProfileScrollGesture: Sendable {
 
     /// The distance along the axis that counts, or nil if the gesture doesn't count.
     private func gestureTravel(isCommandDown: Bool) -> Double? {
-        if isCommandDown { return abs(travelX) >= abs(travelY) ? travelX : travelY }
-        return abs(travelX) >= Self.horizontalDominance * abs(travelY) ? travelX : nil
+        let travel = split(travelX, travelY)
+        if isCommandDown { return abs(travel.along) >= abs(travel.across) ? travel.along : travel.across }
+        return abs(travel.along) >= Self.horizontalDominance * abs(travel.across) ? travel.along : nil
     }
 
     private mutating func wheelStep(_ event: Event) -> Int? {
         let delta: Double
+        let scroll = split(event.deltaX, event.deltaY)
         if event.isCommandDown {
-            delta = abs(event.deltaX) >= abs(event.deltaY) ? event.deltaX : event.deltaY
-        } else if abs(event.deltaX) > abs(event.deltaY) {
-            // A horizontal wheel (or Shift-scrolling) is a sideways swipe already.
-            delta = event.deltaX
+            delta = abs(scroll.along) >= abs(scroll.across) ? scroll.along : scroll.across
+        } else if abs(scroll.along) > abs(scroll.across) {
+            // A wheel along the dock (a horizontal wheel, or Shift-scrolling, on the bottom
+            // edge) is a swipe along it already.
+            delta = scroll.along
         } else {
             return nil
         }

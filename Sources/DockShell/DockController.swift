@@ -191,15 +191,19 @@ public final class DockController {
         return CGSize(width: max(frameHold.width, contentSize.width), height: max(frameHold.height, contentSize.height))
     }
 
-    /// Frame for the panel when fully shown. The window reaches down to the edge so the
-    /// strip under the dock still counts as "over the dock"; the layout insets the surface.
+    /// The screen edge the dock is on.
+    var edge: DockSettings.Edge { store.settings.edge }
+
+    /// Frame for the panel when fully shown. The window reaches the screen edge so the
+    /// strip between it and the dock still counts as "over the dock"; the layout insets
+    /// the surface.
     private func shownFrame(on screen: NSScreen) -> NSRect {
-        DockPlacement.shownFrame(contentSize: frameSize, visibleFrame: screen.visibleFrame)
+        DockPlacement.shownFrame(contentSize: frameSize, visibleFrame: screen.visibleFrame, edge: edge)
     }
 
-    /// Frame for the panel when hidden: just below the bottom edge of the screen.
+    /// Frame for the panel when hidden: just past the dock's edge of the screen.
     private func hiddenFrame(on screen: NSScreen) -> NSRect {
-        DockPlacement.hiddenFrame(contentSize: frameSize, on: screen.placementScreen)
+        DockPlacement.hiddenFrame(contentSize: frameSize, on: screen.placementScreen, edge: edge)
     }
 
     func applyFrame(animated: Bool) {
@@ -269,6 +273,15 @@ public final class DockController {
     func displaySettingChanged() {
         updateActiveDisplayMonitor()
         updateScreen(force: true)
+    }
+
+    /// Called by the root view's `onChange(of: settings.edge)`. The layout turns to run
+    /// along the new edge and reports its new size, which places the window there; this
+    /// moves it right away in case the size happens not to change, and drops hover state
+    /// that refers to the old edge.
+    func edgeSettingChanged() {
+        resetMagnification()
+        applyFrame(animated: false)
     }
 
     private func observeScreens() {
@@ -452,19 +465,14 @@ public final class DockController {
     }
 
     /// True when the pointer is over the dock *or* in the strip between the dock and
-    /// the screen edge. Without the strip, a pointer resting at the very bottom of the
+    /// the screen edge. Without the strip, a pointer resting on the very edge of the
     /// screen (where it revealed the dock) would count as "outside" and hide it again.
     var pointerIsOverDock: Bool {
         guard let panel, panel.isVisible, let screen = targetScreen else { return false }
         // The window is larger than the dock (room for magnification), so use the
         // dock's own hit zone once the layout has produced one.
-        var zone = (hitZoneOnScreen ?? panel.frame).insetBy(dx: -4, dy: -4)
-        let edgeGap = zone.minY - screen.frame.minY
-        if edgeGap > 0 {
-            zone.origin.y = screen.frame.minY
-            zone.size.height += edgeGap
-        }
-        return zone.contains(NSEvent.mouseLocation)
+        let zone = (hitZoneOnScreen ?? panel.frame).insetBy(dx: -4, dy: -4)
+        return DockPlacement.reachingScreenEdge(zone, of: screen.frame, edge: edge).contains(NSEvent.mouseLocation)
     }
 
     /// The pointer is watched everywhere while there's an edge that can reveal the dock.
@@ -507,9 +515,9 @@ public final class DockController {
             return
         }
         // Hidden, or shown without auto-hide (which a full-screen Space doesn't display):
-        // the bottom edge of the dock's screen reveals it. On a full-screen Space the pointer
-        // has to stay there a moment; elsewhere only an auto-hidden dock has anything to show.
-        let atEdge = DockPlacement.isAtRevealEdge(location, of: screen.frame)
+        // the dock's edge of its screen reveals it. On a full-screen Space the pointer has
+        // to stay there a moment; elsewhere only an auto-hidden dock has anything to show.
+        let atEdge = DockPlacement.isAtRevealEdge(location, of: screen.frame, edge: edge)
         if atEdge, store.settings.revealInFullScreen, isOnFullScreenSpace {
             edgeHoldChanged(atEdge: true)
         } else {

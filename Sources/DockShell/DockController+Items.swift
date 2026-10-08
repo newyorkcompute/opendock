@@ -92,7 +92,7 @@ extension DockController {
     /// a few points from where the mouse went down on it.
     private func beginReorder(at location: CGPoint) -> Bool {
         let geometry = shellState.geometry
-        guard let id = geometry.anyItem(atX: location.x)?.pinnedID,
+        guard let id = geometry.anyItem(at: location)?.pinnedID,
             let index = store.items.firstIndex(where: { $0.id == id }),
             let slot = geometry.restingSlots.first(where: { $0.id == .pinned(id) })
         else { return false }
@@ -111,7 +111,7 @@ extension DockController {
         let slots = geometry.restingSlots.filter { $0.id == nil || $0.id != dragged }
         let limit = slots.prefix { $0.id?.pinnedID != nil }.count
         return DockReorder.insertionIndex(
-            pointer: Double(location.x - geometry.rowCenterX),
+            pointer: Double(geometry.along(location) - geometry.rowCenter),
             slots: slots.map { Double($0.width) },
             gapWidth: Double(gapWidth),
             limit: limit

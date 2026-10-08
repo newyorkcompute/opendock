@@ -7,6 +7,7 @@ struct ClockTileView: View {
     let instance: WidgetInstance
 
     @Environment(\.dockIsVisible) private var isVisible
+    @Environment(\.dockEdge) private var edge
     @Environment(\.locale) private var locale
 
     var body: some View {
@@ -19,7 +20,8 @@ struct ClockTileView: View {
 
         TimelineView(.periodic(from: start, by: interval)) { context in
             WidgetTile {
-                VStack(alignment: .leading, spacing: 0) {
+                // Centered in the narrow tile of a side edge.
+                VStack(alignment: edge.isVertical ? .center : .leading, spacing: 0) {
                     WidgetPrimaryText(timeString(context.date, settings: settings))
                     if let caption = caption(context.date, settings: settings) {
                         WidgetSecondaryText(caption)

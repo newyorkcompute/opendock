@@ -50,7 +50,7 @@ extension DockController {
         defer { edgeHold.reset() }
         // Re-check the pointer: it may have left without a move event reaching us.
         guard let screen = targetScreen,
-            DockPlacement.isAtRevealEdge(NSEvent.mouseLocation, of: screen.frame),
+            DockPlacement.isAtRevealEdge(NSEvent.mouseLocation, of: screen.frame, edge: edge),
             edgeHold.isComplete(now: ProcessInfo.processInfo.systemUptime),
             store.settings.revealInFullScreen, isOnFullScreenSpace
         else { return }
