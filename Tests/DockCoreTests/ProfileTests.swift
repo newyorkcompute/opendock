@@ -57,7 +57,8 @@ struct ProfileTests {
     @Test func duplicateCopiesItemsWithNewIDsAfterTheOriginal() throws {
         var doc = document(["Work", "Home"])
         let source = doc.profiles[0]
-        let id = try #require(doc.duplicateProfile(source.id))
+        let duplicated = doc.duplicateProfile(source.id)
+        let id = try #require(duplicated)
         #expect(names(doc) == ["Work", "Work Copy", "Home"])
         let copy = doc.profiles[1]
         #expect(copy.id == id)
@@ -67,7 +68,8 @@ struct ProfileTests {
 
         doc.duplicateProfile(source.id)
         #expect(names(doc) == ["Work", "Work Copy 2", "Work Copy", "Home"])
-        #expect(doc.duplicateProfile(UUID()) == nil)
+        let missing = doc.duplicateProfile(UUID())
+        #expect(missing == nil)
     }
 
     @Test func renameTrimsAndIgnoresBlankNames() {
@@ -83,18 +85,22 @@ struct ProfileTests {
 
     @Test func deleteKeepsTheLastProfile() {
         var doc = document(["Only"])
-        #expect(!doc.deleteProfile(doc.profiles[0].id))
+        let deletedOnly = doc.deleteProfile(doc.profiles[0].id)
+        #expect(!deletedOnly)
         #expect(doc.profiles.count == 1)
-        #expect(!doc.deleteProfile(UUID()))
+        let deletedUnknown = doc.deleteProfile(UUID())
+        #expect(!deletedUnknown)
     }
 
     @Test func deletingTheActiveProfileActivatesItsNeighbor() {
         var doc = document(["A", "B", "C"], active: 1)
         let ids = doc.profiles.map(\.id)
-        #expect(doc.deleteProfile(ids[1]))
+        let deletedB = doc.deleteProfile(ids[1])
+        #expect(deletedB)
         #expect(doc.activeProfileID == ids[2])
 
-        #expect(doc.deleteProfile(ids[2]))
+        let deletedC = doc.deleteProfile(ids[2])
+        #expect(deletedC)
         #expect(doc.activeProfileID == ids[0])
         #expect(names(doc) == ["A"])
     }
