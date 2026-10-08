@@ -9,5 +9,8 @@
 	<true/>
 	<key>com.apple.security.personal-information.location</key>
 	<true/>
+	<!-- Now Playing widget fallback: Apple Events to Music and Spotify under the hardened runtime. -->
+	<key>com.apple.security.automation.apple-events</key>
+	<true/>
 </dict>
 </plist>
