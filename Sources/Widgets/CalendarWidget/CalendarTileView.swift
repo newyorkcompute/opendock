@@ -15,7 +15,7 @@ struct CalendarTileView: View {
 
     var body: some View {
         Group {
-            if CalendarSettings.showNextEvent(in: instance) {
+            if CalendarSettings.showNextEvent.boolValue(in: instance.settings) {
                 TimelineView(.periodic(from: .now, by: isVisible ? 60 : 900)) { context in
                     WidgetTile {
                         WidgetStack(spacing: iconSize * (edge.isVertical ? 0.08 : 0.16)) {

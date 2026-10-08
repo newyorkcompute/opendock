@@ -13,18 +13,9 @@ struct BatterySettingsView: View {
 
     var body: some View {
         Form {
-            Toggle("Show percentage", isOn: binding(BatterySettings.showPercentage))
-            Toggle("Show accessory batteries", isOn: binding(BatterySettings.showAccessories))
+            Toggle("Show percentage", isOn: updater.boolBinding(BatterySettings.showPercentage, in: $instance))
+            Toggle(
+                "Show accessory batteries", isOn: updater.boolBinding(BatterySettings.showAccessories, in: $instance))
         }
-    }
-
-    private func binding(_ key: String) -> Binding<Bool> {
-        Binding(
-            get: { BatterySettings.bool(key, in: instance) },
-            set: { newValue in
-                instance.settings[key] = newValue ? "true" : "false"
-                updater(instance)
-            }
-        )
     }
 }

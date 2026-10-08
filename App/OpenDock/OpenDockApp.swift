@@ -1,14 +1,9 @@
-import BatteryWidget
-import CalendarWidget
-import ClockWidget
+import BuiltInWidgets
 import DockCore
 import DockShell
 import DockWidgetKit
-import NowPlayingWidget
 import SwiftUI
-import SystemActivityWidget
 import SystemServices
-import WeatherWidget
 
 @main
 struct OpenDockApp: App {
@@ -30,7 +25,7 @@ struct OpenDockApp: App {
 @MainActor
 @Observable
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    let store = DockStore.load()
+    let store = DockStore.load(from: .default(widgetSchemas: BuiltInWidgets.settingsSchemas))
     let registry = WidgetRegistry()
     let running = RunningAppsMonitor()
     let windows = AppWindowManager()
@@ -66,10 +61,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     override init() {
         super.init()
-        registry.register([
-            ClockWidget.self, BatteryWidget.self, CalendarWidget.self, SystemActivityWidget.self, WeatherWidget.self,
-            NowPlayingWidget.self,
-        ])
+        registry.register(BuiltInWidgets.all)
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {

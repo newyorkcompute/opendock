@@ -101,8 +101,9 @@ once the welcome window is closed). Without access it
 shows "Tap to allow", and its popover has a button to allow access or open Privacy
 Settings. The Now Playing widget reads the system's Now Playing (the same data as Control
 Center) through a small helper run by `/usr/bin/perl`; if that isn't available it asks
-Music and Spotify directly, and macOS asks you once to allow that. To build your own
-widget, see [Writing a widget](#writing-a-widget).
+Music and Spotify directly, and macOS asks you once to allow that. The keys each widget stores in
+`dock.json` are listed in [docs/widgets.md](docs/widgets.md). To build your own widget,
+see [Writing a widget](#writing-a-widget).
 
 The Weather widget uses [Open-Meteo](https://open-meteo.com/) (free, no account) and asks for
 location access only when a tile set to Current Location is in the dock; you can pick a city
@@ -199,7 +200,11 @@ public enum HelloWidget: DockWidget {
     public static let displayName = "Hello"
     public static let systemImage = "hand.wave"
     public static let summary = "Says hello."
-    public static let defaultSettings = ["name": "World"]
+
+    // Every key the widget reads: name, value type, default, and a one-line description.
+    // The settings UI, load-time validation, and docs/widgets.md all come from this.
+    public static let settingsSchema = WidgetSettingsSchema([name])
+    static let name = WidgetSettingKey("name", type: .text, default: "World", summary: "Who to greet.")
 
     public static func makeView(instance: WidgetInstance) -> AnyView {
         AnyView(HelloTile(instance: instance))
@@ -214,7 +219,8 @@ struct HelloTile: View {
 
     var body: some View {
         WidgetTile {
-            WidgetPrimaryText("Hello, \(instance.settings["name"] ?? "World")")
+            // Reading through the key gives the default when the value is missing or invalid.
+            WidgetPrimaryText("Hello, \(HelloWidget.name.value(in: instance.settings))")
         }
     }
 }
@@ -230,10 +236,14 @@ Guidelines:
 - If the widget needs a permission, ask for it on its own only while
   `\.widgetsMayRequestAccess` is true. It's false while the welcome window is open on a
   fresh install.
-- Save settings through `\.widgetUpdateSettings`, never through your own files.
+- Save settings through `\.widgetUpdateSettings`, never through your own files. In a
+  settings view, `updater.boolBinding(key, in: $instance)` and `stringBinding` give you
+  bindings that read through the schema and persist each change.
 
 Then add a target under `Sources/Widgets/` in `Package.swift`, add it as a dependency of
-`OpenDock`, and register it in `AppDelegate` with `registry.register([...])`.
+`BuiltInWidgets`, and append it to `BuiltInWidgets.all`. That registers it at launch,
+validates its saved settings against the schema, and adds it to the widget docs; run
+`make widget-docs` to regenerate [docs/widgets.md](docs/widgets.md).
 
 ## Roadmap
 

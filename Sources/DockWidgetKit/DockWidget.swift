@@ -19,7 +19,12 @@ public protocol DockWidget {
     /// One-line description for the picker.
     static var summary: String { get }
 
-    /// Default settings for a freshly added instance.
+    /// The settings keys this widget reads, with their types, defaults, and allowed values.
+    /// It's the one source for the settings UI, for validation when a `dock.json` is
+    /// loaded, and for `docs/widgets.md`. Widgets without settings leave it empty.
+    static var settingsSchema: WidgetSettingsSchema { get }
+
+    /// Default settings for a freshly added instance. By default, the schema's defaults.
     static var defaultSettings: [String: String] { get }
 
     /// The compact view that lives in the dock.
@@ -34,7 +39,8 @@ public protocol DockWidget {
 }
 
 public extension DockWidget {
-    static var defaultSettings: [String: String] { [:] }
+    static var settingsSchema: WidgetSettingsSchema { WidgetSettingsSchema() }
+    static var defaultSettings: [String: String] { settingsSchema.defaults }
     static func makePopout(instance: WidgetInstance) -> AnyView? { nil }
     static func makeSettingsView(instance: WidgetInstance) -> AnyView? { nil }
 

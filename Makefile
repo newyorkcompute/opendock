@@ -1,4 +1,4 @@
-.PHONY: build run test format lint release release-native notarize dist clean
+.PHONY: build run test widget-docs format lint release release-native notarize dist clean
 
 SWIFT_SOURCES = Sources App Tests
 
@@ -10,6 +10,9 @@ run:          ## Build and launch
 
 test:         ## Run unit tests
 	swift test
+
+widget-docs:  ## Regenerate the settings tables in docs/widgets.md from the widget schemas
+	OPENDOCK_UPDATE_WIDGET_DOCS=1 swift test --filter WidgetDocsTests
 
 format:       ## Format Swift sources in place (swift-format, per .swift-format)
 	swift format --in-place --recursive --parallel $(SWIFT_SOURCES)

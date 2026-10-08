@@ -13,11 +13,11 @@ OpenDock is a pure Swift Package with no Xcode project. Don't add one.
 | `Sources/DockCore` | Models, profiles, geometry, and persistence (`DockStorage`, `DockStore`). No UI. |
 | `Sources/SystemServices` | Wrappers over macOS APIs: running apps, launching, icons, power, EventKit, hot keys, hiding Apple's Dock. |
 | `Sources/DockWidgetKit` | The `DockWidget` protocol, `WidgetRegistry`, shared tile views, environment values. |
-| `Sources/Widgets/*` | One target per built-in widget (`ClockWidget`, `BatteryWidget`, `CalendarWidget`). |
+| `Sources/Widgets/*` | One target per built-in widget (`ClockWidget`, `BatteryWidget`, `CalendarWidget`, `SystemActivityWidget`, `WeatherWidget`, `NowPlayingWidget`), plus `BuiltInWidgets`, the list of them. |
 | `Sources/DockShell` | The dock panel: `DockPanel`, `DockController` (frame math, auto-hide, magnification), views, drag and drop. |
 | `App/OpenDock` | The `@main` menu bar app, the AppKit-hosted Settings window, and menus. |
 | `App/Resources` | `Info.plist`, entitlements, app icon. |
-| `Tests/DockCoreTests`, `Tests/SystemServicesTests` | Unit tests. |
+| `Tests/DockCoreTests`, `Tests/SystemServicesTests`, `Tests/WidgetTests` | Unit tests. `WidgetTests` also checks `docs/widgets.md` against the widget schemas. |
 | `scripts/` | `build-app.sh` wraps the SwiftPM binary into `build/OpenDock.app`. |
 
 ## Commands
@@ -29,6 +29,7 @@ Building needs macOS with Xcode 26 or later (Swift 6.2+, macOS 26 SDK).
 | `make build` | Debug build and `.app` bundle |
 | `make run` | Debug build, then (re)launch the app |
 | `make test` | Unit tests (`swift test`) |
+| `make widget-docs` | Regenerate the settings tables in `docs/widgets.md` from the widget schemas |
 | `make release-native` | Optimized (`-O`) build and bundle for this Mac's architecture |
 | `make format` | Format Swift sources in place (swift-format, per `.swift-format`) |
 | `make lint` | Check formatting and lint rules, as CI does |
@@ -52,7 +53,11 @@ App logs: `log stream --predicate 'subsystem == "com.newyorkcompute.opendock"' -
   `store.document` is `private(set)`. `dock.json` is versioned with tolerant decoding: add
   fields with defaults, never rename or remove them.
 - **Widget IDs:** never rename a widget type ID (`BuiltInWidgetID.*`,
-  `com.newyorkcompute.opendock.widget.*`). They're stored in users' `dock.json` files.
+ `com.newyorkcompute.opendock.widget.*`). They're stored in users' `dock.json` files.
+- **Widget settings:** every key a widget reads is declared in its `settingsSchema`
+ (`WidgetSettingKey`: name, type, default, description), and read through the key
+ (`key.value(in:)`, `key.boolValue(in:)`). Don't rename keys either. New built-in widgets go
+ in `BuiltInWidgets.all`; then run `make widget-docs` and commit `docs/widgets.md`.
 - **Generic classes in UI targets** need an explicit, empty, nonisolated `deinit {}`, like
   `DockHostingView` in `Sources/DockShell/DockPanel.swift`. Under main-actor default isolation
   the implicit deinit is isolated, and Swift 6.3.3 segfaults on it with `-O`. `isolated deinit`

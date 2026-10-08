@@ -59,6 +59,31 @@ public struct WidgetSettingsUpdater: Equatable {
     }
 }
 
+// Bindings for settings views, which keep their instance in `@State` and persist each
+// change through the updater. Reads go through the key, so an invalid stored value shows
+// as the default.
+public extension WidgetSettingsUpdater {
+    func stringBinding(_ key: WidgetSettingKey, in instance: Binding<WidgetInstance>) -> Binding<String> {
+        Binding(
+            get: { key.value(in: instance.wrappedValue.settings) },
+            set: { newValue in
+                instance.wrappedValue.settings[key.name] = newValue
+                handler(instance.wrappedValue)
+            }
+        )
+    }
+
+    func boolBinding(_ key: WidgetSettingKey, in instance: Binding<WidgetInstance>) -> Binding<Bool> {
+        Binding(
+            get: { key.boolValue(in: instance.wrappedValue.settings) },
+            set: { newValue in
+                instance.wrappedValue.settings[key.name] = newValue ? "true" : "false"
+                handler(instance.wrappedValue)
+            }
+        )
+    }
+}
+
 /// Standard sizing helpers so all widgets agree on proportions.
 public enum WidgetMetrics {
     /// Corner radius for a tile at the given icon size.
