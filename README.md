@@ -172,8 +172,10 @@ Notes:
 
 ## Architecture
 
-OpenDock is a single Swift Package with no Xcode project. `scripts/build-app.sh` wraps the
-built binary in a signed `.app` bundle.
+OpenDock is a single Swift Package. `scripts/build-app.sh` wraps the built binary in a signed
+`.app` bundle. For Xcode's debugger, Instruments, or SwiftUI previews, `make xcodeproj`
+generates a git-ignored project; see
+[Working in Xcode](CONTRIBUTING.md#working-in-xcode) in CONTRIBUTING.
 
 | Target | Role |
 | --- | --- |

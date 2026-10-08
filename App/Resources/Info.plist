@@ -18,10 +18,11 @@
 	<string>OpenDock</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
+	<!-- scripts/build-app.sh replaces these; Xcode fills them from the build settings of the same name. -->
 	<key>CFBundleShortVersionString</key>
-	<string>$(VERSION)</string>
+	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
-	<string>$(BUILD)</string>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.utilities</string>
 	<key>LSMinimumSystemVersion</key>

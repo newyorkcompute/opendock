@@ -22,9 +22,11 @@ security problem, please follow [SECURITY.md](SECURITY.md) instead of opening a 
 
 See the README for [toolchain requirements](README.md#build-and-run).
 
-OpenDock is a pure Swift Package. There is no Xcode project, and we don't want one in the
-repo. `scripts/build-app.sh` wraps the SwiftPM binary into `build/OpenDock.app` (Info.plist,
-icon, ad-hoc signature). You can still edit in Xcode by opening `Package.swift`.
+OpenDock is a pure Swift Package. `Package.swift` is the source of truth for targets, their
+dependencies, and compiler settings, and `scripts/build-app.sh` wraps the SwiftPM binary into
+`build/OpenDock.app` (Info.plist, icon, ad-hoc signature). No Xcode project is checked in;
+[`make xcodeproj`](#working-in-xcode) generates one when you want Xcode's debugger, Instruments,
+or SwiftUI previews.
 
 | Command | What it does |
 | --- | --- |
@@ -36,7 +38,8 @@ icon, ad-hoc signature). You can still edit in Xcode by opening `Package.swift`.
 | `make release` | Optimized universal (Apple silicon + Intel) build and `.app` bundle |
 | `make release-native` | Optimized build for your Mac's architecture only (faster) |
 | `make install` | `make release`, then replace `/Applications/OpenDock.app` with it (see below) |
-| `make clean` | Delete `.build` and `build` |
+| `make xcodeproj` | Generate `App/OpenDock.xcodeproj` with XcodeGen (`make xcode` also opens it) |
+| `make clean` | Delete `.build`, `build`, and the generated Xcode project |
 
 Releases are cut by pushing a `v*` tag; see [RELEASING.md](RELEASING.md).
 
@@ -98,6 +101,51 @@ To watch the app's logs while it runs:
 ```sh
 log stream --predicate 'subsystem == "com.newyorkcompute.opendock"' --level debug
 ```
+
+### Working in Xcode
+
+Opening `Package.swift` in Xcode is enough for editing, but Xcode then runs the `OpenDock`
+executable as a bare binary: no `Info.plist`, so no bundle identifier for permission prompts
+and no `LSUIElement`, and no Now Playing helper next to it. For the debugger, Instruments, and
+SwiftUI previews on the real app, generate a project instead:
+
+```sh
+brew install xcodegen   # once
+make xcode              # = make xcodeproj + open App/OpenDock.xcodeproj
+```
+
+`make xcodeproj` runs [XcodeGen](https://github.com/yonaskolb/XcodeGen) on `App/project.yml`
+and writes `App/OpenDock.xcodeproj`, which is git-ignored. Never commit it or edit it by hand;
+change `App/project.yml` and regenerate. The project has:
+
+- An `OpenDock` app target that compiles `App/OpenDock` with the package's `Info.plist`,
+  entitlements, and icon, and links every other module from `Package.swift` through its
+  `OpenDockModules` product. Module settings, dependencies, and tests come from the package,
+  so `Package.swift` stays the single source of truth. Press ⌘R to run the app from Xcode and
+  ⌘U to run the package's tests.
+- An `OpenDockNowPlayingHelper` target for `Sources/NowPlayingHelper`, copied into
+  `Contents/Frameworks/libOpenDockNowPlayingHelper.dylib` the same way `build-app.sh` does it.
+
+Sources are Xcode 16 synchronized folders, so adding or removing a Swift file doesn't need a
+regeneration. Regenerate when you change `App/project.yml`. Adding a module to the app is done
+in `Package.swift` alone: put it in `appModules`, which feeds both the executable and
+`OpenDockModules` (widgets don't go there; they reach the app through `BuiltInWidgets`). A new
+test target needs one line in the scheme's `testTargets` in `App/project.yml` so ⌘U runs it.
+`App/project.yml` also mirrors two package settings (`ExistentialAny` and main-actor default
+isolation); if those change in `Package.swift`, change them there too.
+
+Builds from Xcode are ad-hoc signed unless `OPENDOCK_SIGN_IDENTITY` is set when you run
+`make xcodeproj`, in the environment or in `.env.local`, exactly as for `build-app.sh`. With
+the `OpenDock Dev` certificate from
+[Installing your build](#installing-your-build-and-keeping-its-permissions), permissions
+survive rebuilds from Xcode too. The identity is baked into the generated project, so
+regenerate after changing it.
+
+CI, releases, and `make build` all still use SwiftPM and `scripts/build-app.sh`, so run
+`make test` and `make lint` before you push even if you did everything in Xcode. Why XcodeGen:
+it's a single Homebrew install and a small YAML file, Xcode reads the local package directly so
+there is nothing else to keep in sync, and unlike Tuist it adds no project DSL, build cache, or
+generated manifests of its own.
 
 ### Formatting
 

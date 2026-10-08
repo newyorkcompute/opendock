@@ -13,6 +13,18 @@ let uiSettings: [SwiftSetting] = baseSettings + [
     .defaultIsolation(MainActor.self),
 ]
 
+/// Every module the app links. The `OpenDock` executable depends on all of them, and the
+/// `OpenDockModules` product exposes the same set to the generated Xcode project
+/// (`App/project.yml`), whose app target compiles `App/OpenDock` itself and can only link
+/// package products. Widgets reach the app through `BuiltInWidgets`.
+let appModules = [
+    "DockCore",
+    "DockWidgetKit",
+    "DockShell",
+    "SystemServices",
+    "BuiltInWidgets",
+]
+
 let package = Package(
     name: "OpenDock",
     defaultLocalization: "en",
@@ -23,6 +35,8 @@ let package = Package(
         .executable(name: "OpenDock", targets: ["OpenDock"]),
         .library(name: "DockCore", targets: ["DockCore"]),
         .library(name: "DockWidgetKit", targets: ["DockWidgetKit"]),
+        /// For the Xcode project only (`make xcodeproj`); see `appModules`.
+        .library(name: "OpenDockModules", targets: appModules),
         /// Loaded by `/usr/bin/perl`, never by the app (see `Sources/NowPlayingHelper`).
         /// `scripts/build-app.sh` builds it and copies the dylib into `Contents/Frameworks`.
         .library(name: "OpenDockNowPlayingHelper", type: .dynamic, targets: ["NowPlayingHelper"]),
@@ -124,13 +138,7 @@ let package = Package(
         /// The menu bar app that wires everything together.
         .executableTarget(
             name: "OpenDock",
-            dependencies: [
-                "DockCore",
-                "DockWidgetKit",
-                "DockShell",
-                "SystemServices",
-                "BuiltInWidgets",
-            ],
+            dependencies: appModules.map { .target(name: $0) },
             path: "App/OpenDock",
             swiftSettings: uiSettings
         ),
