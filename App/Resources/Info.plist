@@ -54,7 +54,7 @@
 	<string>OpenDock shows the weather for your location in the Weather widget.</string>
 	<!-- Now Playing widget fallback: asks Music and Spotify directly when the system-wide helper isn't available. -->
 	<key>NSAppleEventsUsageDescription</key>
-	<string>OpenDock shows and controls what's playing in Music and Spotify in the Now Playing widget.</string>
+	<string>OpenDock shows and controls what's playing in Music and Spotify in the Now Playing widget, and asks Finder whether the Trash is empty and to empty it.</string>
 	<!-- Asked the first time a folder in these places is browsed from the dock. -->
 	<key>NSDesktopFolderUsageDescription</key>
 	<string>OpenDock shows the contents of folders you keep in the dock.</string>
