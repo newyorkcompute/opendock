@@ -8,9 +8,23 @@ struct MenuBarMenu: View {
 
     @Environment(DockStore.self) private var store
     @Environment(WidgetRegistry.self) private var registry
+    @Environment(ProfileSwitcher.self) private var profiles
 
     var body: some View {
         Text("OpenDock")
+
+        Divider()
+
+        if store.profiles.count > 1 {
+            ForEach(Array(store.profiles.enumerated()), id: \.element.id) { index, profile in
+                Toggle(profile.name, isOn: Binding(
+                    get: { profile.id == store.activeProfileID },
+                    set: { isOn in if isOn { profiles.select(profile.id) } }
+                ))
+                .keyboardShortcut(index < 9 ? KeyboardShortcut(KeyEquivalent(Character("\(index + 1)"))) : nil)
+            }
+        }
+        Button("Profiles…") { app.showSettings(.profiles) }
 
         Divider()
 

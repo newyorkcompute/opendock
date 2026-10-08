@@ -37,6 +37,11 @@ public struct DockSettings: Hashable, Codable, Sendable {
     public var magnification: Double
     /// Hide Apple's Dock while OpenDock runs; its settings are restored afterwards.
     public var hideAppleDock: Bool
+    /// Global shortcuts that switch to the next and previous profile, wrapping around.
+    public var nextProfileHotKey: HotKey?
+    public var previousProfileHotKey: HotKey?
+    /// Switch profiles by swiping sideways on the dock, or scrolling over it with ⌘ held.
+    public var switchProfilesByScrolling: Bool
 
     public init(
         edge: Edge = .bottom,
@@ -49,7 +54,10 @@ public struct DockSettings: Hashable, Codable, Sendable {
         showRunningApps: Bool = false,
         hoverEffect: Bool = true,
         magnification: Double = 1.5,
-        hideAppleDock: Bool = false
+        hideAppleDock: Bool = false,
+        nextProfileHotKey: HotKey? = nil,
+        previousProfileHotKey: HotKey? = nil,
+        switchProfilesByScrolling: Bool = true
     ) {
         self.edge = edge
         self.display = display
@@ -62,6 +70,9 @@ public struct DockSettings: Hashable, Codable, Sendable {
         self.hoverEffect = hoverEffect
         self.magnification = magnification
         self.hideAppleDock = hideAppleDock
+        self.nextProfileHotKey = nextProfileHotKey
+        self.previousProfileHotKey = previousProfileHotKey
+        self.switchProfilesByScrolling = switchProfilesByScrolling
     }
 
     public static let `default` = DockSettings()
@@ -95,6 +106,10 @@ extension DockSettings {
         magnification = ((try? c.decodeIfPresent(Double.self, forKey: .magnification)) ?? d.magnification)
             .clamped(to: Self.magnificationRange)
         hideAppleDock = (try? c.decodeIfPresent(Bool.self, forKey: .hideAppleDock)) ?? d.hideAppleDock
+        nextProfileHotKey = (try? c.decodeIfPresent(HotKey.self, forKey: .nextProfileHotKey)) ?? d.nextProfileHotKey
+        previousProfileHotKey = (try? c.decodeIfPresent(HotKey.self, forKey: .previousProfileHotKey)) ?? d.previousProfileHotKey
+        switchProfilesByScrolling = (try? c.decodeIfPresent(Bool.self, forKey: .switchProfilesByScrolling))
+            ?? d.switchProfilesByScrolling
     }
 }
 

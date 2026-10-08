@@ -102,6 +102,53 @@ public final class DockStore {
         return true
     }
 
+    // MARK: - Profiles
+
+    public var profiles: [DockProfile] { document.profiles }
+    public var activeProfileID: DockProfile.ID { document.activeProfileID }
+
+    public func selectProfile(_ id: DockProfile.ID) {
+        guard id != document.activeProfileID, document.profile(id: id) != nil else { return }
+        update { $0.activateProfile(id) }
+    }
+
+    /// Adds an empty profile at the end without activating it.
+    @discardableResult
+    public func addProfile(named name: String? = nil) -> DockProfile.ID {
+        var id = document.activeProfileID
+        update { id = $0.addProfile(named: name) }
+        return id
+    }
+
+    /// Copies a profile, right after it, without activating the copy.
+    @discardableResult
+    public func duplicateProfile(_ id: DockProfile.ID) -> DockProfile.ID? {
+        guard document.profile(id: id) != nil else { return nil }
+        var copy: DockProfile.ID?
+        update { copy = $0.duplicateProfile(id) }
+        return copy
+    }
+
+    public func renameProfile(_ id: DockProfile.ID, to name: String) {
+        guard let current = document.profile(id: id)?.name,
+              current != name.trimmingCharacters(in: .whitespacesAndNewlines)
+        else { return }
+        update { $0.renameProfile(id, to: name) }
+    }
+
+    /// Deletes a profile unless it's the last one left.
+    @discardableResult
+    public func deleteProfile(_ id: DockProfile.ID) -> Bool {
+        guard document.profiles.count > 1, document.profile(id: id) != nil else { return false }
+        var deleted = false
+        update { deleted = $0.deleteProfile(id) }
+        return deleted
+    }
+
+    public func moveProfile(_ id: DockProfile.ID, by offset: Int) {
+        update { $0.moveProfile(id, by: offset) }
+    }
+
     public func resetToFirstRun() {
         update { $0 = .firstRun() }
     }

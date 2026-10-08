@@ -2,6 +2,7 @@ import AppKit
 import DockCore
 import DockWidgetKit
 import SwiftUI
+import SystemServices
 
 /// The Settings window: an AppKit toolbar-tab window hosting one SwiftUI pane per tab.
 ///
@@ -11,7 +12,13 @@ import SwiftUI
 final class SettingsWindowController: NSWindowController {
     private let tabController = SettingsTabViewController()
 
-    init(store: DockStore, registry: WidgetRegistry, launchAtLogin: LaunchAtLogin) {
+    init(
+        store: DockStore,
+        registry: WidgetRegistry,
+        launchAtLogin: LaunchAtLogin,
+        profiles: ProfileSwitcher,
+        hotKeys: GlobalHotKeys
+    ) {
         tabController.tabStyle = .toolbar
         for tab in SettingsTab.allCases {
             let pane = tab.content
@@ -19,6 +26,8 @@ final class SettingsWindowController: NSWindowController {
                 .environment(store)
                 .environment(registry)
                 .environment(launchAtLogin)
+                .environment(profiles)
+                .environment(hotKeys)
             let hosting = NSHostingController(rootView: pane)
             hosting.sizingOptions = []
             hosting.preferredContentSize = tab.contentSize

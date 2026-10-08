@@ -9,7 +9,7 @@ enum BackupActions {
     static func exportLayout(from store: DockStore) {
         let panel = NSSavePanel()
         panel.title = "Export Layout"
-        panel.message = "Save your dock items, widgets, and settings to a file."
+        panel.message = "Save your profiles, dock items, widgets, and settings to a file."
         panel.allowedContentTypes = [.json]
         panel.nameFieldStringValue = defaultFileName
         panel.canCreateDirectories = true
@@ -26,7 +26,7 @@ enum BackupActions {
     static func importLayout(into store: DockStore) {
         let panel = NSOpenPanel()
         panel.title = "Import Layout"
-        panel.message = "Importing replaces your current dock items and settings."
+        panel.message = "Importing replaces all your current profiles and settings."
         panel.prompt = "Import"
         panel.allowedContentTypes = [.json]
         panel.allowsMultipleSelection = false

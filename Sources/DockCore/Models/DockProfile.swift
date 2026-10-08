@@ -1,7 +1,7 @@
 import Foundation
 
-/// A named, ordered dock layout. The MVP exposes a single profile in the UI,
-/// but the model supports several so profile switching is a UI-only addition later.
+/// A named, ordered dock layout. A document holds one or more, and the dock shows the
+/// active one. Settings (size, material, behavior) are shared by all profiles.
 public struct DockProfile: Identifiable, Hashable, Codable, Sendable {
     public var id: UUID
     public var name: String

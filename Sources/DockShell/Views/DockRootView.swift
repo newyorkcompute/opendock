@@ -44,6 +44,7 @@ struct DockSurfaceView: View {
     @Environment(WidgetRegistry.self) private var registry
     @Environment(RunningAppsMonitor.self) private var running
     @Environment(DockShellState.self) private var shellState
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         let metrics = DockRowMetrics(settings: store.settings)
@@ -54,7 +55,8 @@ struct DockSurfaceView: View {
             metrics: metrics,
             pointerX: shellState.pointerX,
             amount: shellState.magnification,
-            hoveredID: shellState.hoveredItemID,
+            // A profile's name is centered over the dock rather than over an item.
+            hoveredID: shellState.profileBanner == nil ? shellState.hoveredItemID : nil,
             draggedID: shellState.draggingItemID,
             gap: shellState.dropGap,
             geometry: shellState.geometry
@@ -67,11 +69,18 @@ struct DockSurfaceView: View {
 
             ForEach(store.items) { item in
                 DockItemView(item: item, controller: controller)
+                    .transition(profileSwap(metrics))
                     .dockLayoutRole(.item(
                         .pinned(item.id),
                         growth: DockMagnification.growth(for: item),
                         hoverable: !item.isSpacer && !item.isDivider
                     ))
+            }
+
+            if store.items.isEmpty {
+                EmptyProfilePlaceholder(controller: controller)
+                    .transition(profileSwap(metrics))
+                    .dockLayoutRole(.item(nil, growth: 0, hoverable: false))
             }
 
             if !extras.isEmpty {
@@ -85,7 +94,7 @@ struct DockSurfaceView: View {
                 }
             }
 
-            DockItemLabel(title: label(for: shellState.hoveredItemID, extras: extras))
+            DockItemLabel(title: shellState.profileBanner ?? label(for: shellState.hoveredItemID, extras: extras))
                 .dockLayoutRole(.label)
         }
         .animation(.dockRunningApps, value: extras.map(\.id))
@@ -106,6 +115,10 @@ struct DockSurfaceView: View {
             // so right-click lands on the padding, not just on items.
             .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             .contextMenu { DockBackgroundMenu(controller: controller) }
+    }
+
+    private func profileSwap(_ metrics: DockRowMetrics) -> AnyTransition {
+        .dockProfileSwap(direction: shellState.profileSwapDirection, distance: metrics.iconSize, reduceMotion: reduceMotion)
     }
 
     private func label(for id: DockRowItemID?, extras: [RunningDockApp]) -> String? {
@@ -140,6 +153,31 @@ extension Animation {
 struct DockHitZone: View {
     var body: some View {
         Rectangle().fill(.black.opacity(0.005))
+    }
+}
+
+/// Stands in for the items of an empty profile, so the dock keeps its height and shows
+/// where to start. Clicking it adds apps.
+struct EmptyProfilePlaceholder: View {
+    let controller: DockController
+
+    @Environment(\.dockIconSize) private var iconSize
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: iconSize * 0.22, style: .continuous)
+            .strokeBorder(.secondary.opacity(0.6), style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+            .overlay {
+                Image(systemName: "plus")
+                    .font(.system(size: iconSize * 0.36, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
+            .frame(width: iconSize, height: iconSize)
+            .padding(.bottom, 6) // keep baseline aligned with apps
+            .contentShape(Rectangle())
+            .onTapGesture { controller.promptForApp() }
+            .help("Add apps to this profile")
+            .accessibilityLabel("Add App")
+            .accessibilityAddTraits(.isButton)
     }
 }
 

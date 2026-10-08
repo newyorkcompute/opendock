@@ -3,6 +3,7 @@ import SwiftUI
 /// The panes of the Settings window, in toolbar order.
 enum SettingsTab: String, CaseIterable, Identifiable {
     case general
+    case profiles
     case dockItems
     case widgets
     case about
@@ -12,6 +13,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .general: "General"
+        case .profiles: "Profiles"
         case .dockItems: "Dock Items"
         case .widgets: "Widgets"
         case .about: "About"
@@ -21,6 +23,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
     var systemImage: String {
         switch self {
         case .general: "gearshape"
+        case .profiles: "rectangle.stack"
         case .dockItems: "dock.rectangle"
         case .widgets: "square.grid.2x2"
         case .about: "info.circle"
@@ -33,6 +36,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         let width: CGFloat = 520
         return switch self {
         case .general: CGSize(width: width, height: 640)
+        case .profiles: CGSize(width: width, height: 560)
         case .dockItems: CGSize(width: width, height: 560)
         case .widgets: CGSize(width: width, height: 380)
         case .about: CGSize(width: width, height: 360)
@@ -43,6 +47,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
     var content: some View {
         switch self {
         case .general: GeneralSettingsTab()
+        case .profiles: ProfilesTab()
         case .dockItems: DockItemsTab()
         case .widgets: WidgetsTab()
         case .about: AboutTab()
