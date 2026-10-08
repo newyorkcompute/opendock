@@ -6,7 +6,9 @@ disagree, CONTRIBUTING wins.
 
 ## Layout
 
-OpenDock is a pure Swift Package with no Xcode project. Don't add one.
+OpenDock is a pure Swift Package. `Package.swift` is the source of truth; the only Xcode
+project is the one `make xcodeproj` generates from `App/project.yml`, and it's git-ignored.
+Don't commit a generated project or add an Xcode project of your own.
 
 | Path | What's there |
 | --- | --- |
@@ -17,6 +19,7 @@ OpenDock is a pure Swift Package with no Xcode project. Don't add one.
 | `Sources/DockShell` | The dock panel: `DockPanel`, `DockController` (frame math, auto-hide, magnification), views, drag and drop. |
 | `App/OpenDock` | The `@main` menu bar app, the AppKit-hosted Settings window, and menus. |
 | `App/Resources` | `Info.plist`, entitlements, app icon. |
+| `App/project.yml` | XcodeGen spec for the generated `App/OpenDock.xcodeproj`. Mirrors `ExistentialAny` and main-actor default isolation from `Package.swift`; new modules go in `Package.swift`'s `appModules` only. |
 | `Tests/DockCoreTests`, `Tests/SystemServicesTests`, `Tests/WidgetTests` | Unit tests. `WidgetTests` also checks `docs/widgets.md` against the widget schemas. |
 | `scripts/` | `build-app.sh` wraps the SwiftPM binary into `build/OpenDock.app`. |
 
@@ -33,6 +36,7 @@ Building needs macOS with Xcode 26 or later (Swift 6.2+, macOS 26 SDK).
 | `make release-native` | Optimized (`-O`) build and bundle for this Mac's architecture |
 | `make format` | Format Swift sources in place (swift-format, per `.swift-format`) |
 | `make lint` | Check formatting and lint rules, as CI does |
+| `make xcodeproj` | Generate `App/OpenDock.xcodeproj` with XcodeGen (contributor convenience; CI doesn't use it) |
 
 Before you open or update a PR, run `make format`, `make lint`, `make test`, and
 `make release-native`, and make sure none of them adds warnings. CI also builds with `-O`, and some compiler crashes only show up there.
