@@ -8,11 +8,15 @@ struct WeatherTileView: View {
     let instance: WidgetInstance
 
     @Environment(\.dockIconSize) private var iconSize
+    @Environment(\.dockEdge) private var edge
     @Environment(\.dockIsVisible) private var isVisible
     @Environment(\.widgetsMayRequestAccess) private var mayRequestAccess
     @State private var service = WeatherService.shared
 
     private var settings: WeatherSettings { WeatherSettings(instance: instance) }
+
+    /// Text beside the symbol on the bottom edge, under it (centered) on a side edge.
+    private var textAlignment: HorizontalAlignment { edge.isVertical ? .center : .leading }
 
     /// Everything that should restart the refresh loop when it changes.
     private struct RefreshKey: Equatable {
@@ -24,13 +28,16 @@ struct WeatherTileView: View {
     var body: some View {
         let feed = service.feed(for: settings.location)
         WidgetTile {
-            HStack(spacing: iconSize * 0.14) {
+            // Symbol then text along the bottom edge; symbol above text on a side edge.
+            WidgetStack(spacing: iconSize * (edge.isVertical ? 0.06 : 0.14)) {
                 WeatherSymbol(name: symbolName(for: feed), size: iconSize * 0.46)
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: textAlignment, spacing: 0) {
                     WidgetPrimaryText(temperatureText(for: feed))
                     WidgetSecondaryText(captionText(for: feed))
                 }
-                .frame(maxWidth: iconSize * 2.2, alignment: .leading)
+                .frame(
+                    maxWidth: edge.isVertical ? nil : CGFloat(iconSize * 2.2),
+                    alignment: Alignment(horizontal: textAlignment, vertical: .center))
             }
         }
         .task(id: RefreshKey(location: settings.location, isVisible: isVisible, mayPrompt: mayRequestAccess)) {
