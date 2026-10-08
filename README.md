@@ -70,7 +70,7 @@ Dock. You can keep both, or have OpenDock hide Apple's while it runs. Inspired b
 - Keyboard control: a global shortcut shows the dock and selects an item; arrow keys move
   along it, Return opens, Space browses a folder or opens a widget, Delete removes, Escape
   puts the keyboard back. The selection is announced to VoiceOver
-- Widgets: Clock, Battery, Calendar, System Activity, and Weather
+- Widgets: Clock, Battery, Calendar, System Activity, Weather, and Now Playing
 - Settings window with General, Profiles, Dock Items, Widgets, and About tabs
 - Export and import your layout as JSON
 - Launch at login
@@ -94,11 +94,15 @@ popover with more detail. Each widget has its own options in Settings > Dock Ite
 | Battery | Charge level and power source | Each battery, including connected accessories, and a shortcut to Battery Settings | Percentage, accessory batteries |
 | System Activity | CPU with a one-minute sparkline, plus memory and disk rings | Per-core CPU and load average, the memory breakdown and swap, the startup disk, and a shortcut to Activity Monitor | Which of CPU, memory, and disk to show; CPU history |
 | Weather | Current conditions and temperature for your location or a city | Feels-like, humidity and wind, the next 12 hours, and a 4-day forecast | °C or °F, caption, location |
+| Now Playing | Artwork, title and artist of whatever is playing in any app, with previous, play/pause and next buttons; hidden while nothing plays | The album, a position bar, bigger controls, and an Open button for the player | Buttons, stay visible when idle |
 
 The Calendar widget asks for calendar access when it first appears (on a fresh install,
 once the welcome window is closed). Without access it
 shows "Tap to allow", and its popover has a button to allow access or open Privacy
-Settings. To build your own widget, see [Writing a widget](#writing-a-widget).
+Settings. The Now Playing widget reads the system's Now Playing (the same data as Control
+Center) through a small helper run by `/usr/bin/perl`; if that isn't available it asks
+Music and Spotify directly, and macOS asks you once to allow that. To build your own
+widget, see [Writing a widget](#writing-a-widget).
 
 The Weather widget uses [Open-Meteo](https://open-meteo.com/) (free, no account) and asks for
 location access only when a tile set to Current Location is in the dock; you can pick a city
@@ -236,7 +240,7 @@ Then add a target under `Sources/Widgets/` in `Package.swift`, add it as a depen
 Tracked as [GitHub issues](https://github.com/newyorkcompute/opendock/issues); the ones
 labeled `good first issue` are self-contained. Highlights:
 
-- More widgets: Now Playing, Reminders, Network, Timer, Sticky Note, Stocks
+- More widgets: Reminders, Network, Timer, Sticky Note, Stocks
 - Left and right screen edges
 - Notification badges
 - Minimized windows in the dock

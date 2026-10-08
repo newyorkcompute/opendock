@@ -23,6 +23,9 @@ let package = Package(
         .executable(name: "OpenDock", targets: ["OpenDock"]),
         .library(name: "DockCore", targets: ["DockCore"]),
         .library(name: "DockWidgetKit", targets: ["DockWidgetKit"]),
+        /// Loaded by `/usr/bin/perl`, never by the app (see `Sources/NowPlayingHelper`).
+        /// `scripts/build-app.sh` builds it and copies the dylib into `Contents/Frameworks`.
+        .library(name: "OpenDockNowPlayingHelper", type: .dynamic, targets: ["NowPlayingHelper"]),
     ],
     targets: [
         // MARK: Foundation layers
@@ -79,6 +82,23 @@ let package = Package(
             path: "Sources/Widgets/WeatherWidget",
             swiftSettings: uiSettings
         ),
+        .target(
+            name: "NowPlayingWidget",
+            dependencies: ["DockWidgetKit", "SystemServices"],
+            path: "Sources/Widgets/NowPlayingWidget",
+            swiftSettings: uiSettings
+        ),
+
+        // MARK: Helpers
+
+        /// Reads the system-wide Now Playing state through MediaRemote. Built as a dynamic
+        /// library that `SystemServices` runs inside Apple-signed `/usr/bin/perl`, because
+        /// MediaRemote ignores other processes since macOS 15.4. Foundation and AppKit only;
+        /// it must not depend on the app's other targets.
+        .target(
+            name: "NowPlayingHelper",
+            swiftSettings: baseSettings
+        ),
 
         // MARK: Shell + App
 
@@ -102,6 +122,7 @@ let package = Package(
                 "CalendarWidget",
                 "SystemActivityWidget",
                 "WeatherWidget",
+                "NowPlayingWidget",
             ],
             path: "App/OpenDock",
             swiftSettings: uiSettings

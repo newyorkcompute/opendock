@@ -4,6 +4,7 @@ import ClockWidget
 import DockCore
 import DockShell
 import DockWidgetKit
+import NowPlayingWidget
 import SwiftUI
 import SystemActivityWidget
 import SystemServices
@@ -67,6 +68,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         super.init()
         registry.register([
             ClockWidget.self, BatteryWidget.self, CalendarWidget.self, SystemActivityWidget.self, WeatherWidget.self,
+            NowPlayingWidget.self,
         ])
     }
 
