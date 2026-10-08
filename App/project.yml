@@ -15,7 +15,10 @@ name: OpenDock
 
 options:
   minimumXcodeGenVersion: "2.44.0"  # syncedFolder sources
-  xcodeVersion: "26.0"
+  # Written as LastUpgradeCheck. Xcode offers "update to recommended settings" when this is
+  # older than the Xcode opening the project, so it stays ahead of every 26.x and 27.x
+  # release. Bump it when Xcode 28 ships.
+  xcodeVersion: "27.9"
   deploymentTarget:
     macOS: "15.0"
   developmentLanguage: en
@@ -83,11 +86,6 @@ targets:
         # scripts/build-app.sh sets from OPENDOCK_VERSION and the commit count instead.
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
-    scheme:
-      testTargets:
-        - package: OpenDock/DockCoreTests
-        - package: OpenDock/SystemServicesTests
-        - package: OpenDock/WidgetTests
 
   # The package's NowPlayingHelper target, named after its product here so Xcode's output is
   # libOpenDockNowPlayingHelper.dylib, the same file name SwiftPM produces.
@@ -105,3 +103,26 @@ targets:
         SKIP_INSTALL: YES
         # Package.swift: baseSettings only, no default isolation
         SWIFT_DEFAULT_ACTOR_ISOLATION: nonisolated
+
+# Named "OpenDock App" because Xcode also lists the package's own "OpenDock" scheme (the bare
+# executable product); this is the one to pick. ⌘U runs the package's test targets; add new
+# ones here.
+schemes:
+  OpenDock App:
+    build:
+      targets:
+        OpenDock: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - package: OpenDock/DockCoreTests
+        - package: OpenDock/SystemServicesTests
+        - package: OpenDock/WidgetTests
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
