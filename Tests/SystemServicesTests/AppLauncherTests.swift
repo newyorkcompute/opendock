@@ -14,18 +14,24 @@ private enum LaunchEvent: Equatable {
 @MainActor
 private final class Recorder {
     var events: [LaunchEvent] = []
+    var launchCompletions: [@MainActor @Sendable (AppLaunchResult) -> Void] = []
 }
 
 @MainActor
 private struct FakeWorkspace: AppWorkspace {
     let recorder: Recorder
 
-    func openApplication(at url: URL, configuration: NSWorkspace.OpenConfiguration) {
+    func openApplication(
+        at url: URL,
+        configuration: NSWorkspace.OpenConfiguration,
+        completion: @escaping @MainActor @Sendable (AppLaunchResult) -> Void
+    ) {
         recorder.events.append(.openApplication(
             url,
             activates: configuration.activates,
             newInstance: configuration.createsNewApplicationInstance
         ))
+        recorder.launchCompletions.append(completion)
     }
 
     func open(_ url: URL, configuration: NSWorkspace.OpenConfiguration) {
@@ -62,6 +68,11 @@ private final class FakeRunningApp: RunningAppHandle {
 }
 
 @MainActor
+private final class ResultRecorder {
+    var values: [AppLaunchResult] = []
+}
+
+@MainActor
 private struct FakeLookup: RunningAppLookup {
     var app: FakeRunningApp?
 
@@ -83,17 +94,36 @@ struct AppLauncherTests {
     )
 
     @Test func launchesAppThatIsNotRunning() {
-        AppLauncher.open(safari, running: FakeLookup(app: nil), workspace: workspace)
+        let outcome = AppLauncher.open(safari, running: FakeLookup(app: nil), workspace: workspace)
+        #expect(outcome == .launching)
         #expect(recorder.events == [.openApplication(safari.url, activates: true, newInstance: false)])
+    }
+
+    @Test func reportsTheLaunchResult() {
+        let results = ResultRecorder()
+        AppLauncher.open(safari, running: FakeLookup(app: nil), workspace: workspace) { results.values.append($0) }
+        #expect(recorder.launchCompletions.count == 1)
+        recorder.launchCompletions.first?(.launched(processIdentifier: 42))
+        #expect(results.values == [.launched(processIdentifier: 42)])
     }
 
     @Test func activatesAndReopensRunningApp() {
         let running = FakeRunningApp(recorder: recorder, bundleURL: safari.url)
-        AppLauncher.open(safari, running: FakeLookup(app: running), workspace: workspace)
+        let outcome = AppLauncher.open(safari, running: FakeLookup(app: running), workspace: workspace)
+        #expect(outcome == .activated)
         #expect(recorder.events == [
             .activate(allWindows: true),
             .openApplication(safari.url, activates: true, newInstance: false),
         ])
+    }
+
+    @Test func activatingARunningAppReportsNoLaunch() {
+        let results = ResultRecorder()
+        let running = FakeRunningApp(recorder: recorder, bundleURL: safari.url)
+        AppLauncher.open(safari, running: FakeLookup(app: running), workspace: workspace) { results.values.append($0) }
+        // Reopening goes through Launch Services too, but that isn't a launch.
+        recorder.launchCompletions.forEach { $0(.launched(processIdentifier: 42)) }
+        #expect(results.values.isEmpty)
     }
 
     @Test func reopensRunningFinder() {

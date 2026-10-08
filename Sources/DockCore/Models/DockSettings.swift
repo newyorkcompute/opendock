@@ -42,6 +42,9 @@ public struct DockSettings: Hashable, Codable, Sendable {
     public var previousProfileHotKey: HotKey?
     /// Switch profiles by swiping sideways on the dock, or scrolling over it with ⌘ held.
     public var switchProfilesByScrolling: Bool
+    /// Bounce an app's icon while the app launches, like the Dock's "Animate opening
+    /// applications" setting.
+    public var animateOpeningApps: Bool
 
     public init(
         edge: Edge = .bottom,
@@ -57,7 +60,8 @@ public struct DockSettings: Hashable, Codable, Sendable {
         hideAppleDock: Bool = false,
         nextProfileHotKey: HotKey? = nil,
         previousProfileHotKey: HotKey? = nil,
-        switchProfilesByScrolling: Bool = true
+        switchProfilesByScrolling: Bool = true,
+        animateOpeningApps: Bool = true
     ) {
         self.edge = edge
         self.display = display
@@ -73,6 +77,7 @@ public struct DockSettings: Hashable, Codable, Sendable {
         self.nextProfileHotKey = nextProfileHotKey
         self.previousProfileHotKey = previousProfileHotKey
         self.switchProfilesByScrolling = switchProfilesByScrolling
+        self.animateOpeningApps = animateOpeningApps
     }
 
     public static let `default` = DockSettings()
@@ -110,6 +115,7 @@ extension DockSettings {
         previousProfileHotKey = (try? c.decodeIfPresent(HotKey.self, forKey: .previousProfileHotKey)) ?? d.previousProfileHotKey
         switchProfilesByScrolling = (try? c.decodeIfPresent(Bool.self, forKey: .switchProfilesByScrolling))
             ?? d.switchProfilesByScrolling
+        animateOpeningApps = (try? c.decodeIfPresent(Bool.self, forKey: .animateOpeningApps)) ?? d.animateOpeningApps
     }
 }
 

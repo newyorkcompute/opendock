@@ -53,6 +53,9 @@ public final class DockShellState {
     /// The profile just switched to, named above the dock for a moment.
     var profileBanner: String?
 
+    /// Icons bouncing while their apps launch.
+    var launchBounces = LaunchBounces()
+
     let geometry = DockGeometry()
 
     var isInteracting: Bool { interactionDepth > 0 }

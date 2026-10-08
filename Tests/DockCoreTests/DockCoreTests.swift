@@ -98,6 +98,17 @@ struct DockDocumentCodecTests {
         #expect(decoded.hideAppleDock)
     }
 
+    @Test func animateOpeningAppsDecodesTolerantly() throws {
+        let decoder = JSONDecoder()
+        #expect(try decoder.decode(DockSettings.self, from: Data("{}".utf8)).animateOpeningApps)
+        #expect(try decoder.decode(DockSettings.self, from: Data(#"{"animateOpeningApps": "no"}"#.utf8)).animateOpeningApps)
+
+        var settings = DockSettings.default
+        settings.animateOpeningApps = false
+        let decoded = try decoder.decode(DockSettings.self, from: JSONEncoder().encode(settings))
+        #expect(!decoded.animateOpeningApps)
+    }
+
     @Test func rejectsNewerVersions() throws {
         let profile = DockProfile(name: "X")
         let doc = DockDocument(version: DockDocument.currentVersion + 1, profiles: [profile], activeProfileID: profile.id)
