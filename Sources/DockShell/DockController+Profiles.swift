@@ -21,8 +21,8 @@ extension DockController {
     public func switchProfile(to id: DockProfile.ID, direction: Int? = nil) {
         let profiles = store.profiles
         guard id != store.activeProfileID,
-              let newIndex = profiles.firstIndex(where: { $0.id == id }),
-              shellState.draggingItemID == nil
+            let newIndex = profiles.firstIndex(where: { $0.id == id }),
+            shellState.draggingItemID == nil
         else { return }
         let oldIndex = profiles.firstIndex { $0.id == store.activeProfileID } ?? 0
 
@@ -71,11 +71,11 @@ extension DockController {
     /// Returns true when the scroll switched profiles.
     private func handleScroll(_ scroll: ProfileScrollGesture.Event, inWindow windowNumber: Int) -> Bool {
         guard let panel, panel.windowNumber == windowNumber,
-              store.settings.switchProfilesByScrolling,
-              store.profiles.count > 1,
-              shellState.isVisible,
-              !shellState.isInteracting,
-              !shellState.isDragging
+            store.settings.switchProfilesByScrolling,
+            store.profiles.count > 1,
+            shellState.isVisible,
+            !shellState.isInteracting,
+            !shellState.isDragging
         else { return false }
         guard let step = profileScrollGesture.handle(scroll) else { return false }
         switchProfile(by: step)

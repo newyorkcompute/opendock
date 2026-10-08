@@ -1,11 +1,14 @@
 import Foundation
 import Testing
+
 @testable import DockCore
 
 @Suite("Profiles")
 struct ProfileTests {
     private func document(_ names: [String], active: Int = 0) -> DockDocument {
-        let profiles = names.map { DockProfile(name: $0, items: [.spacer(), .widget(BuiltInWidgetID.clock, settings: ["style": "analog"])]) }
+        let profiles = names.map {
+            DockProfile(name: $0, items: [.spacer(), .widget(BuiltInWidgetID.clock, settings: ["style": "analog"])])
+        }
         return DockDocument(profiles: profiles, activeProfileID: profiles[active].id)
     }
 

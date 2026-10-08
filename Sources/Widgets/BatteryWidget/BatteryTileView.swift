@@ -68,16 +68,20 @@ struct BatteryTileView: View {
         if !accessories.isEmpty {
             HStack(spacing: iconSize * 0.08) {
                 ForEach(accessories) { accessory in
-                    let color = BatteryFormatting.color(percentage: accessory.percentage, isCharging: accessory.isCharging)
+                    let color = BatteryFormatting.color(
+                        percentage: accessory.percentage, isCharging: accessory.isCharging)
                     let size = iconSize * 0.38
-                    ProgressRing(progress: Double(accessory.percentage) / 100, color: color, lineWidth: max(1.8, iconSize * 0.045))
-                        .frame(width: size, height: size)
-                        .overlay {
-                            Image(systemName: BatteryFormatting.symbol(forAccessory: accessory.name))
-                                .font(.system(size: size * 0.4, weight: .semibold))
-                                .foregroundStyle(.secondary)
-                        }
-                        .help("\(accessory.name): \(accessory.percentage)%")
+                    ProgressRing(
+                        progress: Double(accessory.percentage) / 100, color: color,
+                        lineWidth: max(1.8, iconSize * 0.045)
+                    )
+                    .frame(width: size, height: size)
+                    .overlay {
+                        Image(systemName: BatteryFormatting.symbol(forAccessory: accessory.name))
+                            .font(.system(size: size * 0.4, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                    .help("\(accessory.name): \(accessory.percentage)%")
                 }
             }
         }

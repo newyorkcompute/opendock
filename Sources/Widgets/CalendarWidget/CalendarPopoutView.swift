@@ -28,7 +28,9 @@ struct CalendarPopoutView: View {
                     }
                 } else if service.isDenied {
                     Button("Open Privacy Settings") {
-                        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Calendars") {
+                        if let url = URL(
+                            string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Calendars")
+                        {
                             NSWorkspace.shared.open(url)
                         }
                     }

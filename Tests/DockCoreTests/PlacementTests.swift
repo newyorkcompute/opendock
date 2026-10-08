@@ -1,6 +1,7 @@
 import CoreGraphics
 import Foundation
 import Testing
+
 @testable import DockCore
 
 @Suite("Dock placement across displays")
@@ -60,7 +61,8 @@ struct PlacementTests {
     }
 
     @Test func specificNeverMatchesScreensWithoutAnID() {
-        let anonymous = DockPlacement.Screen(id: nil, name: "Projector", frame: laptop.frame, visibleFrame: laptop.visibleFrame)
+        let anonymous = DockPlacement.Screen(
+            id: nil, name: "Projector", frame: laptop.frame, visibleFrame: laptop.visibleFrame)
         let choice = DockSettings.Display.specific(id: "LEFT", name: "")
         #expect(DockPlacement.screenIndex(for: choice, in: [laptop, anonymous], activeIndex: nil) == 0)
     }
@@ -84,13 +86,15 @@ struct PlacementTests {
     }
 
     @Test func shownFrameSitsAboveAppleDock() {
-        let frame = DockPlacement.shownFrame(contentSize: CGSize(width: 600, height: 160), visibleFrame: below.visibleFrame)
+        let frame = DockPlacement.shownFrame(
+            contentSize: CGSize(width: 600, height: 160), visibleFrame: below.visibleFrame)
         #expect(frame.minY == -1010)
         #expect(below.frame.contains(frame))
     }
 
     @Test func shownFrameIsOnWholePoints() {
-        let frame = DockPlacement.shownFrame(contentSize: CGSize(width: 601, height: 160), visibleFrame: laptop.visibleFrame)
+        let frame = DockPlacement.shownFrame(
+            contentSize: CGSize(width: 601, height: 160), visibleFrame: laptop.visibleFrame)
         #expect(frame.minX == frame.minX.rounded())
     }
 
@@ -167,7 +171,8 @@ struct DisplaySettingTests {
     }
 
     @Test func specificWithoutNameKeepsTheID() throws {
-        #expect(try decode(#"{"display": {"kind": "specific", "id": "ABC"}}"#).display == .specific(id: "ABC", name: ""))
+        #expect(
+            try decode(#"{"display": {"kind": "specific", "id": "ABC"}}"#).display == .specific(id: "ABC", name: ""))
     }
 
     @Test func unrecognizedValuesFallBackWithoutLosingOtherSettings() throws {

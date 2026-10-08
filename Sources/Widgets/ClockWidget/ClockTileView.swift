@@ -13,7 +13,9 @@ struct ClockTileView: View {
         let settings = ClockSettings(instance: instance)
         // Only tick every second when seconds are shown *and* the dock is on screen.
         let interval: TimeInterval = settings.showSeconds && isVisible ? 1 : 60
-        let start = Date(timeIntervalSinceReferenceDate: (Date.now.timeIntervalSinceReferenceDate / interval).rounded(.down) * interval)
+        let start = Date(
+            timeIntervalSinceReferenceDate: (Date.now.timeIntervalSinceReferenceDate / interval).rounded(.down)
+                * interval)
 
         TimelineView(.periodic(from: start, by: interval)) { context in
             WidgetTile {

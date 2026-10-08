@@ -121,7 +121,9 @@ public final class GlobalHotKeys {
 private let hotKeySignature: OSType = 0x4F44_4B21
 
 /// Carbon delivers hot key events on the main thread, through the main run loop.
-private func hotKeyEventHandler(_: EventHandlerCallRef?, event: EventRef?, userData: UnsafeMutableRawPointer?) -> OSStatus {
+private func hotKeyEventHandler(_: EventHandlerCallRef?, event: EventRef?, userData: UnsafeMutableRawPointer?)
+    -> OSStatus
+{
     guard let event, let userData else { return OSStatus(eventNotHandledErr) }
     var hotKeyID = EventHotKeyID()
     let status = GetEventParameter(

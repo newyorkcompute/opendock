@@ -96,7 +96,9 @@ public final class AppleDockHider {
         let current = backend.readDockPreferences()
         var restored = current
         if current.autohide == backup.applied.autohide { restored.autohide = backup.original.autohide }
-        if current.autohideDelay == backup.applied.autohideDelay { restored.autohideDelay = backup.original.autohideDelay }
+        if current.autohideDelay == backup.applied.autohideDelay {
+            restored.autohideDelay = backup.original.autohideDelay
+        }
         if restored != current {
             backend.writeDockPreferences(restored)
             backend.restartDock()
@@ -120,9 +122,11 @@ public final class SystemAppleDockBackend: AppleDockBackend {
     private let log = Logger(subsystem: "com.newyorkcompute.opendock", category: "AppleDockHider")
 
     /// `~/Library/Application Support/OpenDock/apple-dock-backup.json` by default.
-    public init(backupURL: URL = DockStorage.default().fileURL
-        .deletingLastPathComponent()
-        .appendingPathComponent("apple-dock-backup.json")) {
+    public init(
+        backupURL: URL = DockStorage.default().fileURL
+            .deletingLastPathComponent()
+            .appendingPathComponent("apple-dock-backup.json")
+    ) {
         self.backupURL = backupURL
     }
 
@@ -136,7 +140,8 @@ public final class SystemAppleDockBackend: AppleDockBackend {
 
     public func writeDockPreferences(_ preferences: AppleDockPreferences) {
         CFPreferencesSetAppValue(Self.autohideKey, preferences.autohide.map { NSNumber(value: $0) }, Self.domain)
-        CFPreferencesSetAppValue(Self.autohideDelayKey, preferences.autohideDelay.map { NSNumber(value: $0) }, Self.domain)
+        CFPreferencesSetAppValue(
+            Self.autohideDelayKey, preferences.autohideDelay.map { NSNumber(value: $0) }, Self.domain)
         if !CFPreferencesAppSynchronize(Self.domain) {
             log.error("Couldn't write Apple's Dock settings")
         }
@@ -164,7 +169,8 @@ public final class SystemAppleDockBackend: AppleDockBackend {
     }
 
     public func saveBackup(_ backup: AppleDockBackup) throws {
-        try FileManager.default.createDirectory(at: backupURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(
+            at: backupURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         try encoder.encode(backup).write(to: backupURL, options: .atomic)

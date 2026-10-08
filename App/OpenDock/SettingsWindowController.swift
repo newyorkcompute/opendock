@@ -67,8 +67,8 @@ final class SettingsTabViewController: NSTabViewController {
     override func tabView(_ tabView: NSTabView, didSelect tabViewItem: NSTabViewItem?) {
         super.tabView(tabView, didSelect: tabViewItem)
         guard let window = view.window,
-              let size = tabViewItem?.viewController?.preferredContentSize,
-              size != .zero
+            let size = tabViewItem?.viewController?.preferredContentSize,
+            size != .zero
         else { return }
         let current = window.frame
         var frame = window.frameRect(forContentRect: NSRect(origin: .zero, size: size))

@@ -48,7 +48,9 @@ public enum DockReorder {
     ///   - pointer: Right-click x relative to the row's center, as for `insertionIndex`.
     ///   - slots: Resting widths of the row's slots.
     ///   - limit: Number of pinned items, which lead the row; the result is at most this.
-    public static func menuInsertionIndex(afterItemAt anchor: Int?, pointer: Double?, slots: [Double], limit: Int) -> Int {
+    public static func menuInsertionIndex(afterItemAt anchor: Int?, pointer: Double?, slots: [Double], limit: Int)
+        -> Int
+    {
         if let anchor { return min(max(anchor + 1, 0), max(0, limit)) }
         guard let pointer else { return max(0, limit) }
         return insertionIndex(pointer: pointer, slots: slots, gapWidth: 0, limit: limit)

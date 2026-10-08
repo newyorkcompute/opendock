@@ -92,7 +92,8 @@ struct DockItemRow: View {
         case let .app(app):
             isMissing ? "Missing: \(app.url.path)" : "Application"
         case let .folder(folder):
-            isMissing ? "Missing: \(folder.url.path)" : folder.url.deletingLastPathComponent().abbreviatingWithTildeInPath
+            isMissing
+                ? "Missing: \(folder.url.path)" : folder.url.deletingLastPathComponent().abbreviatingWithTildeInPath
         case let .spacer(spacer):
             spacer.size == .small ? "Small spacer" : "Regular spacer"
         case .divider:

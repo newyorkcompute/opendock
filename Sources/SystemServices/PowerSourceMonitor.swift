@@ -111,12 +111,14 @@ public final class PowerSourceMonitor {
 
     private func startObserving() {
         let context = Unmanaged.passUnretained(self).toOpaque()
-        if let unmanaged = IOPSNotificationCreateRunLoopSource({ context in
-            guard let context else { return }
-            let monitor = Unmanaged<PowerSourceMonitor>.fromOpaque(context).takeUnretainedValue()
-            // The source is attached to the main run loop, so this runs on the main thread.
-            MainActor.assumeIsolated { monitor.refresh() }
-        }, context) {
+        if let unmanaged = IOPSNotificationCreateRunLoopSource(
+            { context in
+                guard let context else { return }
+                let monitor = Unmanaged<PowerSourceMonitor>.fromOpaque(context).takeUnretainedValue()
+                // The source is attached to the main run loop, so this runs on the main thread.
+                MainActor.assumeIsolated { monitor.refresh() }
+            }, context)
+        {
             let source = unmanaged.takeRetainedValue()
             CFRunLoopAddSource(CFRunLoopGetMain(), source, .defaultMode)
             runLoopSource = source
@@ -135,13 +137,14 @@ public final class PowerSourceMonitor {
 
     private nonisolated static func readSources() -> ([PowerSource], Bool) {
         guard let info = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
-              let list = IOPSCopyPowerSourcesList(info)?.takeRetainedValue() as? [CFTypeRef]
+            let list = IOPSCopyPowerSourcesList(info)?.takeRetainedValue() as? [CFTypeRef]
         else { return ([], true) }
 
         var result: [PowerSource] = []
         for (index, ps) in list.enumerated() {
-            guard let description = IOPSGetPowerSourceDescription(info, ps)?
-                .takeUnretainedValue() as? [String: Any]
+            guard
+                let description = IOPSGetPowerSourceDescription(info, ps)?
+                    .takeUnretainedValue() as? [String: Any]
             else { continue }
             if let present = description[kIOPSIsPresentKey] as? Bool, !present { continue }
             result.append(makeSource(index: index, description: description))
@@ -155,17 +158,19 @@ public final class PowerSourceMonitor {
     private nonisolated static func makeSource(index: Int, description d: [String: Any]) -> PowerSource {
         let typeString = d[kIOPSTypeKey] as? String
         let transport = d[kIOPSTransportTypeKey] as? String
-        let kind: PowerSource.Kind = switch typeString {
-        case kIOPSInternalBatteryType: .internalBattery
-        case kIOPSUPSType: .ups
-        case "Accessory Source": .accessory
-        default: transport == "Bluetooth" ? .accessory : .other
-        }
+        let kind: PowerSource.Kind =
+            switch typeString {
+            case kIOPSInternalBatteryType: .internalBattery
+            case kIOPSUPSType: .ups
+            case "Accessory Source": .accessory
+            default: transport == "Bluetooth" ? .accessory : .other
+            }
 
         var percentage: Int?
         if let current = d[kIOPSCurrentCapacityKey] as? Int {
             let maximum = (d[kIOPSMaxCapacityKey] as? Int) ?? 100
-            percentage = maximum > 0 ? min(100, max(0, Int((Double(current) / Double(maximum) * 100).rounded()))) : current
+            percentage =
+                maximum > 0 ? min(100, max(0, Int((Double(current) / Double(maximum) * 100).rounded()))) : current
         }
 
         func minutes(_ key: String) -> Int? {

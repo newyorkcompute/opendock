@@ -1,41 +1,43 @@
 import Foundation
 import Testing
+
 @testable import DockCore
 
 @Suite("DockStorage migration")
 struct MigrationTests {
     /// A v1 `dock.json` as written by builds before the widget ID rename.
     private let legacyJSON = #"""
-    {
-      "activeProfileID" : "6F0C9E4B-2B57-4C1F-9C55-3C7A8E1D0A01",
-      "profiles" : [
         {
-          "id" : "6F0C9E4B-2B57-4C1F-9C55-3C7A8E1D0A01",
-          "items" : [
+          "activeProfileID" : "6F0C9E4B-2B57-4C1F-9C55-3C7A8E1D0A01",
+          "profiles" : [
             {
-              "id" : "0B0B6C2E-8F6E-4B8A-A3B1-7E6F0C1D2A01",
-              "kind" : { "spacer" : { "_0" : { "size" : "small" } } }
-            },
-            {
-              "id" : "0B0B6C2E-8F6E-4B8A-A3B1-7E6F0C1D2A02",
-              "kind" : { "widget" : { "_0" : { "settings" : { "style" : "analog" }, "typeID" : "org.opendock.widget.clock" } } }
-            },
-            {
-              "id" : "0B0B6C2E-8F6E-4B8A-A3B1-7E6F0C1D2A03",
-              "kind" : { "widget" : { "_0" : { "settings" : { }, "typeID" : "org.opendock.widget.calendar" } } }
+              "id" : "6F0C9E4B-2B57-4C1F-9C55-3C7A8E1D0A01",
+              "items" : [
+                {
+                  "id" : "0B0B6C2E-8F6E-4B8A-A3B1-7E6F0C1D2A01",
+                  "kind" : { "spacer" : { "_0" : { "size" : "small" } } }
+                },
+                {
+                  "id" : "0B0B6C2E-8F6E-4B8A-A3B1-7E6F0C1D2A02",
+                  "kind" : { "widget" : { "_0" : { "settings" : { "style" : "analog" }, "typeID" : "org.opendock.widget.clock" } } }
+                },
+                {
+                  "id" : "0B0B6C2E-8F6E-4B8A-A3B1-7E6F0C1D2A03",
+                  "kind" : { "widget" : { "_0" : { "settings" : { }, "typeID" : "org.opendock.widget.calendar" } } }
+                }
+              ],
+              "name" : "Default"
             }
           ],
-          "name" : "Default"
+          "settings" : { },
+          "version" : 1
         }
-      ],
-      "settings" : { },
-      "version" : 1
-    }
-    """#
+        """#
 
     private func legacyDocument(_ typeIDs: [String]) -> DockDocument {
         let safari = DockItem.app(at: URL(fileURLWithPath: "/Applications/Safari.app"))
-        let work = DockProfile(name: "Work", items: [safari] + typeIDs.map { DockItem.widget($0, settings: ["key": $0]) })
+        let work = DockProfile(
+            name: "Work", items: [safari] + typeIDs.map { DockItem.widget($0, settings: ["key": $0]) })
         let home = DockProfile(name: "Home", items: [DockItem.spacer()] + typeIDs.map { DockItem.widget($0) })
         return DockDocument(version: 1, profiles: [work, home], activeProfileID: home.id)
     }
@@ -83,10 +85,11 @@ struct MigrationTests {
     @Test func rewritesUnknownLegacyWidgetsByPrefix() throws {
         let legacy = legacyDocument(["org.opendock.widget.weather"])
         let migrated = try DockStorage.decode(DockStorage.encode(legacy))
-        #expect(widgetTypeIDs(migrated) == [
-            ["com.newyorkcompute.opendock.widget.weather"],
-            ["com.newyorkcompute.opendock.widget.weather"],
-        ])
+        #expect(
+            widgetTypeIDs(migrated) == [
+                ["com.newyorkcompute.opendock.widget.weather"],
+                ["com.newyorkcompute.opendock.widget.weather"],
+            ])
     }
 
     @Test func leavesOtherWidgetIDsAlone() throws {

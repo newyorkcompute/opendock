@@ -1,41 +1,42 @@
 import Foundation
 import Testing
+
 @testable import DockCore
 
 @Suite("Divider items")
 struct DividerTests {
     /// A v2 `dock.json` as written by builds before dividers existed.
     private let preDividerJSON = #"""
-    {
-      "activeProfileID" : "7A1D0F5C-3C68-4D2A-8D66-4D8B9F2E1B01",
-      "profiles" : [
         {
-          "id" : "7A1D0F5C-3C68-4D2A-8D66-4D8B9F2E1B01",
-          "items" : [
+          "activeProfileID" : "7A1D0F5C-3C68-4D2A-8D66-4D8B9F2E1B01",
+          "profiles" : [
             {
-              "id" : "1C1C7D3F-9F7F-4C9B-B4C2-8F7A1D2E3B01",
-              "kind" : { "app" : { "_0" : { "bundleIdentifier" : "com.apple.Safari", "url" : "file:///Applications/Safari.app/" } } }
-            },
-            {
-              "id" : "1C1C7D3F-9F7F-4C9B-B4C2-8F7A1D2E3B02",
-              "kind" : { "spacer" : { "_0" : { "size" : "small" } } }
-            },
-            {
-              "id" : "1C1C7D3F-9F7F-4C9B-B4C2-8F7A1D2E3B03",
-              "kind" : { "widget" : { "_0" : { "settings" : { }, "typeID" : "com.newyorkcompute.opendock.widget.clock" } } }
-            },
-            {
-              "id" : "1C1C7D3F-9F7F-4C9B-B4C2-8F7A1D2E3B04",
-              "kind" : { "folder" : { "_0" : { "url" : "file:///Users/me/Downloads/" } } }
+              "id" : "7A1D0F5C-3C68-4D2A-8D66-4D8B9F2E1B01",
+              "items" : [
+                {
+                  "id" : "1C1C7D3F-9F7F-4C9B-B4C2-8F7A1D2E3B01",
+                  "kind" : { "app" : { "_0" : { "bundleIdentifier" : "com.apple.Safari", "url" : "file:///Applications/Safari.app/" } } }
+                },
+                {
+                  "id" : "1C1C7D3F-9F7F-4C9B-B4C2-8F7A1D2E3B02",
+                  "kind" : { "spacer" : { "_0" : { "size" : "small" } } }
+                },
+                {
+                  "id" : "1C1C7D3F-9F7F-4C9B-B4C2-8F7A1D2E3B03",
+                  "kind" : { "widget" : { "_0" : { "settings" : { }, "typeID" : "com.newyorkcompute.opendock.widget.clock" } } }
+                },
+                {
+                  "id" : "1C1C7D3F-9F7F-4C9B-B4C2-8F7A1D2E3B04",
+                  "kind" : { "folder" : { "_0" : { "url" : "file:///Users/me/Downloads/" } } }
+                }
+              ],
+              "name" : "Default"
             }
           ],
-          "name" : "Default"
+          "settings" : { "autoHide" : true },
+          "version" : 2
         }
-      ],
-      "settings" : { "autoHide" : true },
-      "version" : 2
-    }
-    """#
+        """#
 
     private func itemIDs(_ document: DockDocument) -> [String] {
         document.activeProfile.items.map(\.id.uuidString)

@@ -30,7 +30,9 @@ struct DisplayPicker: View {
         }
         .task {
             refresh()
-            for await _ in NotificationCenter.default.notifications(named: NSApplication.didChangeScreenParametersNotification) {
+            for await _ in NotificationCenter.default.notifications(
+                named: NSApplication.didChangeScreenParametersNotification)
+            {
                 refresh()
             }
         }
@@ -48,7 +50,8 @@ struct DisplayPicker: View {
     /// The chosen display, when it isn't connected.
     private var disconnectedChoice: (id: String, name: String)? {
         guard case let .specific(id, name) = store.settings.display,
-              !screens.contains(where: { $0.id == id }) else { return nil }
+            !screens.contains(where: { $0.id == id })
+        else { return nil }
         return (id, name)
     }
 
@@ -62,12 +65,13 @@ struct DisplayPicker: View {
                 }
             },
             set: { choice in
-                let display: DockSettings.Display = switch choice {
-                case .main: .main
-                case .active: .active
-                case let .specific(id):
-                    .specific(id: id, name: screens.first { $0.id == id }?.name ?? disconnectedChoice?.name ?? "")
-                }
+                let display: DockSettings.Display =
+                    switch choice {
+                    case .main: .main
+                    case .active: .active
+                    case let .specific(id):
+                        .specific(id: id, name: screens.first { $0.id == id }?.name ?? disconnectedChoice?.name ?? "")
+                    }
                 store.updateSettings { $0.display = display }
             }
         )

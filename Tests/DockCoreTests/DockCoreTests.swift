@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import DockCore
 
 @Suite("DockProfile mutations")
@@ -61,13 +62,15 @@ struct DockProfileTests {
 @Suite("DockDocument codec")
 struct DockDocumentCodecTests {
     @Test func roundTripsEveryItemKind() throws {
-        let profile = DockProfile(name: "Work", items: [
-            .app(at: URL(fileURLWithPath: "/Applications/Safari.app")),
-            .folder(at: URL(fileURLWithPath: "/Users/me/Downloads")),
-            .spacer(.small),
-            .widget(BuiltInWidgetID.clock, settings: ["style": "analog"]),
-            .divider(),
-        ])
+        let profile = DockProfile(
+            name: "Work",
+            items: [
+                .app(at: URL(fileURLWithPath: "/Applications/Safari.app")),
+                .folder(at: URL(fileURLWithPath: "/Users/me/Downloads")),
+                .spacer(.small),
+                .widget(BuiltInWidgetID.clock, settings: ["style": "analog"]),
+                .divider(),
+            ])
         var settings = DockSettings.default
         settings.iconSize = 64
         settings.autoHide = true
@@ -90,7 +93,8 @@ struct DockDocumentCodecTests {
     @Test func hideAppleDockDecodesTolerantly() throws {
         let decoder = JSONDecoder()
         #expect(try decoder.decode(DockSettings.self, from: Data("{}".utf8)).hideAppleDock == false)
-        #expect(try decoder.decode(DockSettings.self, from: Data(#"{"hideAppleDock": "yes"}"#.utf8)).hideAppleDock == false)
+        #expect(
+            try decoder.decode(DockSettings.self, from: Data(#"{"hideAppleDock": "yes"}"#.utf8)).hideAppleDock == false)
 
         var settings = DockSettings.default
         settings.hideAppleDock = true
@@ -101,7 +105,8 @@ struct DockDocumentCodecTests {
     @Test func animateOpeningAppsDecodesTolerantly() throws {
         let decoder = JSONDecoder()
         #expect(try decoder.decode(DockSettings.self, from: Data("{}".utf8)).animateOpeningApps)
-        #expect(try decoder.decode(DockSettings.self, from: Data(#"{"animateOpeningApps": "no"}"#.utf8)).animateOpeningApps)
+        #expect(
+            try decoder.decode(DockSettings.self, from: Data(#"{"animateOpeningApps": "no"}"#.utf8)).animateOpeningApps)
 
         var settings = DockSettings.default
         settings.animateOpeningApps = false
@@ -111,7 +116,8 @@ struct DockDocumentCodecTests {
 
     @Test func rejectsNewerVersions() throws {
         let profile = DockProfile(name: "X")
-        let doc = DockDocument(version: DockDocument.currentVersion + 1, profiles: [profile], activeProfileID: profile.id)
+        let doc = DockDocument(
+            version: DockDocument.currentVersion + 1, profiles: [profile], activeProfileID: profile.id)
         let data = try JSONEncoder().encode(doc)
         #expect(throws: DockStorage.StorageError.self) {
             try DockStorage.decode(data)
@@ -183,13 +189,15 @@ struct DockStoreTests {
 
     @Test func backsUpCorruptFile() throws {
         let storage = temporaryStorage()
-        try FileManager.default.createDirectory(at: storage.fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(
+            at: storage.fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         try Data("not json".utf8).write(to: storage.fileURL)
 
         let store = DockStore.load(from: storage)
         #expect(!store.items.isEmpty)
 
-        let siblings = try FileManager.default.contentsOfDirectory(atPath: storage.fileURL.deletingLastPathComponent().path)
+        let siblings = try FileManager.default.contentsOfDirectory(
+            atPath: storage.fileURL.deletingLastPathComponent().path)
         #expect(siblings.contains { $0.contains("corrupt") })
     }
 }

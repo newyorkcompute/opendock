@@ -1,6 +1,6 @@
 import Carbon.HIToolbox
-import Foundation
 import DockCore
+import Foundation
 
 /// Spells a `HotKey` the way menus do, such as "⌃⌥⌘→" or "⇧⌘P". Letters and symbols come
 /// from the current keyboard layout (an ASCII-capable one), so a key reads as it's labeled.
@@ -28,7 +28,7 @@ public enum HotKeyFormatter {
 
     private static func translated(_ keyCode: UInt16) -> String? {
         guard let source = TISCopyCurrentASCIICapableKeyboardLayoutInputSource()?.takeRetainedValue(),
-              let property = TISGetInputSourceProperty(source, kTISPropertyUnicodeKeyLayoutData)
+            let property = TISGetInputSourceProperty(source, kTISPropertyUnicodeKeyLayoutData)
         else { return nil }
         let layoutData = Unmanaged<CFData>.fromOpaque(property).takeUnretainedValue() as Data
         var deadKeyState: UInt32 = 0

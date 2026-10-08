@@ -17,10 +17,13 @@ struct MenuBarMenu: View {
 
         if store.profiles.count > 1 {
             ForEach(Array(store.profiles.enumerated()), id: \.element.id) { index, profile in
-                Toggle(profile.name, isOn: Binding(
-                    get: { profile.id == store.activeProfileID },
-                    set: { isOn in if isOn { profiles.select(profile.id) } }
-                ))
+                Toggle(
+                    profile.name,
+                    isOn: Binding(
+                        get: { profile.id == store.activeProfileID },
+                        set: { isOn in if isOn { profiles.select(profile.id) } }
+                    )
+                )
                 .keyboardShortcut(index < 9 ? KeyboardShortcut(KeyEquivalent(Character("\(index + 1)"))) : nil)
             }
         }
@@ -33,10 +36,12 @@ struct MenuBarMenu: View {
                 if dock.isVisible { dock.hide() } else { dock.revealAndHold() }
             }
         }
-        Toggle("Auto-Hide Dock", isOn: Binding(
-            get: { store.settings.autoHide },
-            set: { value in store.updateSettings { $0.autoHide = value } }
-        ))
+        Toggle(
+            "Auto-Hide Dock",
+            isOn: Binding(
+                get: { store.settings.autoHide },
+                set: { value in store.updateSettings { $0.autoHide = value } }
+            ))
 
         Divider()
 

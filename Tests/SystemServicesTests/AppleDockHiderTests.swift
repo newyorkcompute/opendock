@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import SystemServices
 
 /// In-memory stand-in for `com.apple.dock` and the backup file.

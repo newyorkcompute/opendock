@@ -10,7 +10,8 @@ public struct DockStorage: Sendable {
 
     /// `~/Library/Application Support/OpenDock/dock.json`
     public static func `default`(fileManager: FileManager = .default) -> DockStorage {
-        let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+        let base =
+            fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? fileManager.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support")
         let dir = base.appendingPathComponent("OpenDock", isDirectory: true)
         return DockStorage(fileURL: dir.appendingPathComponent("dock.json"))
@@ -67,11 +68,13 @@ public struct DockStorage: Sendable {
 
     /// Rewrites every widget whose type ID starts with `oldPrefix`, in every profile,
     /// keeping its item ID, position, and settings.
-    private static func renameWidgetTypes(in document: inout DockDocument, prefix oldPrefix: String, to newPrefix: String) {
+    private static func renameWidgetTypes(
+        in document: inout DockDocument, prefix oldPrefix: String, to newPrefix: String
+    ) {
         for profileIndex in document.profiles.indices {
             for itemIndex in document.profiles[profileIndex].items.indices {
                 guard case var .widget(instance) = document.profiles[profileIndex].items[itemIndex].kind,
-                      instance.typeID.hasPrefix(oldPrefix)
+                    instance.typeID.hasPrefix(oldPrefix)
                 else { continue }
                 instance.typeID = newPrefix + String(instance.typeID.dropFirst(oldPrefix.count))
                 document.profiles[profileIndex].items[itemIndex].kind = .widget(instance)

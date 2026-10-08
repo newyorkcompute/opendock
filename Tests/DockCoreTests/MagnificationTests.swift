@@ -1,6 +1,7 @@
 import CoreGraphics
 import Foundation
 import Testing
+
 @testable import DockCore
 
 @Suite("Dock magnification geometry")
@@ -28,8 +29,11 @@ struct MagnificationTests {
 
     @Test func falloffIsSmoothBell() {
         #expect(DockMagnification.falloff(distance: 0, radius: 100) == 1)
-        #expect(DockMagnification.falloff(distance: 20, radius: 100) > DockMagnification.falloff(distance: 40, radius: 100))
-        #expect(DockMagnification.falloff(distance: -50, radius: 100) == DockMagnification.falloff(distance: 50, radius: 100))
+        #expect(
+            DockMagnification.falloff(distance: 20, radius: 100) > DockMagnification.falloff(distance: 40, radius: 100))
+        #expect(
+            DockMagnification.falloff(distance: -50, radius: 100)
+                == DockMagnification.falloff(distance: 50, radius: 100))
         #expect(DockMagnification.falloff(distance: 100, radius: 100) == 0)
         #expect(DockMagnification.falloff(distance: 250, radius: 100) == 0)
         // Zero slope at the edge: no visible "pop" as an item enters the range.
@@ -138,14 +142,17 @@ struct MagnificationTests {
         let widgetCenter = 3 * pitch + slots[3].width / 2
         for offset in stride(from: -200.0, through: 200, by: 25) {
             let row = DockMagnification.row(slots, pointer: widgetCenter + offset, peakScale: peak, radius: radius)
-            let expected = 1 + DockMagnification.widgetGrowth * (peak - 1) * DockMagnification.falloff(distance: offset, radius: radius)
+            let expected =
+                1 + DockMagnification.widgetGrowth * (peak - 1)
+                * DockMagnification.falloff(distance: offset, radius: radius)
             #expect(abs(row.scales[3] - expected) < 1e-9, "at \(offset): \(row.scales[3]) vs \(expected)")
         }
     }
 
     @Test func wideWidgetPushesNeighborsNoFurtherThanOneIcon() {
         // At full effect a tile three pitches wide grows less than one icon does.
-        let widget = DockMagnification.row(iconsAroundWidget(), pointer: 3 * pitch + 1.5 * pitch, peakScale: 2, radius: radius)
+        let widget = DockMagnification.row(
+            iconsAroundWidget(), pointer: 3 * pitch + 1.5 * pitch, peakScale: 2, radius: radius)
         let icon = DockMagnification.row(icons(9), pointer: center(of: 4), peakScale: 2, radius: radius)
         #expect(widget.widths[3] - 3 * pitch < icon.widths[4] - pitch)
     }
@@ -172,7 +179,8 @@ struct MagnificationTests {
     }
 
     @Test func maximumOverhangIncludesWidgetGrowth() {
-        let widgets = Array(repeating: DockMagnification.Slot(width: 120, growth: DockMagnification.widgetGrowth), count: 3)
+        let widgets = Array(
+            repeating: DockMagnification.Slot(width: 120, growth: DockMagnification.widgetGrowth), count: 3)
         let overhang = DockMagnification.maximumOverhang(widgets, peakScale: peak, radius: radius)
         #expect(overhang.leading > 0 && overhang.trailing > 0)
         let mixed = iconsAroundWidget()
@@ -293,7 +301,8 @@ struct MagnificationSettingsTests {
     }
 
     @Test func wrongTypeFallsBackToDefault() throws {
-        let settings = try JSONDecoder().decode(DockSettings.self, from: Data(#"{"magnification": "big", "iconSize": 40}"#.utf8))
+        let settings = try JSONDecoder().decode(
+            DockSettings.self, from: Data(#"{"magnification": "big", "iconSize": 40}"#.utf8))
         #expect(settings.magnification == DockSettings.default.magnification)
         #expect(settings.iconSize == 40)
     }

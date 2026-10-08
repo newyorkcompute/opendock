@@ -182,7 +182,9 @@ struct SpacerItemView: View {
 
     var body: some View {
         Color.clear
-            .frame(minWidth: 0, idealWidth: spacer.size == .small ? iconSize * 0.3 : iconSize * 0.7, maxWidth: .infinity)
+            .frame(
+                minWidth: 0, idealWidth: spacer.size == .small ? iconSize * 0.3 : iconSize * 0.7, maxWidth: .infinity
+            )
             .frame(height: iconSize)
             .contentShape(Rectangle())
             .contextMenu {
@@ -302,7 +304,9 @@ nonisolated struct WidgetMagnifier: Layout {
     ) -> CGSize {
         let natural = subviews.first?.sizeThatFits(.unspecified) ?? .zero
         let resting = cache.update(natural: natural, scale: scale)
-        return CGSize(width: Self.length(proposal.width, or: resting.width), height: Self.length(proposal.height, or: resting.height))
+        return CGSize(
+            width: Self.length(proposal.width, or: resting.width),
+            height: Self.length(proposal.height, or: resting.height))
     }
 
     func placeSubviews(

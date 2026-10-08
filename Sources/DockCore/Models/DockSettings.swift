@@ -105,15 +105,18 @@ extension DockSettings {
         autoHide = try c.decodeIfPresent(Bool.self, forKey: .autoHide) ?? d.autoHide
         autoHideDelay = try c.decodeIfPresent(Double.self, forKey: .autoHideDelay) ?? d.autoHideDelay
         material = try c.decodeIfPresent(Material.self, forKey: .material) ?? d.material
-        showRunningIndicators = try c.decodeIfPresent(Bool.self, forKey: .showRunningIndicators) ?? d.showRunningIndicators
+        showRunningIndicators =
+            try c.decodeIfPresent(Bool.self, forKey: .showRunningIndicators) ?? d.showRunningIndicators
         showRunningApps = try c.decodeIfPresent(Bool.self, forKey: .showRunningApps) ?? d.showRunningApps
         hoverEffect = try c.decodeIfPresent(Bool.self, forKey: .hoverEffect) ?? d.hoverEffect
         magnification = ((try? c.decodeIfPresent(Double.self, forKey: .magnification)) ?? d.magnification)
             .clamped(to: Self.magnificationRange)
         hideAppleDock = (try? c.decodeIfPresent(Bool.self, forKey: .hideAppleDock)) ?? d.hideAppleDock
         nextProfileHotKey = (try? c.decodeIfPresent(HotKey.self, forKey: .nextProfileHotKey)) ?? d.nextProfileHotKey
-        previousProfileHotKey = (try? c.decodeIfPresent(HotKey.self, forKey: .previousProfileHotKey)) ?? d.previousProfileHotKey
-        switchProfilesByScrolling = (try? c.decodeIfPresent(Bool.self, forKey: .switchProfilesByScrolling))
+        previousProfileHotKey =
+            (try? c.decodeIfPresent(HotKey.self, forKey: .previousProfileHotKey)) ?? d.previousProfileHotKey
+        switchProfilesByScrolling =
+            (try? c.decodeIfPresent(Bool.self, forKey: .switchProfilesByScrolling))
             ?? d.switchProfilesByScrolling
         animateOpeningApps = (try? c.decodeIfPresent(Bool.self, forKey: .animateOpeningApps)) ?? d.animateOpeningApps
     }

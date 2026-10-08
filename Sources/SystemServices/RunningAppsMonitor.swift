@@ -60,13 +60,14 @@ public final class RunningAppsMonitor {
         for app in workspace.runningApplications where app.activationPolicy == .regular {
             if let id = app.bundleIdentifier { next.runningBundleIDs.insert(id) }
             if let url = app.bundleURL { next.runningBundlePaths.insert(url.normalizedPath) }
-            next.regularApps.append(AppDescriptor(
-                processIdentifier: app.processIdentifier,
-                bundleIdentifier: app.bundleIdentifier,
-                bundleURL: app.bundleURL?.standardizedFileURL,
-                localizedName: app.localizedName,
-                launchDate: app.launchDate
-            ))
+            next.regularApps.append(
+                AppDescriptor(
+                    processIdentifier: app.processIdentifier,
+                    bundleIdentifier: app.bundleIdentifier,
+                    bundleURL: app.bundleURL?.standardizedFileURL,
+                    localizedName: app.localizedName,
+                    launchDate: app.launchDate
+                ))
         }
         // `runningApplications` comes in no particular order.
         next.regularApps.sort(by: AppDescriptor.launchedBefore)

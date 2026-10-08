@@ -21,8 +21,10 @@ struct WidgetsTab: View {
             } header: {
                 Text("Widget Library")
             } footer: {
-                Text("Widgets are added to the end of the dock. Rearrange them in Dock Items, or drag them in the dock itself.")
-                    .settingsFootnote()
+                Text(
+                    "Widgets are added to the end of the dock. Rearrange them in Dock Items, or drag them in the dock itself."
+                )
+                .settingsFootnote()
             }
         }
         .formStyle(.grouped)

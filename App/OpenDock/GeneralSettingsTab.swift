@@ -28,7 +28,9 @@ struct GeneralSettingsTab: View {
             Button("Reset", role: .destructive) { store.resetToFirstRun() }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("All your profiles, dock items, widgets, and settings will be replaced with the starter layout. Export your layout first if you want to keep it.")
+            Text(
+                "All your profiles, dock items, widgets, and settings will be replaced with the starter layout. Export your layout first if you want to keep it."
+            )
         }
     }
 
@@ -68,8 +70,10 @@ struct GeneralSettingsTab: View {
         } header: {
             Text("Appearance")
         } footer: {
-            Text("Liquid Glass requires macOS 26; earlier versions use Frosted. Left and right screen edges are coming soon.")
-                .settingsFootnote()
+            Text(
+                "Liquid Glass requires macOS 26; earlier versions use Frosted. Left and right screen edges are coming soon."
+            )
+            .settingsFootnote()
         }
     }
 
@@ -124,25 +128,33 @@ struct GeneralSettingsTab: View {
         } header: {
             Text("Apple’s Dock")
         } footer: {
-            Text("Turns on auto-hide for Apple’s Dock with a long delay so it stays out of the way. Your Dock settings are put back when you quit OpenDock or turn this off.")
-                .settingsFootnote()
+            Text(
+                "Turns on auto-hide for Apple’s Dock with a long delay so it stays out of the way. Your Dock settings are put back when you quit OpenDock or turn this off."
+            )
+            .settingsFootnote()
         }
     }
 
     private var startupSection: some View {
         Section {
-            Toggle("Open OpenDock at login", isOn: Binding(
-                get: { launchAtLogin.isEnabled },
-                set: { launchAtLogin.isEnabled = $0 }
-            ))
+            Toggle(
+                "Open OpenDock at login",
+                isOn: Binding(
+                    get: { launchAtLogin.isEnabled },
+                    set: { launchAtLogin.isEnabled = $0 }
+                )
+            )
             .disabled(!launchAtLogin.isAvailable)
 
             if launchAtLogin.requiresApproval {
                 LabeledContent {
                     Button("Open Login Items…") { launchAtLogin.openSystemSettings() }
                 } label: {
-                    Label("Allow OpenDock in System Settings to finish turning this on.", systemImage: "exclamationmark.triangle.fill")
-                        .symbolRenderingMode(.multicolor)
+                    Label(
+                        "Allow OpenDock in System Settings to finish turning this on.",
+                        systemImage: "exclamationmark.triangle.fill"
+                    )
+                    .symbolRenderingMode(.multicolor)
                 }
             }
 

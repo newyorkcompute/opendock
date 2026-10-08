@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import DockCore
 
 @Suite("Launch bounce timing")
@@ -121,7 +122,8 @@ struct LaunchBouncesTests {
     private let start = Date(timeIntervalSinceReferenceDate: 1_000)
     private let hop = LaunchBounce.hopDuration
     private let safari = AppItem(url: URL(filePath: "/Applications/Safari.app"), bundleIdentifier: "com.apple.Safari")
-    private let notes = AppItem(url: URL(filePath: "/System/Applications/Notes.app"), bundleIdentifier: "com.apple.Notes")
+    private let notes = AppItem(
+        url: URL(filePath: "/System/Applications/Notes.app"), bundleIdentifier: "com.apple.Notes")
 
     private func at(_ seconds: TimeInterval) -> Date { start.addingTimeInterval(seconds) }
 
@@ -138,7 +140,8 @@ struct LaunchBouncesTests {
     @Test func findsTheAppByBundleIdentifierOrPath() {
         var bounces = LaunchBounces()
         bounces.start(safari, at: start)
-        let otherCopy = AppItem(url: URL(filePath: "/Users/me/Downloads/Safari.app"), bundleIdentifier: "com.apple.Safari")
+        let otherCopy = AppItem(
+            url: URL(filePath: "/Users/me/Downloads/Safari.app"), bundleIdentifier: "com.apple.Safari")
         let samePath = AppItem(url: URL(filePath: "/Applications/Safari.app/"), bundleIdentifier: nil)
         let unrelated = AppItem(url: URL(filePath: "/Applications/Other.app"), bundleIdentifier: "com.example.other")
         #expect(bounces.bounce(for: otherCopy) != nil)
