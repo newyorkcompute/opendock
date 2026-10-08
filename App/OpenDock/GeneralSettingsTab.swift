@@ -117,7 +117,7 @@ struct GeneralSettingsTab: View {
             if store.settings.autoHide {
                 LabeledContent("Hide delay") {
                     HStack(spacing: 10) {
-                        Slider(value: setting(\.autoHideDelay), in: 0.1 ... 2.0, step: 0.1) {
+                        Slider(value: setting(\.autoHideDelay), in: DockSettings.autoHideDelayRange, step: 0.1) {
                             Text("Hide delay")
                         }
                         .labelsHidden()
