@@ -31,11 +31,24 @@ icon, ad-hoc signature). You can still edit in Xcode by opening `Package.swift`.
 | `make build` | Debug build and `.app` bundle |
 | `make run` | Debug build, then (re)launch the app |
 | `make test` | Run the unit tests (`swift test`) |
+| `make format` | Format the Swift sources in place with swift-format |
+| `make lint` | Check formatting and lint rules, as CI does |
 | `make release` | Optimized universal (Apple silicon + Intel) build and `.app` bundle |
 | `make release-native` | Optimized build for your Mac's architecture only (faster) |
 | `make clean` | Delete `.build` and `build` |
 
 Releases are cut by pushing a `v*` tag; see [RELEASING.md](RELEASING.md).
+
+### Formatting
+
+Swift code is formatted with [swift-format](https://github.com/swiftlang/swift-format),
+which ships with Xcode 16 and later as `swift format`, so there's nothing to install. The
+settings live in `.swift-format` at the repo root: 4-space indentation and 120-column lines.
+Run `make format` before you commit, and `make lint` to check what CI will check. CI fails
+the `Build & test` job on any formatting difference or lint warning.
+
+In Xcode, Editor > Structure > Format File with 'swift-format' (⌃⇧I) formats the current
+file with the same settings.
 
 To watch the app's logs while it runs:
 
@@ -139,7 +152,7 @@ Dockset's (or any other app's) icons, artwork, or marketing copy.
 
 - Keep each pull request focused on one change. Separate refactors from behavior changes.
 - Link the issue it addresses (`Fixes #123`).
-- Run `make test` and make sure the build has no new warnings.
+- Run `make test` and `make lint`, and make sure the build has no new warnings.
 - For visible changes, include a screenshot or a short screen recording.
 - CI (`Build & test` and `Universal release build`) must pass before merging.
 - We squash-merge every pull request, so the PR title becomes the commit message on `main`.
