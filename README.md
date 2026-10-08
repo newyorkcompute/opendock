@@ -52,7 +52,11 @@ Dock. You can keep both, or have OpenDock hide Apple's while it runs. Inspired b
 - Apps, folders and files, small or regular spacers, and dividers. Click a divider for
   quick settings (hiding, magnification, position), like the Dock's separators
 - Click and hold a folder (or choose Browse from its menu) to see what's in it: open items,
-  step into subfolders, drag files out, and sort by name, date, or kind
+  step into subfolders, drag files out, and sort by name, date, or kind. A folder hops
+  once when a new file lands in it, like Downloads in Apple's Dock
+- The Trash at the end of the dock, like the Dock's: its icon shows whether it's empty, a
+  click opens it in Finder, the menu empties it, and dropping files on it trashes them
+  (dropping a dock item removes it from the dock). Settings > Dock Items can hide it
 - Running-app indicators, with options to show running apps that aren't pinned and, after
   those, the apps you used last (like the Dock's recent apps)
 - Magnification like the Dock's: icons near the pointer grow with a smooth falloff and
