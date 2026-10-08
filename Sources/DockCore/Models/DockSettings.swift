@@ -50,6 +50,11 @@ public struct DockSettings: Hashable, Codable, Sendable {
     public var clickToMinimize: Bool
     /// Show apps' badges (unread counts and the like) on their icons, read from Apple's Dock.
     public var showBadges: Bool
+    /// Show the apps used most recently that aren't pinned or running, after the running
+    /// apps and a divider, like the Dock's "Show suggested and recent apps" setting.
+    public var showRecentApps: Bool
+    /// How many recent apps to show at most.
+    public var recentAppsCount: Int
 
     public init(
         edge: Edge = .bottom,
@@ -68,7 +73,9 @@ public struct DockSettings: Hashable, Codable, Sendable {
         switchProfilesByScrolling: Bool = true,
         animateOpeningApps: Bool = true,
         clickToMinimize: Bool = false,
-        showBadges: Bool = true
+        showBadges: Bool = true,
+        showRecentApps: Bool = false,
+        recentAppsCount: Int = 3
     ) {
         self.edge = edge
         self.display = display
@@ -87,12 +94,15 @@ public struct DockSettings: Hashable, Codable, Sendable {
         self.animateOpeningApps = animateOpeningApps
         self.clickToMinimize = clickToMinimize
         self.showBadges = showBadges
+        self.showRecentApps = showRecentApps
+        self.recentAppsCount = recentAppsCount.clamped(to: Self.recentAppsCountRange)
     }
 
     public static let `default` = DockSettings()
 
     public static let iconSizeRange: ClosedRange<Double> = 32 ... 96
     public static let magnificationRange: ClosedRange<Double> = 1.2 ... 2.0
+    public static let recentAppsCountRange: ClosedRange<Int> = 1 ... 10
 
     /// Scale of the item under the pointer: 1 when magnification is off.
     public var peakMagnification: Double {
@@ -130,6 +140,9 @@ extension DockSettings {
         animateOpeningApps = (try? c.decodeIfPresent(Bool.self, forKey: .animateOpeningApps)) ?? d.animateOpeningApps
         clickToMinimize = (try? c.decodeIfPresent(Bool.self, forKey: .clickToMinimize)) ?? d.clickToMinimize
         showBadges = (try? c.decodeIfPresent(Bool.self, forKey: .showBadges)) ?? d.showBadges
+        showRecentApps = (try? c.decodeIfPresent(Bool.self, forKey: .showRecentApps)) ?? d.showRecentApps
+        recentAppsCount = ((try? c.decodeIfPresent(Int.self, forKey: .recentAppsCount)) ?? d.recentAppsCount)
+            .clamped(to: Self.recentAppsCountRange)
     }
 }
 

@@ -138,6 +138,47 @@ struct DockDocumentCodecTests {
         #expect(!decoded.showBadges)
     }
 
+    @Test func recentAppsSettingsDecodeTolerantly() throws {
+        let decoder = JSONDecoder()
+        let defaults = try decoder.decode(DockSettings.self, from: Data("{}".utf8))
+        #expect(defaults.showRecentApps == false)
+        #expect(defaults.recentAppsCount == 3)
+        let garbage = try decoder.decode(
+            DockSettings.self, from: Data(#"{"showRecentApps": "yes", "recentAppsCount": "many"}"#.utf8))
+        #expect(garbage.showRecentApps == false)
+        #expect(garbage.recentAppsCount == 3)
+        #expect(try decoder.decode(DockSettings.self, from: Data(#"{"recentAppsCount": 0}"#.utf8)).recentAppsCount == 1)
+        #expect(
+            try decoder.decode(DockSettings.self, from: Data(#"{"recentAppsCount": 99}"#.utf8)).recentAppsCount
+                == DockSettings.recentAppsCountRange.upperBound)
+
+        var settings = DockSettings.default
+        settings.showRecentApps = true
+        settings.recentAppsCount = 5
+        let decoded = try decoder.decode(DockSettings.self, from: JSONEncoder().encode(settings))
+        #expect(decoded.showRecentApps)
+        #expect(decoded.recentAppsCount == 5)
+    }
+
+    @Test func recentAppsRoundTripAndDefaultToNone() throws {
+        let profile = DockProfile(name: "X")
+        let mail = AppItem(url: URL(fileURLWithPath: "/Applications/Mail.app"), bundleIdentifier: "com.apple.mail")
+        let original = DockDocument(profiles: [profile], activeProfileID: profile.id, recentApps: RecentApps([mail]))
+        let decoded = try DockStorage.decode(DockStorage.encode(original))
+        #expect(decoded.recentApps.apps == [mail])
+
+        // Files from before the section existed, and ones with a broken list.
+        let json = """
+            {"version": 2, "profiles": [{"id": "\(profile.id.uuidString)", "name": "X", "items": []}]}
+            """
+        #expect(try DockStorage.decode(Data(json.utf8)).recentApps.isEmpty)
+        let broken = """
+            {"version": 2, "profiles": [{"id": "\(profile.id.uuidString)", "name": "X", "items": []}],
+             "recentApps": {"oops": true}}
+            """
+        #expect(try DockStorage.decode(Data(broken.utf8)).recentApps.isEmpty)
+    }
+
     @Test func rejectsNewerVersions() throws {
         let profile = DockProfile(name: "X")
         let doc = DockDocument(
@@ -209,6 +250,25 @@ struct DockStoreTests {
 
         #expect(store.profile.name == "Imported")
         #expect(store.items.count == 1)
+    }
+
+    @Test func recentAppsPersistAndSurviveImport() throws {
+        let storage = temporaryStorage()
+        let store = DockStore(storage: storage, document: .firstRun(), saveDelay: .zero)
+        let mail = AppItem(url: URL(fileURLWithPath: "/Applications/Mail.app"), bundleIdentifier: "com.apple.mail")
+        let notes = AppItem(url: URL(fileURLWithPath: "/Applications/Notes.app"), bundleIdentifier: "com.apple.notes")
+        store.recordRecentApp(mail) { _ in true }
+        store.recordRecentApp(notes) { _ in true }
+        store.saveNow()
+        #expect(try storage.load().recentApps.apps == [notes, mail])
+
+        let profile = DockProfile(name: "Imported", items: [.spacer()])
+        try store.importData(DockStorage.encode(DockDocument(profiles: [profile], activeProfileID: profile.id)))
+        #expect(store.recentApps.apps == [notes, mail])
+
+        store.removeRecentApp(mail)
+        store.saveNow()
+        #expect(try storage.load().recentApps.apps == [notes])
     }
 
     @Test func backsUpCorruptFile() throws {

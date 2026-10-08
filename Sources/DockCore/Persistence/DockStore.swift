@@ -113,6 +113,27 @@ public final class DockStore {
         updateProfile { $0.replaceApps(with: urls) }
     }
 
+    // MARK: - Recent apps
+
+    public var recentApps: RecentApps { document.recentApps }
+
+    /// `app` was just used: it becomes the most recent app. Nothing is written if it
+    /// already was.
+    public func recordRecentApp(
+        _ app: AppItem, exists: (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) }
+    ) {
+        var recents = document.recentApps
+        guard recents.record(app, exists: exists) else { return }
+        update { $0.recentApps = recents }
+    }
+
+    /// Takes `app` out of the recent apps until it's used again.
+    public func removeRecentApp(_ app: AppItem) {
+        var recents = document.recentApps
+        guard recents.remove(app) else { return }
+        update { $0.recentApps = recents }
+    }
+
     // MARK: - Welcome
 
     /// True until the welcome window has been closed once on a fresh install.
@@ -183,10 +204,12 @@ public final class DockStore {
         try DockStorage.encode(document)
     }
 
-    /// Like `resetToFirstRun`, keeps whether the welcome window was seen.
+    /// Like `resetToFirstRun`, keeps whether the welcome window was seen. The recent apps
+    /// stay too: they're about what was used on this Mac, not part of a layout.
     public func importData(_ data: Data) throws {
         var imported = try DockStorage.decode(data)
         imported.hasSeenWelcome = document.hasSeenWelcome
+        imported.recentApps = document.recentApps
         update { $0 = imported }
     }
 
