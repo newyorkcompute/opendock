@@ -54,13 +54,14 @@ make release                 # universal app in build/OpenDock.app (make release
 make dist                    # build/dist/OpenDock-<version>.zip + .sha256
 ```
 
-`scripts/build-app.sh` reads these environment variables:
+`scripts/build-app.sh` reads these environment variables (also from a git-ignored
+`.env.local` at the repo root; the environment takes precedence):
 
 | Variable | Default | Sets |
 | --- | --- | --- |
 | `OPENDOCK_VERSION` | `0.1.0` | `CFBundleShortVersionString` |
 | `OPENDOCK_BUILD` | commit count | `CFBundleVersion` |
-| `OPENDOCK_SIGN_IDENTITY` | `-` (ad hoc) | `codesign` identity, e.g. `Developer ID Application: Name (TEAMID)` |
+| `OPENDOCK_SIGN_IDENTITY` | `-` (ad hoc) | `codesign` identity (name or SHA-1), e.g. `Developer ID Application: Name (TEAMID)`. Only Developer ID signatures get a secure timestamp; for local self-signed certificates see [CONTRIBUTING.md](CONTRIBUTING.md#installing-your-build-and-keeping-its-permissions) |
 
 To sign and notarize locally, store notary credentials once with
 `xcrun notarytool store-credentials opendock`, then:

@@ -35,9 +35,60 @@ icon, ad-hoc signature). You can still edit in Xcode by opening `Package.swift`.
 | `make lint` | Check formatting and lint rules, as CI does |
 | `make release` | Optimized universal (Apple silicon + Intel) build and `.app` bundle |
 | `make release-native` | Optimized build for your Mac's architecture only (faster) |
+| `make install` | `make release`, then replace `/Applications/OpenDock.app` with it (see below) |
 | `make clean` | Delete `.build` and `build` |
 
 Releases are cut by pushing a `v*` tag; see [RELEASING.md](RELEASING.md).
+
+### Installing your build, and keeping its permissions
+
+`make install` is for dogfooding: it builds the universal app, backs up the installed
+`/Applications/OpenDock.app` (as a zip) and your `dock.json` to
+`~/Library/Application Support/OpenDock/Backups/<timestamp>/`, quits the running OpenDock,
+copies the new bundle in, and relaunches it. `scripts/install-app.sh --native` does the same
+with a single-architecture build.
+
+By default the bundle is ad-hoc signed, and macOS ties permissions such as Calendar and
+Accessibility to the app's signature. An ad-hoc signature changes with every build, so each
+reinstall counts as a new app and asks for them again. To keep them across builds, sign with
+a certificate of your own:
+
+1. Create a self-signed code-signing certificate named `OpenDock Dev` in your login
+   keychain. Either open **Keychain Access**, choose **Keychain Access > Certificate
+   Assistant > Create a Certificate…**, set the name to `OpenDock Dev`, **Identity Type** to
+   *Self Signed Root*, **Certificate Type** to *Code Signing*, and click **Create**; or do it
+   from Terminal:
+
+   ```sh
+   cd "$(mktemp -d)"
+   openssl req -x509 -newkey rsa:2048 -sha256 -days 3650 -nodes -subj '/CN=OpenDock Dev' \
+       -addext 'keyUsage=critical,digitalSignature' -addext 'extendedKeyUsage=critical,codeSigning' \
+       -keyout key.pem -out cert.pem
+   openssl pkcs12 -export -inkey key.pem -in cert.pem -name 'OpenDock Dev' -passout pass:x -out dev.p12
+   security import dev.p12 -k ~/Library/Keychains/login.keychain-db -P x -T /usr/bin/codesign
+   # Marks the certificate as trusted for code signing; macOS asks for your login password.
+   security add-trusted-cert -r trustRoot -p codeSign -k ~/Library/Keychains/login.keychain-db cert.pem
+   ```
+
+   Either way, `security find-identity -v -p codesigning` should now list `OpenDock Dev`.
+   If it shows `CSSMERR_TP_NOT_TRUSTED` instead, the certificate isn't trusted yet: run the
+   `add-trusted-cert` line above, or double-click the certificate in Keychain Access, expand
+   **Trust**, and set **Code Signing** to *Always Trust*.
+2. Tell the build about it, either in the environment or in a git-ignored `.env.local` at
+   the repo root:
+
+   ```sh
+   echo 'OPENDOCK_SIGN_IDENTITY="OpenDock Dev"' >> .env.local
+   make install
+   ```
+
+`scripts/build-app.sh` then signs every build with that certificate (with the hardened
+runtime, as releases are), and `codesign -dv /Applications/OpenDock.app` shows
+`Authority=OpenDock Dev`. Permissions you grant are kept from one `make install` to the next.
+The first time `codesign` uses the key, macOS may ask for permission to access it; click
+**Always Allow**. A self-signed certificate is only for your own Mac: Gatekeeper still treats
+the app as unsigned anywhere else, so releases use a Developer ID (see
+[RELEASING.md](RELEASING.md#signing-and-notarization)).
 
 To watch the app's logs while it runs:
 
