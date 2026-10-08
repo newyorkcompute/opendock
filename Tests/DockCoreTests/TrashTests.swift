@@ -137,7 +137,7 @@ struct TrashStoreTests {
     @Test func freshInstallEndsWithTheTrash() {
         let items = DockDocument.firstRun().activeProfile.items
         #expect(items.last?.isTrash == true)
-        #expect(items.count { $0.isTrash } == 1)
+        #expect(items.count(where: { $0.isTrash }) == 1)
     }
 
     @Test func existingFilesDoNotGainATrash() throws {

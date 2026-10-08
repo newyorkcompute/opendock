@@ -78,7 +78,9 @@ public extension DockProfile {
     /// Moves the Trash to the end, and drops any beyond the first, so the invariant on
     /// `items` holds after every change (and for files written by hand or by other builds).
     private mutating func keepTrashLast() {
-        guard let trash = trashItem, items.count { $0.isTrash } > 1 || items.last?.isTrash != true else { return }
+        guard let trash = trashItem, items.count(where: { $0.isTrash }) > 1 || items.last?.isTrash != true else {
+            return
+        }
         items.removeAll { $0.isTrash }
         items.append(trash)
     }

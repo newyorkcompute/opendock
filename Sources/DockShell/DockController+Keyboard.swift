@@ -154,7 +154,7 @@ extension DockController {
                 AppLauncher.open(folder)
             case .widget:
                 openSecondary(id)
-            case .spacer, .divider, nil:
+            case .spacer, .divider, .trash, nil:
                 break
             }
         case .running, .recent:
@@ -178,7 +178,7 @@ extension DockController {
             case .folder, .widget:
                 popoverRequestSerial += 1
                 shellState.popoverRequest = .init(item: itemID, serial: popoverRequestSerial)
-            case .spacer, .divider, nil:
+            case .spacer, .divider, .trash, nil:
                 break
             }
         case .running, .recent:
@@ -233,7 +233,7 @@ extension DockController {
             case let .app(app): return app.displayName
             case let .folder(folder): return folder.displayName
             case let .widget(instance): return registry.displayName(for: instance)
-            case .spacer, .divider, nil: return nil
+            case .spacer, .divider, .trash, nil: return nil
             }
         case .running, .recent:
             return sectionApp(for: id)?.displayName
