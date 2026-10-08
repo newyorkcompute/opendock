@@ -67,7 +67,7 @@ Dock. You can keep both, or have OpenDock hide Apple's while it runs. Inspired b
 - Profiles: keep several layouts (say, Work and Home) and switch between them from the menu
   bar, with your own global shortcuts, or by swiping sideways on the dock (⌘-scroll works
   with a mouse). A Focus mode can switch profiles too (see [Focus modes](#focus-modes))
-- Widgets: Clock, Battery, Calendar, and System Activity
+- Widgets: Clock, Battery, Calendar, System Activity, and Weather
 - Settings window with General, Profiles, Dock Items, Widgets, and About tabs
 - Export and import your layout as JSON
 - Launch at login
@@ -90,11 +90,17 @@ popover with more detail. Each widget has its own options in Settings > Dock Ite
 | Clock | The time, with the date or your own label below | The full date, time zone, and a month calendar | Seconds, date, time zone, label |
 | Battery | Charge level and power source | Each battery, including connected accessories, and a shortcut to Battery Settings | Percentage, accessory batteries |
 | System Activity | CPU with a one-minute sparkline, plus memory and disk rings | Per-core CPU and load average, the memory breakdown and swap, the startup disk, and a shortcut to Activity Monitor | Which of CPU, memory, and disk to show; CPU history |
+| Weather | Current conditions and temperature for your location or a city | Feels-like, humidity and wind, the next 12 hours, and a 4-day forecast | °C or °F, caption, location |
 
 The Calendar widget asks for calendar access when it first appears (on a fresh install,
 once the welcome window is closed). Without access it
 shows "Tap to allow", and its popover has a button to allow access or open Privacy
 Settings. To build your own widget, see [Writing a widget](#writing-a-widget).
+
+The Weather widget uses [Open-Meteo](https://open-meteo.com/) (free, no account) and asks for
+location access only when a tile set to Current Location is in the dock; you can pick a city
+instead in its settings. It refreshes every 15 minutes while the dock is visible and keeps the
+last forecast when offline.
 
 ## Window management
 
@@ -165,7 +171,7 @@ built binary in a signed `.app` bundle.
 | `DockCore` | Models (`DockItem`, `DockProfile`, `DockSettings`) and JSON persistence (`DockStore`). No UI, fully unit-tested. |
 | `DockWidgetKit` | The widget contract (`DockWidget`), the `WidgetRegistry`, shared tile views, and environment values. |
 | `SystemServices` | Thin wrappers over macOS APIs: running apps, power sources, EventKit, icons, launching, hiding Apple's Dock. |
-| `Widgets/*` | One target per built-in widget (`ClockWidget`, `BatteryWidget`, `CalendarWidget`). |
+| `Widgets/*` | One target per built-in widget (`ClockWidget`, `BatteryWidget`, `CalendarWidget`, `SystemActivityWidget`, `WeatherWidget`). |
 | `DockShell` | The dock panel: window, positioning, auto-hide, item views, drag and drop. |
 | `OpenDock` (`App/`) | The menu bar app: wires everything together, plus the menu, Settings window, and launch at login. |
 
@@ -227,8 +233,7 @@ Then add a target under `Sources/Widgets/` in `Package.swift`, add it as a depen
 Tracked as [GitHub issues](https://github.com/newyorkcompute/opendock/issues); the ones
 labeled `good first issue` are self-contained. Highlights:
 
-- More widgets: Now Playing, Weather, Reminders, System Activity, Network, Timer, Sticky
-  Note, Stocks
+- More widgets: Now Playing, Reminders, Network, Timer, Sticky Note, Stocks
 - Left and right screen edges
 - Notification badges
 - Minimized windows in the dock

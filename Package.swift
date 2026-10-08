@@ -73,6 +73,12 @@ let package = Package(
             path: "Sources/Widgets/SystemActivityWidget",
             swiftSettings: uiSettings
         ),
+        .target(
+            name: "WeatherWidget",
+            dependencies: ["DockWidgetKit", "SystemServices"],
+            path: "Sources/Widgets/WeatherWidget",
+            swiftSettings: uiSettings
+        ),
 
         // MARK: Shell + App
 
@@ -95,6 +101,7 @@ let package = Package(
                 "BatteryWidget",
                 "CalendarWidget",
                 "SystemActivityWidget",
+                "WeatherWidget",
             ],
             path: "App/OpenDock",
             swiftSettings: uiSettings
@@ -110,6 +117,7 @@ let package = Package(
         .testTarget(
             name: "SystemServicesTests",
             dependencies: ["DockCore", "SystemServices"],
+            resources: [.copy("Fixtures")],
             swiftSettings: baseSettings
         ),
     ]

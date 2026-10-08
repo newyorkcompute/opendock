@@ -7,6 +7,7 @@ import DockWidgetKit
 import SwiftUI
 import SystemActivityWidget
 import SystemServices
+import WeatherWidget
 
 @main
 struct OpenDockApp: App {
@@ -64,7 +65,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     override init() {
         super.init()
-        registry.register([ClockWidget.self, BatteryWidget.self, CalendarWidget.self, SystemActivityWidget.self])
+        registry.register([
+            ClockWidget.self, BatteryWidget.self, CalendarWidget.self, SystemActivityWidget.self, WeatherWidget.self,
+        ])
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
