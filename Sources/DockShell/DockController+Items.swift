@@ -38,14 +38,16 @@ extension DockController {
     // the gap standing in for it, so the other items close up behind it and make room
     // ahead of it. Releasing commits the move; releasing away from the dock cancels, unless
     // the item was held well away from it, which removes it (`DockController+DragOff.swift`).
+    // Over the Trash the drop goes there instead (see `DockController+Trash.swift`).
 
     func dragUpdated(_ info: any NSDraggingInfo) -> NSDragOperation {
         guard let location = dropLocation(info) else { return [] }
         cancelScheduledHide()
         let isReorder = isReorderDrag(info)
+        let files = isReorder ? [] : droppedFileURLs(info)
         if isReorder {
             guard shellState.draggingItemID != nil || beginReorder(at: location) else { return [] }
-        } else if addableURLs(droppedFileURLs(info)).isEmpty {
+        } else if files.isEmpty {
             return []
         }
         guard shellState.geometry.hitZone.contains(location) else {
@@ -54,6 +56,14 @@ extension DockController {
         }
         stopWatchingForDragEnd()
         dragOffReturned()
+        if isTrashSlot(at: location) {
+            dragMovedOverTrash()
+            pointerMoved(to: location)
+            return isReorder ? .move : .generic
+        }
+        dragLeftTrash()
+        // Files already in the dock have nowhere to go in it but the Trash.
+        if !isReorder, addableURLs(files).isEmpty { return [] }
         let width = isReorder ? shellState.dropGap.width : DockRowMetrics(settings: store.settings).dropGapWidth
         moveDropGap(to: dropIndex(at: location, gapWidth: width), width: width)
         pointerMoved(to: location)
@@ -65,6 +75,10 @@ extension DockController {
     }
 
     func performDrop(_ info: any NSDraggingInfo) -> Bool {
+        if shellState.isDragOverTrash {
+            defer { endDrag() }
+            return dropOnTrash(info, isReorder: isReorderDrag(info))
+        }
         guard let index = shellState.dropIndex else { return false }
         defer { endDrag() }
         guard isReorderDrag(info) else {
@@ -150,6 +164,7 @@ extension DockController {
     /// for files closes.
     private func dragLeftDock() {
         shellState.dropIndex = nil
+        dragLeftTrash()
         pointerMoved(to: nil)
         if let dragged = shellState.draggingItemID {
             // Once the removal is armed the slot has closed up, and stays closed.
@@ -171,10 +186,11 @@ extension DockController {
     func endDrag() {
         stopWatchingForDragEnd()
         dragOffEnded()
-        guard shellState.isDragging || shellState.dropGap.open != 0 else { return }
+        guard shellState.isDragging || shellState.dropGap.open != 0 || shellState.isDragOverTrash else { return }
         shellState.draggingItemID = nil
         shellState.dropIndex = nil
         shellState.dropGap.open = 0
+        shellState.isDragOverTrash = false
         // Labels were off and the dock held still for the drag; carry on from wherever the
         // pointer is now.
         interactionEnded()
@@ -216,7 +232,7 @@ extension DockController {
         return layoutPoint(fromScreen: panel.convertPoint(toScreen: info.draggingLocation))
     }
 
-    private func droppedFileURLs(_ info: any NSDraggingInfo) -> [URL] {
+    func droppedFileURLs(_ info: any NSDraggingInfo) -> [URL] {
         info.draggingPasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true])
             as? [URL] ?? []
     }

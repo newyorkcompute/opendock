@@ -35,6 +35,10 @@ struct DockItemView: View {
             WidgetItemView(item: item, instance: instance, controller: controller)
         case .divider:
             DividerItemView(item: item, controller: controller)
+        case .trash:
+            // Never reached: the Trash isn't among `store.items`, and `TrashItemView` draws it
+            // at the end of the row.
+            EmptyView()
         }
     }
 

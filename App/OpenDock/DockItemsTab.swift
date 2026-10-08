@@ -56,6 +56,15 @@ struct DockItemsTab: View {
                     .strokeBorder(.separator)
             )
 
+            Toggle(
+                "Show Trash",
+                isOn: Binding(
+                    get: { store.showsTrash },
+                    set: { store.setShowsTrash($0) }
+                )
+            )
+            .help("Keep the Trash at the end of the dock, after the running and recent apps, like Apple's Dock.")
+
             if let selectedItem {
                 // Widget settings views seed @State from their instance; a fresh identity per
                 // item keeps one widget's settings from leaking into another of the same type.
