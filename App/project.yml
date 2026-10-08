@@ -85,6 +85,7 @@ targets:
       testTargets:
         - package: OpenDock/DockCoreTests
         - package: OpenDock/SystemServicesTests
+        - package: OpenDock/WidgetTests
 
   # The package's NowPlayingHelper target, named after its product here so Xcode's output is
   # libOpenDockNowPlayingHelper.dylib, the same file name SwiftPM produces.

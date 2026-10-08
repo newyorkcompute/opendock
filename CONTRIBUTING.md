@@ -129,8 +129,10 @@ change `App/project.yml` and regenerate. The project has:
 Sources are Xcode 16 synchronized folders, so adding or removing a Swift file doesn't need a
 regeneration. Regenerate when you change `App/project.yml`. Adding a module to the app is done
 in `Package.swift` alone: put it in `appModules`, which feeds both the executable and
-`OpenDockModules`. `App/project.yml` mirrors two package settings (`ExistentialAny` and
-main-actor default isolation); if those change in `Package.swift`, change them there too.
+`OpenDockModules` (widgets don't go there; they reach the app through `BuiltInWidgets`). A new
+test target needs one line in the scheme's `testTargets` in `App/project.yml` so ⌘U runs it.
+`App/project.yml` also mirrors two package settings (`ExistentialAny` and main-actor default
+isolation); if those change in `Package.swift`, change them there too.
 
 CI, releases, and `make build` all still use SwiftPM and `scripts/build-app.sh`, so run
 `make test` and `make lint` before you push even if you did everything in Xcode. Why XcodeGen:

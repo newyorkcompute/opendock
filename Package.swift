@@ -16,18 +16,13 @@ let uiSettings: [SwiftSetting] = baseSettings + [
 /// Every module the app links. The `OpenDock` executable depends on all of them, and the
 /// `OpenDockModules` product exposes the same set to the generated Xcode project
 /// (`App/project.yml`), whose app target compiles `App/OpenDock` itself and can only link
-/// package products. Add new widgets here and nowhere else.
+/// package products. Widgets reach the app through `BuiltInWidgets`.
 let appModules = [
     "DockCore",
     "DockWidgetKit",
     "DockShell",
     "SystemServices",
-    "ClockWidget",
-    "BatteryWidget",
-    "CalendarWidget",
-    "SystemActivityWidget",
-    "WeatherWidget",
-    "NowPlayingWidget",
+    "BuiltInWidgets",
 ]
 
 let package = Package(
