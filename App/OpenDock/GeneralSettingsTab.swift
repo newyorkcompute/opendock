@@ -106,6 +106,7 @@ struct GeneralSettingsTab: View {
                 }
             }
 
+            Toggle("Show the dock in full-screen apps", isOn: setting(\.revealInFullScreen))
             Toggle("Show indicators for running apps", isOn: setting(\.showRunningIndicators))
             Toggle("Show running apps that aren’t in the dock", isOn: setting(\.showRunningApps))
             Toggle("Show recent apps that aren’t in the dock", isOn: setting(\.showRecentApps))
@@ -142,12 +143,19 @@ struct GeneralSettingsTab: View {
         } header: {
             Text("Behavior")
         } footer: {
-            if store.settings.showRecentApps {
-                Text(
-                    "Recent apps are the ones you switched to last that aren’t in the dock and aren’t running. They’re only noted while this is on, and are kept across relaunches."
-                )
-                .settingsFootnote()
+            VStack(alignment: .leading, spacing: 6) {
+                if store.settings.revealInFullScreen {
+                    Text(
+                        "In a full-screen app, hold the pointer at the bottom edge of the screen for a moment to show the dock. It hides again when the pointer leaves."
+                    )
+                }
+                if store.settings.showRecentApps {
+                    Text(
+                        "Recent apps are the ones you switched to last that aren’t in the dock and aren’t running. They’re only noted while this is on, and are kept across relaunches."
+                    )
+                }
             }
+            .settingsFootnote()
         }
     }
 

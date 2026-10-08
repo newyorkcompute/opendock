@@ -16,8 +16,9 @@ final class DockPanel: NSPanel {
         )
         isFloatingPanel = true
         level = .floating
-        // No `.fullScreenAuxiliary`: the dock stays off full-screen Spaces so it never
-        // covers a video or presentation. Edge-reveal in full screen can come later.
+        // No `.fullScreenAuxiliary` by default: the dock stays off full-screen Spaces so it
+        // never covers a video or presentation. `DockController+FullScreen.swift` adds it
+        // while the pointer, held at the edge, has called the dock up over one.
         collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
         isOpaque = false
         backgroundColor = .clear

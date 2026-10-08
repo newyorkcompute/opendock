@@ -58,7 +58,8 @@ Dock. You can keep both, or have OpenDock hide Apple's while it runs. Inspired b
 - Magnification like the Dock's: icons near the pointer grow with a smooth falloff and
   push their neighbors aside, with an adjustable size and a name label above the hovered item.
   Widget tiles grow along with them, more gently, and stay sharp
-- Auto-hide with a configurable delay
+- Auto-hide with a configurable delay. In full-screen apps, hold the pointer at the bottom
+  edge for a moment to show the dock, like Apple's Dock
 - Optionally hides Apple's Dock while it runs, and puts your Dock settings back when it quits
 - Drag items in the dock to reorder them, and drop apps or folders from Finder to add them
 - Right-click an app to see its windows and bring one to the front, and optionally click
