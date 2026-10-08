@@ -78,12 +78,17 @@ extension DockController {
     }
 
     /// A drop on the Trash. An item dragged out of the dock is removed from it (not from
-    /// disk); files from Finder, or from a folder's popover, go to the Trash. Returns
-    /// whether anything was taken.
+    /// disk), with the same sound as dragging it off the dock; files from Finder, or from a
+    /// folder's popover, go to the Trash. Returns whether anything was taken.
+    ///
+    /// The Trash is inside the dock's panel, which sits above the drag-off overlay
+    /// (`DockController+DragOff.swift`), so a drag over it comes here and not to the
+    /// overlay, whatever the removal's state: the drop lands on the Trash.
     func dropOnTrash(_ info: any NSDraggingInfo, isReorder: Bool) -> Bool {
         if isReorder {
             guard let dragged = shellState.draggingItemID else { return false }
             store.remove(id: dragged)
+            SystemSounds.playPoof()
             return true
         }
         return trashFiles(droppedFileURLs(info))
