@@ -3,11 +3,12 @@ import DockCore
 import SwiftUI
 import SystemServices
 
-/// Appearance, behavior, window, startup, and backup settings.
+/// Appearance, behavior, window, badge, startup, and backup settings.
 struct GeneralSettingsTab: View {
     @Environment(DockStore.self) private var store
     @Environment(LaunchAtLogin.self) private var launchAtLogin
     @Environment(AppWindowManager.self) private var windows
+    @Environment(DockBadgeMonitor.self) private var badges
 
     @State private var confirmingReset = false
 
@@ -16,6 +17,7 @@ struct GeneralSettingsTab: View {
             appearanceSection
             behaviorSection
             windowsSection
+            badgesSection
             appleDockSection
             startupSection
             backupSection
@@ -24,9 +26,12 @@ struct GeneralSettingsTab: View {
         .task {
             launchAtLogin.refresh()
             windows.refreshTrust()
+            badges.refreshAccess()
+            // Coming back from System Settings, where any of these may have just been allowed.
             for await _ in NotificationCenter.default.notifications(named: NSApplication.didBecomeActiveNotification) {
                 launchAtLogin.refresh()
                 windows.refreshTrust()
+                badges.refreshAccess()
             }
         }
         .alert("Reset OpenDock to its defaults?", isPresented: $confirmingReset) {
@@ -152,6 +157,40 @@ struct GeneralSettingsTab: View {
         } footer: {
             Text(
                 "Clicking the icon again restores the windows. OpenDock uses Accessibility access to list an app’s windows in its menu, bring one to the front, and minimize or restore them. It doesn’t read what’s in your windows."
+            )
+            .settingsFootnote()
+        }
+    }
+
+    private var badgesSection: some View {
+        Section {
+            Toggle(
+                "Show badges on app icons",
+                isOn: Binding(
+                    get: { store.settings.showBadges },
+                    set: { enabled in
+                        store.updateSettings { $0.showBadges = enabled }
+                        if enabled, !badges.hasAccess { badges.requestAccess() }
+                    }
+                )
+            )
+
+            if store.settings.showBadges, !badges.hasAccess {
+                LabeledContent {
+                    Button("Allow Access…") { badges.requestAccess() }
+                } label: {
+                    Label(
+                        "Allow OpenDock to use Accessibility to show badges.",
+                        systemImage: "exclamationmark.triangle.fill"
+                    )
+                    .symbolRenderingMode(.multicolor)
+                }
+            }
+        } header: {
+            Text("Badges")
+        } footer: {
+            Text(
+                "Unread counts and other badges are read from Apple’s Dock, which needs Accessibility access. Apps show their badges while they’re running or kept in Apple’s Dock."
             )
             .settingsFootnote()
         }

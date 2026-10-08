@@ -11,7 +11,8 @@ import os
 /// Usage from the app:
 /// ```swift
 /// let controller = DockController(
-///     store: store, registry: registry, running: running, windows: windows, actions: actions)
+///     store: store, registry: registry, running: running, windows: windows, badges: badges,
+///     actions: actions)
 /// controller.start()
 /// ```
 @MainActor
@@ -21,6 +22,7 @@ public final class DockController {
     public let running: RunningAppsMonitor
     /// Windows for app menus and click-to-minimize.
     public let windows: AppWindowManager
+    public let badges: DockBadgeMonitor
     public let shellState = DockShellState()
     public var actions: DockActions
 
@@ -70,12 +72,14 @@ public final class DockController {
         registry: WidgetRegistry,
         running: RunningAppsMonitor,
         windows: AppWindowManager,
+        badges: DockBadgeMonitor,
         actions: DockActions = .noop
     ) {
         self.store = store
         self.registry = registry
         self.running = running
         self.windows = windows
+        self.badges = badges
         self.actions = actions
     }
 
@@ -89,6 +93,7 @@ public final class DockController {
             .environment(store)
             .environment(registry)
             .environment(running)
+            .environment(badges)
             .environment(shellState)
         let hosting = DockHostingView(rootView: root)
         hosting.sizingOptions = []
@@ -127,6 +132,7 @@ public final class DockController {
         profileBannerTask?.cancel()
         launchBounceTask?.cancel()
         launchMonitor.onLaunchEnded = nil
+        badges.isDockVisible = false
         removeScrollMonitor()
         removeEdgeMonitors()
         removeHoverMonitor()

@@ -17,6 +17,7 @@ final class SettingsWindowController: NSWindowController {
         registry: WidgetRegistry,
         launchAtLogin: LaunchAtLogin,
         windows: AppWindowManager,
+        badges: DockBadgeMonitor,
         profiles: ProfileSwitcher,
         hotKeys: GlobalHotKeys
     ) {
@@ -28,6 +29,7 @@ final class SettingsWindowController: NSWindowController {
                 .environment(registry)
                 .environment(launchAtLogin)
                 .environment(windows)
+                .environment(badges)
                 .environment(profiles)
                 .environment(hotKeys)
             let hosting = NSHostingController(rootView: pane)

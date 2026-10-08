@@ -31,6 +31,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let registry = WidgetRegistry()
     let running = RunningAppsMonitor()
     let windows = AppWindowManager()
+    let badges = DockBadgeMonitor(source: AccessibilityDockBadgeSource())
     let launchAtLogin = LaunchAtLogin()
     let appleDock = AppleDockHider(backend: SystemAppleDockBackend())
     private(set) var dock: DockController?
@@ -46,6 +47,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         registry: registry,
         launchAtLogin: launchAtLogin,
         windows: windows,
+        badges: badges,
         profiles: profiles,
         hotKeys: hotKeys
     )
@@ -61,6 +63,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             registry: registry,
             running: running,
             windows: windows,
+            badges: badges,
             actions: DockActions(
                 openSettings: { [weak self] in self?.showSettings() },
                 quit: { NSApp.terminate(nil) }
