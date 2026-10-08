@@ -26,6 +26,9 @@ struct DockRootView: View {
             .onChange(of: store.settings.autoHide) { _, enabled in
                 controller.autoHideSettingChanged(enabled)
             }
+            .onChange(of: store.settings.revealInFullScreen) {
+                controller.fullScreenRevealSettingChanged()
+            }
             .onChange(of: store.settings.display) {
                 controller.displaySettingChanged()
             }

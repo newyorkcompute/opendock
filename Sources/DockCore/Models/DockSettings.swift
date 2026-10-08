@@ -55,6 +55,9 @@ public struct DockSettings: Hashable, Codable, Sendable {
     public var showRecentApps: Bool
     /// How many recent apps to show at most.
     public var recentAppsCount: Int
+    /// Show the dock over a full-screen app while the pointer is held at the screen edge,
+    /// like Apple's Dock. Off, the dock never appears on full-screen Spaces.
+    public var revealInFullScreen: Bool
 
     public init(
         edge: Edge = .bottom,
@@ -75,7 +78,8 @@ public struct DockSettings: Hashable, Codable, Sendable {
         clickToMinimize: Bool = false,
         showBadges: Bool = true,
         showRecentApps: Bool = false,
-        recentAppsCount: Int = 3
+        recentAppsCount: Int = 3,
+        revealInFullScreen: Bool = true
     ) {
         self.edge = edge
         self.display = display
@@ -96,6 +100,7 @@ public struct DockSettings: Hashable, Codable, Sendable {
         self.showBadges = showBadges
         self.showRecentApps = showRecentApps
         self.recentAppsCount = recentAppsCount.clamped(to: Self.recentAppsCountRange)
+        self.revealInFullScreen = revealInFullScreen
     }
 
     public static let `default` = DockSettings()
@@ -143,6 +148,7 @@ extension DockSettings {
         showRecentApps = (try? c.decodeIfPresent(Bool.self, forKey: .showRecentApps)) ?? d.showRecentApps
         recentAppsCount = ((try? c.decodeIfPresent(Int.self, forKey: .recentAppsCount)) ?? d.recentAppsCount)
             .clamped(to: Self.recentAppsCountRange)
+        revealInFullScreen = (try? c.decodeIfPresent(Bool.self, forKey: .revealInFullScreen)) ?? d.revealInFullScreen
     }
 }
 
