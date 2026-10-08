@@ -1,7 +1,13 @@
 import Foundation
+import Observation
 import Testing
 
 @testable import DockCore
+
+/// Set from an observation's `onChange`, which runs synchronously during the mutation.
+private final class ChangeFlag: @unchecked Sendable {
+    var isSet = false
+}
 
 @Suite("Welcome window")
 @MainActor
@@ -38,6 +44,23 @@ struct WelcomeTests {
         #expect(!store.needsWelcome)
         store.saveNow()
         #expect(!DockStore.load(from: storage).needsWelcome)
+    }
+
+    /// The dock holds widgets' permission prompts while `needsWelcome` is true, and lets them
+    /// ask once it observes the change.
+    @Test func seeingTheWelcomeNotifiesObservers() {
+        let store = DockStore.load(from: temporaryStorage())
+        let changed = ChangeFlag()
+        let needsWelcome = withObservationTracking {
+            store.needsWelcome
+        } onChange: {
+            changed.isSet = true
+        }
+        #expect(needsWelcome)
+
+        store.markWelcomeSeen()
+        #expect(changed.isSet)
+        #expect(!store.needsWelcome)
     }
 
     @Test func existingFileFromBeforeTheWelcomeWindowDoesNotNeedIt() throws {

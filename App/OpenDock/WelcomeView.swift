@@ -138,7 +138,13 @@ struct WelcomeView: View {
                     systemImage: "calendar",
                     title: "Calendars",
                     text:
-                        "The Calendar widget asks to read your events when it appears in the dock, so it can show what’s next. Remove it if you’d rather not share them."
+                        "The Calendar widget asks to read your events so it can show what’s next. On a new install, it waits until you close this window."
+                )
+                WelcomeRow(
+                    systemImage: "macwindow.on.rectangle",
+                    title: "Accessibility",
+                    text:
+                        "Listing an app’s windows in its menu and click-to-minimize need Accessibility access. OpenDock asks when you first use one of them."
                 )
             }
             Text("You can open this guide again from the OpenDock menu in the menu bar.")

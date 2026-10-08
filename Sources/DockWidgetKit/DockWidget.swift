@@ -7,6 +7,7 @@ import SwiftUI
 /// Widgets are SwiftUI views. They should:
 /// - size themselves to `\.dockIconSize` in height (use `WidgetTile` for the standard pill),
 /// - do their own polling, and stop/slow it when `\.dockIsVisible` is false,
+/// - ask for permissions on their own only while `\.widgetsMayRequestAccess` is true,
 /// - persist settings through `\.widgetUpdateSettings`, never through their own files.
 public protocol DockWidget {
     /// Stable reverse-DNS identifier, e.g. `com.newyorkcompute.opendock.widget.clock`. Never change it.

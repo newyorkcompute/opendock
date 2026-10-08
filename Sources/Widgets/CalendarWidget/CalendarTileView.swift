@@ -9,6 +9,7 @@ struct CalendarTileView: View {
 
     @Environment(\.dockIconSize) private var iconSize
     @Environment(\.dockIsVisible) private var isVisible
+    @Environment(\.widgetsMayRequestAccess) private var mayRequestAccess
     @State private var service = CalendarService.shared
 
     var body: some View {
@@ -28,8 +29,10 @@ struct CalendarTileView: View {
                 }
             }
         }
+        .task(id: mayRequestAccess) {
+            if mayRequestAccess { await service.requestAccessIfNeeded() }
+        }
         .task(id: isVisible) {
-            await service.requestAccessIfNeeded()
             if isVisible { await service.autoRefresh() }
         }
     }
