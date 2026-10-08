@@ -16,6 +16,7 @@ struct OpenDockApp: App {
             MenuBarMenu(app: appDelegate)
                 .environment(appDelegate.store)
                 .environment(appDelegate.registry)
+                .environment(appDelegate.profiles)
         }
         .menuBarExtraStyle(.menu)
     }
@@ -34,11 +35,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private(set) var dock: DockController?
     @ObservationIgnored private var appliedHideAppleDock: Bool?
     @ObservationIgnored private var signalSources: [any DispatchSourceSignal] = []
+    @ObservationIgnored private(set) lazy var profiles = ProfileSwitcher(store: store)
+    @ObservationIgnored private(set) lazy var hotKeys = GlobalHotKeys { [weak self] action in
+        self?.hotKeyPressed(action)
+    }
 
     @ObservationIgnored private lazy var settingsWindow = SettingsWindowController(
         store: store,
         registry: registry,
-        launchAtLogin: launchAtLogin
+        launchAtLogin: launchAtLogin,
+        profiles: profiles,
+        hotKeys: hotKeys
     )
 
     override init() {
@@ -57,8 +64,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             )
         )
         self.dock = dock
+        profiles.dock = dock
         dock.start()
         syncAppleDock()
+        syncHotKeys()
         terminateOnSignals()
     }
 
@@ -87,6 +96,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard hide != appliedHideAppleDock else { return }
         appliedHideAppleDock = hide
         appleDock.apply(hide: hide)
+    }
+
+    private enum HotKeyAction {
+        static let nextProfile = "nextProfile"
+        static let previousProfile = "previousProfile"
+    }
+
+    /// Registers the profile shortcuts, now and whenever they change.
+    private func syncHotKeys() {
+        let (next, previous) = withObservationTracking {
+            (store.settings.nextProfileHotKey, store.settings.previousProfileHotKey)
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in self?.syncHotKeys() }
+        }
+        var shortcuts: [String: HotKey] = [:]
+        if let next, next.isValidGlobalShortcut { shortcuts[HotKeyAction.nextProfile] = next }
+        if let previous, previous.isValidGlobalShortcut { shortcuts[HotKeyAction.previousProfile] = previous }
+        hotKeys.update(shortcuts)
+    }
+
+    private func hotKeyPressed(_ action: String) {
+        switch action {
+        case HotKeyAction.nextProfile: profiles.step(by: 1)
+        case HotKeyAction.previousProfile: profiles.step(by: -1)
+        default: break
+        }
     }
 
     /// Quits through `applicationWillTerminate` on `kill`, Ctrl-C, or a closed terminal,

@@ -258,6 +258,10 @@ struct WidgetItemView: View {
         .onChange(of: showingPopout) { _, shown in
             if shown { shellState.beginInteraction() } else { shellState.endInteraction() }
         }
+        .onDisappear {
+            // Switching profiles can take the tile away with its popover still open.
+            if showingPopout { shellState.endInteraction() }
+        }
         .accessibilityLabel(registry.displayName(for: instance))
         .contextMenu {
             Text(registry.displayName(for: instance))

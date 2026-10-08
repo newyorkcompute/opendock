@@ -54,8 +54,11 @@ Dock. You can keep both, or have OpenDock hide Apple's while it runs. Inspired b
 - Auto-hide with a configurable delay
 - Optionally hides Apple's Dock while it runs, and puts your Dock settings back when it quits
 - Drag items in the dock to reorder them, and drop apps or folders from Finder to add them
+- Profiles: keep several layouts (say, Work and Home) and switch between them from the menu
+  bar, with your own global shortcuts, or by swiping sideways on the dock (⌘-scroll works
+  with a mouse)
 - Widgets: Clock, Battery, and Calendar
-- Settings window with General, Dock Items, Widgets, and About tabs
+- Settings window with General, Profiles, Dock Items, Widgets, and About tabs
 - Export and import your layout as JSON
 - Launch at login
 - Menu bar menu for showing and hiding the dock, adding items, and backups
@@ -175,7 +178,7 @@ Then add a target under `Sources/Widgets/` in `Package.swift`, add it as a depen
 Tracked as [GitHub issues](https://github.com/newyorkcompute/opendock/issues); the ones
 labeled `good first issue` are self-contained. Highlights:
 
-- Profiles, with switching by hotkey or Focus mode
+- Switching profiles automatically with Focus modes
 - More widgets: Now Playing, Weather, Reminders, System Activity, Network, Timer, Sticky
   Note, Stocks
 - Left and right screen edges

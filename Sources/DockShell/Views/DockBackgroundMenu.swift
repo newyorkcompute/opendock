@@ -31,6 +31,16 @@ struct DockBackgroundMenu: View {
             }
         }
         Divider()
+        if store.profiles.count > 1 {
+            Menu("Profile") {
+                ForEach(store.profiles) { profile in
+                    Toggle(profile.name, isOn: Binding(
+                        get: { profile.id == store.activeProfileID },
+                        set: { isOn in if isOn { controller.switchProfile(to: profile.id) } }
+                    ))
+                }
+            }
+        }
         Toggle("Auto-Hide", isOn: Binding(
             get: { store.settings.autoHide },
             set: { value in store.updateSettings { $0.autoHide = value } }

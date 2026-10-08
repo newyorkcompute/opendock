@@ -7,6 +7,7 @@ import SystemServices
 struct DockItemsTab: View {
     @Environment(DockStore.self) private var store
     @Environment(WidgetRegistry.self) private var registry
+    @Environment(ProfileSwitcher.self) private var profiles
 
     @State private var selection: DockItem.ID?
 
@@ -16,6 +17,19 @@ struct DockItemsTab: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
+            if store.profiles.count > 1 {
+                Picker("Profile", selection: Binding(
+                    get: { store.activeProfileID },
+                    set: { profiles.select($0) }
+                )) {
+                    ForEach(store.profiles) { profile in
+                        Text(profile.name).tag(profile.id)
+                    }
+                }
+                .fixedSize()
+                .help("The profile whose items you’re editing, which is also the one the dock shows")
+            }
+
             VStack(spacing: 0) {
                 List(selection: $selection) {
                     ForEach(store.items) { item in
@@ -50,6 +64,7 @@ struct DockItemsTab: View {
             }
         }
         .padding(20)
+        .onChange(of: store.activeProfileID) { selection = nil }
     }
 
     // MARK: - Footer

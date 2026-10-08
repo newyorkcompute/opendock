@@ -28,7 +28,7 @@ struct GeneralSettingsTab: View {
             Button("Reset", role: .destructive) { store.resetToFirstRun() }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Your dock items, widgets, and settings will be replaced with the starter layout. Export your layout first if you want to keep it.")
+            Text("All your profiles, dock items, widgets, and settings will be replaced with the starter layout. Export your layout first if you want to keep it.")
         }
     }
 
@@ -174,7 +174,7 @@ struct GeneralSettingsTab: View {
         } header: {
             Text("Backup")
         } footer: {
-            Text("A layout file contains your dock items, widgets, and settings.")
+            Text("A layout file contains all your profiles with their dock items and widgets, plus your settings.")
                 .settingsFootnote()
         }
     }
