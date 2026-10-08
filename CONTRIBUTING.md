@@ -56,6 +56,13 @@ the `Build & test` job on any formatting difference or lint warning.
 In Xcode, Editor > Structure > Format File with 'swift-format' (⌃⇧I) formats the current
 file with the same settings.
 
+The config works with, and gives identical output on, swift-format 6.3 (Xcode 26) and 6.4
+(Xcode 27). When you edit it, change only top-level options and entries in `rules`. Don't
+regenerate it with `swift format dump-configuration`, and don't add nested option objects
+such as `orderedImports`: every key inside one is required, so an object written by one
+version fails to load in a version that added a key to it. Keep the full `rules` list,
+because a rule missing from it is turned off.
+
 Whole-repo formatting commits are listed in `.git-blame-ignore-revs`. GitHub's blame view
 skips them already; to make `git blame` skip them too, run this once in your checkout:
 
