@@ -66,8 +66,10 @@ a certificate of your own:
        -keyout key.pem -out cert.pem
    openssl pkcs12 -export -inkey key.pem -in cert.pem -name 'OpenDock Dev' -passout pass:x -out dev.p12
    security import dev.p12 -k ~/Library/Keychains/login.keychain-db -P x -T /usr/bin/codesign
-   # Marks the certificate as trusted for code signing; macOS asks for your login password.
+   # Marks the certificate as trusted for code signing (macOS asks for your login password).
    security add-trusted-cert -r trustRoot -p codeSign -k ~/Library/Keychains/login.keychain-db cert.pem
+   # Lets codesign use the key without a dialog on every build (asks for the password again).
+   security set-key-partition-list -S apple-tool:,apple:,codesign: -s ~/Library/Keychains/login.keychain-db
    ```
 
    Either way, `security find-identity -v -p codesigning` should now list `OpenDock Dev`.
@@ -85,8 +87,9 @@ a certificate of your own:
 `scripts/build-app.sh` then signs every build with that certificate (with the hardened
 runtime, as releases are), and `codesign -dv /Applications/OpenDock.app` shows
 `Authority=OpenDock Dev`. Permissions you grant are kept from one `make install` to the next.
-The first time `codesign` uses the key, macOS may ask for permission to access it; click
-**Always Allow**. A self-signed certificate is only for your own Mac: Gatekeeper still treats
+If macOS asks whether `codesign` may use the key, click **Always Allow** (or run the
+`set-key-partition-list` line above once). A self-signed certificate is only for your own
+Mac: Gatekeeper still treats
 the app as unsigned anywhere else, so releases use a Developer ID (see
 [RELEASING.md](RELEASING.md#signing-and-notarization)).
 
