@@ -8,18 +8,35 @@
 # Environment:
 #   OPENDOCK_VERSION        CFBundleShortVersionString, e.g. 0.1.0 (default 0.1.0)
 #   OPENDOCK_BUILD          CFBundleVersion (default: commit count, so it only ever goes up)
-#   OPENDOCK_SIGN_IDENTITY  codesign identity, e.g. "Developer ID Application: … (TEAMID)"
-#                           (default "-", ad hoc)
+#   OPENDOCK_SIGN_IDENTITY  codesign identity: "Developer ID Application: … (TEAMID)" for
+#                           releases, or a self-signed "OpenDock Dev" certificate for
+#                           local builds (see CONTRIBUTING.md). Default "-", ad hoc.
+#
+# These can also live in a git-ignored .env.local at the repo root (KEY=value lines);
+# variables already set in the environment take precedence over the file.
 #
 # No Xcode project needed: Swift Package Manager produces the binary and this
 # script wraps it in the bundle structure macOS expects (Info.plist, resources,
 # signature). TCC permissions (Calendar etc.) are tied to the bundle identifier
-# plus signature, so we always sign, even if only ad hoc.
+# plus signature, so we always sign, even if only ad hoc. An ad-hoc signature
+# changes with every build, though, so macOS re-asks for permissions after each
+# reinstall; a real certificate (even self-signed) keeps them.
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+
+if [[ -f "$ROOT/.env.local" ]]; then
+    # Snapshot exported OPENDOCK_* variables, source the file, then put the
+    # snapshot back so the environment wins over the file.
+    ENV_SNAPSHOT="$(export -p | grep '^declare -x OPENDOCK_' || true)"
+    set -a
+    # shellcheck disable=SC1091
+    source "$ROOT/.env.local"
+    set +a
+    eval "$ENV_SNAPSHOT"
+fi
 
 CONFIG="release"
 UNIVERSAL=1
@@ -27,7 +44,7 @@ for arg in "$@"; do
     case "$arg" in
         --debug)  CONFIG="debug"; UNIVERSAL=0 ;;
         --native) UNIVERSAL=0 ;;
-        -h|--help) sed -n '2,12p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) sed -n '2,16p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "unknown option: $arg (see --help)" >&2; exit 2 ;;
     esac
 done
@@ -103,11 +120,28 @@ done
 shopt -u nullglob
 
 echo "▸ codesign ($SIGN_IDENTITY)"
+IDENTITY_NAME="-"
+if [[ "$SIGN_IDENTITY" != "-" ]]; then
+    # `security find-identity` prints one `N) <SHA-1> "<name>"` line per identity
+    # usable for code signing; OPENDOCK_SIGN_IDENTITY may be either field.
+    IDENTITY_LINE="$(security find-identity -v -p codesigning \
+        | grep -F -e " $SIGN_IDENTITY \"" -e "\"$SIGN_IDENTITY\"" | head -n 1 || true)"
+    if [[ -z "$IDENTITY_LINE" ]]; then
+        echo "no valid code-signing identity '$SIGN_IDENTITY' in the keychain search list" >&2
+        echo "(security find-identity -v -p codesigning lists the usable ones; see CONTRIBUTING.md)" >&2
+        exit 1
+    fi
+    IDENTITY_NAME="$(sed -E 's/^[^"]*"([^"]*)".*$/\1/' <<< "$IDENTITY_LINE")"
+fi
+# The hardened runtime works with any signature, so it's always on: local builds
+# then behave like notarized releases.
 SIGN_FLAGS=(--force --deep --sign "$SIGN_IDENTITY"
             --entitlements "$ROOT/App/Resources/OpenDock.entitlements"
             --options runtime)
-# Notarization requires a secure timestamp; ad-hoc signatures can't have one.
-if [[ "$SIGN_IDENTITY" == "-" ]]; then SIGN_FLAGS+=(--timestamp=none); else SIGN_FLAGS+=(--timestamp); fi
+# Notarization requires a secure timestamp from Apple's server. Ad-hoc signatures
+# can't carry one, and a local self-signed identity doesn't need one (nor the
+# network access it takes), so only Developer ID signatures get it.
+if [[ "$IDENTITY_NAME" == "Developer ID"* ]]; then SIGN_FLAGS+=(--timestamp); else SIGN_FLAGS+=(--timestamp=none); fi
 codesign "${SIGN_FLAGS[@]}" "$APP_DIR"
 codesign --verify --deep --strict "$APP_DIR"
 

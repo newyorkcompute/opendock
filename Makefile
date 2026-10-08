@@ -1,4 +1,4 @@
-.PHONY: build run test widget-docs format lint release release-native notarize dist clean
+.PHONY: build run test widget-docs format lint release release-native install notarize dist clean
 
 SWIFT_SOURCES = Sources App Tests
 
@@ -25,6 +25,9 @@ release:      ## Optimized universal (arm64 + x86_64) build + .app bundle
 
 release-native: ## Optimized build for this Mac's architecture only
 	scripts/build-app.sh --native
+
+install:      ## Universal build, back up and replace /Applications/OpenDock.app, relaunch
+	scripts/install-app.sh
 
 notarize:     ## Notarize + staple build/OpenDock.app (see RELEASING.md)
 	scripts/notarize.sh build/OpenDock.app
