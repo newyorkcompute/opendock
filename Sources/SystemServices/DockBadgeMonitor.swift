@@ -86,11 +86,6 @@ public enum DockBadgeReadError: Error, Equatable, Sendable {
 /// tests use a stand-in.
 @MainActor
 public protocol DockBadgeSource: AnyObject {
-    /// Whether OpenDock may read Apple's Dock. With `prompt`, macOS asks the user for
-    /// access if it may not.
-    func hasAccess(prompt: Bool) -> Bool
-    /// Opens the pane of System Settings where the user grants access.
-    func openAccessSettings()
     /// The badges Apple's Dock shows now. Throws a `DockBadgeReadError`.
     func readBadges() async throws -> [DockBadge]
 }
@@ -100,15 +95,17 @@ public protocol DockBadgeSource: AnyObject {
 /// macOS has no public API for other apps' badges, and Accessibility can't notify when one
 /// changes, so the badges are read from Apple's Dock every `pollInterval`, and again soon
 /// after an app is activated or quits (when badges tend to change). Nothing is read while
-/// badges are turned off or the dock is hidden. Without Accessibility access, only the
-/// access itself is checked, every `accessCheckInterval`, and the user is asked for it only
-/// through `requestAccess()`.
+/// badges are turned off or the dock is hidden. Without Accessibility access
+/// (`permission`), only the access itself is checked, every `accessCheckInterval`; reading
+/// starts as soon as it's granted.
 @MainActor
 @Observable
 public final class DockBadgeMonitor {
     public private(set) var badges = DockBadges()
-    /// Whether macOS lets OpenDock read badges from Apple's Dock.
-    public private(set) var hasAccess: Bool
+
+    /// The Accessibility permission the badges are read with, shared with everything else
+    /// that needs it.
+    public let permission: AccessibilityPermission
 
     /// The user's setting. Turning it off clears the badges.
     @ObservationIgnored public var isEnabled = false {
@@ -129,11 +126,13 @@ public final class DockBadgeMonitor {
     @ObservationIgnored private let source: any DockBadgeSource
     @ObservationIgnored private var pollTask: Task<Void, Never>?
     @ObservationIgnored private var observers: [any NSObjectProtocol] = []
-    @ObservationIgnored private var hasPrompted = false
+    /// Counts the times polling has started, so a stale permission observation can tell it
+    /// has nothing to restart.
+    @ObservationIgnored private var pollingGeneration = 0
 
-    public init(source: any DockBadgeSource) {
+    public init(source: any DockBadgeSource, permission: AccessibilityPermission) {
         self.source = source
-        hasAccess = source.hasAccess(prompt: false)
+        self.permission = permission
     }
 
     isolated deinit {
@@ -147,39 +146,19 @@ public final class DockBadgeMonitor {
         badges.label(for: app)
     }
 
-    /// Asks for Accessibility access: with the system prompt the first time, and by opening
-    /// System Settings after that, since macOS may not show the prompt again.
-    public func requestAccess() {
-        if hasPrompted {
-            source.openAccessSettings()
-        } else {
-            hasPrompted = true
-            setAccess(source.hasAccess(prompt: true))
-        }
-    }
-
-    /// Checks again whether OpenDock has access, for instance when the user may have just
-    /// granted it in System Settings.
-    public func refreshAccess() {
-        setAccess(source.hasAccess(prompt: false))
-    }
-
     /// Reads the badges once, if they're wanted now. Returns how long to wait before the
     /// next read.
     @discardableResult
     public func refresh() async -> Duration {
         guard isEnabled, isDockVisible else { return Self.pollInterval }
-        if !hasAccess {
-            hasAccess = source.hasAccess(prompt: false)
-            guard hasAccess else { return Self.accessCheckInterval }
-        }
+        guard permission.refresh() else { return Self.accessCheckInterval }
         do {
             let read = try await source.readBadges()
             // Turned off, hidden, or superseded by a newer read while this one ran.
             guard !Task.isCancelled, isEnabled, isDockVisible else { return Self.pollInterval }
             setBadges(DockBadges(read))
         } catch DockBadgeReadError.accessDenied {
-            hasAccess = false
+            permission.noteDenied()
             setBadges(DockBadges())
             return Self.accessCheckInterval
         } catch {
@@ -190,12 +169,6 @@ public final class DockBadgeMonitor {
 
     // MARK: - Polling
 
-    private func setAccess(_ granted: Bool) {
-        guard granted != hasAccess else { return }
-        hasAccess = granted
-        if pollTask != nil { restartPolling() }
-    }
-
     private func setBadges(_ new: DockBadges) {
         if new != badges { badges = new }
     }
@@ -205,6 +178,7 @@ public final class DockBadgeMonitor {
         if isEnabled, isDockVisible {
             observeApps()
             restartPolling()
+            watchPermission(generation: pollingGeneration)
         } else {
             pollTask?.cancel()
             pollTask = nil
@@ -212,9 +186,24 @@ public final class DockBadgeMonitor {
         }
     }
 
+    /// Reads right away when the permission changes (granted in System Settings, say),
+    /// instead of at the next access check, for as long as this round of polling lasts.
+    private func watchPermission(generation: Int) {
+        _ = withObservationTracking {
+            permission.isGranted
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self, pollTask != nil, generation == pollingGeneration else { return }
+                restartPolling()
+                watchPermission(generation: generation)
+            }
+        }
+    }
+
     /// Reads now (or after `delay`), then every `pollInterval`.
     private func restartPolling(after delay: Duration = .zero) {
         pollTask?.cancel()
+        if pollTask == nil { pollingGeneration += 1 }
         pollTask = Task { [weak self] in
             if delay > .zero { try? await Task.sleep(for: delay) }
             while !Task.isCancelled {

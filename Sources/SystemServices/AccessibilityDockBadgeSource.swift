@@ -6,28 +6,15 @@ import ApplicationServices
 /// badges (there's no public API), and unlike Launch Services' per-app `StatusLabel`, it also
 /// sees the badges system apps such as Messages get from the notification system.
 ///
-/// It needs Accessibility access, and a tile for the app in Apple's Dock. Every running app
-/// has one there (as do apps kept in it), and hiding Apple's Dock with auto-hide, as
-/// `AppleDockHider` does, doesn't remove them.
+/// It needs Accessibility access (`AccessibilityPermission`, checked by `DockBadgeMonitor`),
+/// and a tile for the app in Apple's Dock. Every running app has one there (as do apps kept
+/// in it), and hiding Apple's Dock with auto-hide, as `AppleDockHider` does, doesn't remove
+/// them.
 @MainActor
 public final class AccessibilityDockBadgeSource: DockBadgeSource {
     private static let dockBundleIdentifier = "com.apple.dock"
-    private static let accessSettingsURL = URL(
-        string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
 
     public init() {}
-
-    public func hasAccess(prompt: Bool) -> Bool {
-        guard prompt else { return AXIsProcessTrusted() }
-        // The value of `kAXTrustedCheckOptionPrompt`, a mutable global strict concurrency rejects.
-        let options = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
-        return AXIsProcessTrustedWithOptions(options)
-    }
-
-    public func openAccessSettings() {
-        guard let url = Self.accessSettingsURL else { return }
-        NSWorkspace.shared.open(url)
-    }
 
     public func readBadges() async throws -> [DockBadge] {
         guard

@@ -3,12 +3,12 @@ import DockCore
 import SwiftUI
 import SystemServices
 
-/// Appearance, behavior, window, badge, startup, and backup settings.
+/// Appearance, behavior, apps, keyboard, Accessibility, Apple's Dock, startup, and backup
+/// settings.
 struct GeneralSettingsTab: View {
     @Environment(DockStore.self) private var store
     @Environment(LaunchAtLogin.self) private var launchAtLogin
-    @Environment(AppWindowManager.self) private var windows
-    @Environment(DockBadgeMonitor.self) private var badges
+    @Environment(AccessibilityPermission.self) private var accessibility
 
     @State private var confirmingReset = false
 
@@ -16,9 +16,9 @@ struct GeneralSettingsTab: View {
         Form {
             appearanceSection
             behaviorSection
+            appsSection
             keyboardSection
-            windowsSection
-            badgesSection
+            accessibilitySection
             appleDockSection
             startupSection
             backupSection
@@ -26,13 +26,11 @@ struct GeneralSettingsTab: View {
         .formStyle(.grouped)
         .task {
             launchAtLogin.refresh()
-            windows.refreshTrust()
-            badges.refreshAccess()
-            // Coming back from System Settings, where any of these may have just been allowed.
+            accessibility.refresh()
+            // Coming back from System Settings, where either may have just been allowed.
             for await _ in NotificationCenter.default.notifications(named: NSApplication.didBecomeActiveNotification) {
                 launchAtLogin.refresh()
-                windows.refreshTrust()
-                badges.refreshAccess()
+                accessibility.refresh()
             }
         }
         .alert("Reset OpenDock to its defaults?", isPresented: $confirmingReset) {
@@ -47,6 +45,7 @@ struct GeneralSettingsTab: View {
 
     // MARK: - Sections
 
+    /// How the dock looks: size, magnification, material, and where it is.
     private var appearanceSection: some View {
         Section {
             LabeledContent("Icon size") {
@@ -63,6 +62,27 @@ struct GeneralSettingsTab: View {
                         .monospacedDigit()
                         .foregroundStyle(.secondary)
                         .frame(width: 44, alignment: .trailing)
+                }
+            }
+
+            Toggle("Magnification", isOn: setting(\.hoverEffect))
+
+            if store.settings.hoverEffect {
+                LabeledContent("Magnified size") {
+                    HStack(spacing: 10) {
+                        Slider(value: setting(\.magnification), in: DockSettings.magnificationRange, step: 0.05) {
+                            Text("Magnified size")
+                        } minimumValueLabel: {
+                            Text("Small").font(.caption)
+                        } maximumValueLabel: {
+                            Text("Large").font(.caption)
+                        }
+                        .labelsHidden()
+                        Text("\(Int((store.settings.iconSize * store.settings.magnification).rounded())) pt")
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                            .frame(width: 44, alignment: .trailing)
+                    }
                 }
             }
 
@@ -89,6 +109,7 @@ struct GeneralSettingsTab: View {
         }
     }
 
+    /// When the dock shows and hides, and what clicks and launches do.
     private var behaviorSection: some View {
         Section {
             Toggle("Automatically hide and show the dock", isOn: setting(\.autoHide))
@@ -109,6 +130,37 @@ struct GeneralSettingsTab: View {
             }
 
             Toggle("Show the dock in full-screen apps", isOn: setting(\.revealInFullScreen))
+            Toggle("Animate opening applications", isOn: setting(\.animateOpeningApps))
+            Toggle(
+                "Click the active app’s icon to minimize its windows",
+                isOn: Binding(
+                    get: { store.settings.clickToMinimize },
+                    set: { enabled in
+                        store.updateSettings { $0.clickToMinimize = enabled }
+                        if enabled { accessibility.request() }
+                    }
+                )
+            )
+        } header: {
+            Text("Behavior")
+        } footer: {
+            VStack(alignment: .leading, spacing: 6) {
+                if store.settings.revealInFullScreen {
+                    Text(
+                        "In a full-screen app, hold the pointer at the \(store.settings.edge.screenEdgeName) edge of the screen for a moment to show the dock. It hides again when the pointer leaves."
+                    )
+                }
+                if store.settings.clickToMinimize {
+                    Text("Clicking the icon again restores the windows. Needs Accessibility access.")
+                }
+            }
+            .settingsFootnote()
+        }
+    }
+
+    /// What the dock shows about apps: indicators, the running and recent sections, badges.
+    private var appsSection: some View {
+        Section {
             Toggle("Show indicators for running apps", isOn: setting(\.showRunningIndicators))
             Toggle("Show running apps that aren’t in the dock", isOn: setting(\.showRunningApps))
             Toggle("Show recent apps that aren’t in the dock", isOn: setting(\.showRecentApps))
@@ -121,39 +173,28 @@ struct GeneralSettingsTab: View {
                 }
             }
 
-            Toggle("Animate opening applications", isOn: setting(\.animateOpeningApps))
-            Toggle("Magnification", isOn: setting(\.hoverEffect))
-
-            if store.settings.hoverEffect {
-                LabeledContent("Magnified size") {
-                    HStack(spacing: 10) {
-                        Slider(value: setting(\.magnification), in: DockSettings.magnificationRange, step: 0.05) {
-                            Text("Magnified size")
-                        } minimumValueLabel: {
-                            Text("Small").font(.caption)
-                        } maximumValueLabel: {
-                            Text("Large").font(.caption)
-                        }
-                        .labelsHidden()
-                        Text("\(Int((store.settings.iconSize * store.settings.magnification).rounded())) pt")
-                            .monospacedDigit()
-                            .foregroundStyle(.secondary)
-                            .frame(width: 44, alignment: .trailing)
+            Toggle(
+                "Show badges on app icons",
+                isOn: Binding(
+                    get: { store.settings.showBadges },
+                    set: { enabled in
+                        store.updateSettings { $0.showBadges = enabled }
+                        if enabled { accessibility.request() }
                     }
-                }
-            }
+                )
+            )
         } header: {
-            Text("Behavior")
+            Text("Apps")
         } footer: {
             VStack(alignment: .leading, spacing: 6) {
-                if store.settings.revealInFullScreen {
-                    Text(
-                        "In a full-screen app, hold the pointer at the bottom edge of the screen for a moment to show the dock. It hides again when the pointer leaves."
-                    )
-                }
                 if store.settings.showRecentApps {
                     Text(
                         "Recent apps are the ones you switched to last that aren’t in the dock and aren’t running. They’re only noted while this is on, and are kept across relaunches."
+                    )
+                }
+                if store.settings.showBadges {
+                    Text(
+                        "Unread counts and other badges are read from Apple’s Dock, which needs Accessibility access. Apps show their badges while they’re running or kept in Apple’s Dock."
                     )
                 }
             }
@@ -180,65 +221,29 @@ struct GeneralSettingsTab: View {
         }
     }
 
-    private var windowsSection: some View {
+    /// The one permission several features share, shown in one place.
+    private var accessibilitySection: some View {
         Section {
-            Toggle(
-                "Click the active app’s icon to minimize its windows",
-                isOn: Binding(
-                    get: { store.settings.clickToMinimize },
-                    set: { enabled in
-                        store.updateSettings { $0.clickToMinimize = enabled }
-                        if enabled { windows.requestAccess() }
-                    }
-                )
-            )
-
             LabeledContent("Accessibility access") {
-                if windows.isTrusted {
+                if accessibility.isGranted {
                     Text("Allowed").foregroundStyle(.secondary)
                 } else {
-                    Button("Allow…") { windows.requestAccess() }
+                    Button("Allow…") { accessibility.request() }
                 }
             }
-        } header: {
-            Text("Windows")
-        } footer: {
-            Text(
-                "Clicking the icon again restores the windows. OpenDock uses Accessibility access to list an app’s windows in its menu, bring one to the front, and minimize or restore them. It doesn’t read what’s in your windows."
-            )
-            .settingsFootnote()
-        }
-    }
 
-    private var badgesSection: some View {
-        Section {
-            Toggle(
-                "Show badges on app icons",
-                isOn: Binding(
-                    get: { store.settings.showBadges },
-                    set: { enabled in
-                        store.updateSettings { $0.showBadges = enabled }
-                        if enabled, !badges.hasAccess { badges.requestAccess() }
-                    }
+            if !accessibility.isGranted, store.settings.clickToMinimize || store.settings.showBadges {
+                Label(
+                    "Badges and click-to-minimize stay off until OpenDock is allowed.",
+                    systemImage: "exclamationmark.triangle.fill"
                 )
-            )
-
-            if store.settings.showBadges, !badges.hasAccess {
-                LabeledContent {
-                    Button("Allow Access…") { badges.requestAccess() }
-                } label: {
-                    Label(
-                        "Allow OpenDock to use Accessibility to show badges.",
-                        systemImage: "exclamationmark.triangle.fill"
-                    )
-                    .symbolRenderingMode(.multicolor)
-                }
+                .symbolRenderingMode(.multicolor)
             }
         } header: {
-            Text("Badges")
+            Text("Accessibility")
         } footer: {
             Text(
-                "Unread counts and other badges are read from Apple’s Dock, which needs Accessibility access. Apps show their badges while they’re running or kept in Apple’s Dock."
+                "OpenDock uses Accessibility access to list an app’s windows in its menu and bring one to the front, to minimize and restore them with a click, and to read badges from Apple’s Dock. It doesn’t read what’s in your windows."
             )
             .settingsFootnote()
         }
@@ -329,5 +334,16 @@ extension View {
     /// Style for explanatory text under a settings section.
     func settingsFootnote() -> some View {
         font(.footnote).foregroundStyle(.secondary)
+    }
+}
+
+extension DockSettings.Edge {
+    /// The edge as named in a sentence: "the bottom edge of the screen".
+    fileprivate var screenEdgeName: String {
+        switch self {
+        case .bottom: "bottom"
+        case .left: "left"
+        case .right: "right"
+        }
     }
 }

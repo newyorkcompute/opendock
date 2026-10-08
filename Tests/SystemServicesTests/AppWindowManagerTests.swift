@@ -4,8 +4,6 @@ import Testing
 @testable import SystemServices
 
 private enum WindowEvent: Equatable {
-    case prompt
-    case openSettings
     case list(pid_t)
     case minimize(AppWindow.ID)
     case restore(AppWindow.ID)
@@ -13,20 +11,15 @@ private enum WindowEvent: Equatable {
     case activate(pid_t)
 }
 
-/// An app's windows and an Accessibility switch, with no real windows behind them.
+/// An app's windows, with no real windows behind them.
 @MainActor
 private final class FakeWindowBackend: WindowBackend {
-    var isTrusted: Bool
     var windows: [AppWindow]
     var events: [WindowEvent] = []
 
-    init(trusted: Bool = true, windows: [AppWindow] = []) {
-        isTrusted = trusted
+    init(windows: [AppWindow] = []) {
         self.windows = windows
     }
-
-    func promptForTrust() { events.append(.prompt) }
-    func openAccessibilitySettings() { events.append(.openSettings) }
 
     func windows(ofProcess processIdentifier: pid_t) -> [AppWindow] {
         events.append(.list(processIdentifier))
@@ -53,46 +46,33 @@ private func window(_ id: Int, _ title: String, minimized: Bool = false, main: B
 private let pid: pid_t = 42
 
 @MainActor
+private func makeManager(_ backend: FakeWindowBackend, trusted: Bool = true) -> AppWindowManager {
+    AppWindowManager(
+        permission: AccessibilityPermission(backend: FakeAccessibilityBackend(trusted: trusted)), backend: backend)
+}
+
+@MainActor
 @Suite("App windows")
 struct AppWindowManagerTests {
     // MARK: Access
 
-    @Test func checkingAccessNeverPrompts() {
-        let backend = FakeWindowBackend(trusted: false, windows: [window(1, "Inbox")])
-        let manager = AppWindowManager(backend: backend)
-        #expect(!manager.isTrusted)
+    @Test func doesNothingWithoutAccess() {
+        let backend = FakeWindowBackend(windows: [window(1, "Inbox")])
+        let manager = makeManager(backend, trusted: false)
         #expect(manager.menuWindows(ofProcess: pid).isEmpty)
         #expect(manager.toggleMinimized(ofProcess: pid) == nil)
         manager.bringToFront(window(1, "Inbox"), ofProcess: pid)
         #expect(backend.events.isEmpty)
     }
 
-    @Test func asksWithThePromptOnceThenOpensSystemSettings() {
-        let backend = FakeWindowBackend(trusted: false)
-        let manager = AppWindowManager(backend: backend)
-        manager.requestAccess()
-        manager.requestAccess()
-        #expect(backend.events == [.prompt, .openSettings])
-    }
-
-    @Test func doesNotAskOnceAllowed() {
-        let backend = FakeWindowBackend(trusted: false)
-        let manager = AppWindowManager(backend: backend)
-        backend.isTrusted = true
-        manager.requestAccess()
-        #expect(backend.events.isEmpty)
-        #expect(manager.isTrusted)
-    }
-
-    @Test func noticesAccessChanging() {
-        let backend = FakeWindowBackend(trusted: false)
-        let manager = AppWindowManager(backend: backend)
-        backend.isTrusted = true
-        #expect(manager.refreshTrust())
-        #expect(manager.isTrusted)
-        backend.isTrusted = false
-        #expect(!manager.refreshTrust())
-        #expect(!manager.isTrusted)
+    @Test func checksAccessAgainBeforeEveryUse() {
+        let accessibility = FakeAccessibilityBackend(trusted: false)
+        let backend = FakeWindowBackend(windows: [window(1, "Inbox")])
+        let manager = AppWindowManager(permission: AccessibilityPermission(backend: accessibility), backend: backend)
+        #expect(manager.menuWindows(ofProcess: pid).isEmpty)
+        accessibility.isTrusted = true
+        #expect(manager.menuWindows(ofProcess: pid).count == 1)
+        #expect(manager.permission.isGranted)
     }
 
     // MARK: Menu
@@ -103,20 +83,20 @@ struct AppWindowManagerTests {
             window(2, "budget", minimized: true),
             window(3, "Notes 9", main: true),
         ])
-        let windows = AppWindowManager(backend: backend).menuWindows(ofProcess: pid)
+        let windows = makeManager(backend).menuWindows(ofProcess: pid)
         #expect(windows.map(\.id) == [2, 3, 1])
         #expect(backend.events == [.list(pid)])
     }
 
     @Test func bringingAWindowForwardRaisesItAndActivatesTheApp() {
         let backend = FakeWindowBackend()
-        AppWindowManager(backend: backend).bringToFront(window(7, "Inbox"), ofProcess: pid)
+        makeManager(backend).bringToFront(window(7, "Inbox"), ofProcess: pid)
         #expect(backend.actions == [.raise(7), .activate(pid)])
     }
 
     @Test func bringingAMinimizedWindowForwardRestoresItFirst() {
         let backend = FakeWindowBackend()
-        AppWindowManager(backend: backend).bringToFront(window(7, "Inbox", minimized: true), ofProcess: pid)
+        makeManager(backend).bringToFront(window(7, "Inbox", minimized: true), ofProcess: pid)
         #expect(backend.actions == [.restore(7), .raise(7), .activate(pid)])
     }
 
@@ -128,7 +108,7 @@ struct AppWindowManagerTests {
             window(2, "B", minimized: true),
             window(3, "C"),
         ])
-        let outcome = AppWindowManager(backend: backend).toggleMinimized(ofProcess: pid)
+        let outcome = makeManager(backend).toggleMinimized(ofProcess: pid)
         #expect(outcome == .minimized)
         #expect(backend.actions == [.minimize(1), .minimize(3)])
     }
@@ -138,7 +118,7 @@ struct AppWindowManagerTests {
             window(1, "A", minimized: true),
             window(2, "B", minimized: true, main: true),
         ])
-        let outcome = AppWindowManager(backend: backend).toggleMinimized(ofProcess: pid)
+        let outcome = makeManager(backend).toggleMinimized(ofProcess: pid)
         #expect(outcome == .restored)
         #expect(backend.actions == [.restore(1), .restore(2), .raise(2), .activate(pid)])
     }
@@ -148,19 +128,19 @@ struct AppWindowManagerTests {
             window(4, "Front", minimized: true),
             window(5, "Back", minimized: true),
         ])
-        _ = AppWindowManager(backend: backend).toggleMinimized(ofProcess: pid)
+        _ = makeManager(backend).toggleMinimized(ofProcess: pid)
         #expect(backend.actions.suffix(2) == [.raise(4), .activate(pid)])
     }
 
     @Test func clickingAnAppWithNoWindowsIsLeftToOpenIt() {
         let backend = FakeWindowBackend(windows: [])
-        #expect(AppWindowManager(backend: backend).toggleMinimized(ofProcess: pid) == nil)
+        #expect(makeManager(backend).toggleMinimized(ofProcess: pid) == nil)
         #expect(backend.actions.isEmpty)
     }
 
     @Test func minimizingThenRestoringRoundTrips() {
         let backend = FakeWindowBackend(windows: [window(1, "A", main: true), window(2, "B")])
-        let manager = AppWindowManager(backend: backend)
+        let manager = makeManager(backend)
         #expect(manager.toggleMinimized(ofProcess: pid) == .minimized)
         backend.windows = backend.windows.map { window($0.id, $0.title, minimized: true, main: $0.isMain) }
         #expect(manager.toggleMinimized(ofProcess: pid) == .restored)
