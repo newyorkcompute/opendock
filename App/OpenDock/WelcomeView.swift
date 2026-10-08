@@ -141,6 +141,12 @@ struct WelcomeView: View {
                         "The Calendar widget asks to read your events so it can show what’s next. On a new install, it waits until you close this window."
                 )
                 WelcomeRow(
+                    systemImage: "folder",
+                    title: "Folders",
+                    text:
+                        "The first time you browse a folder in Desktop, Documents, Downloads, or on another drive, macOS asks whether OpenDock may see it."
+                )
+                WelcomeRow(
                     systemImage: "macwindow.on.rectangle",
                     title: "Accessibility",
                     text:
