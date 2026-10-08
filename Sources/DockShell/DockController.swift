@@ -32,7 +32,7 @@ public final class DockController {
 
     /// The screen the dock is on. Resolved from the display setting by `updateScreen`
     /// whenever displays or the setting change, rather than on every pointer move.
-    private var targetScreen: NSScreen?
+    private(set) var targetScreen: NSScreen?
     private var screenObservers: [any NSObjectProtocol] = []
     private var workspaceObservers: [any NSObjectProtocol] = []
     /// While the dock follows the active display: notices focus moving to a window on
