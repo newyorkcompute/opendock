@@ -65,7 +65,7 @@ public final class DockShellState {
     /// the keyboard, which can't click it. Views compare the `item` and watch for changes.
     var popoverRequest: PopoverRequest?
 
-    struct PopoverRequest: Equatable {
+    nonisolated struct PopoverRequest: Equatable, Sendable {
         var item: DockItem.ID
         /// Distinguishes repeated requests for the same item.
         var serial: Int
