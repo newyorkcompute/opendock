@@ -70,6 +70,7 @@ jobs:
         run: |
           APP=build/OpenDock.app
           test -x "$APP/Contents/MacOS/OpenDock"
+          test -f "$APP/Contents/Frameworks/libOpenDockNowPlayingHelper.dylib"
           plutil -lint "$APP/Contents/Info.plist"
           codesign --verify --deep --strict --verbose=2 "$APP"
           scripts/verify-archs.sh "$APP/Contents/MacOS/OpenDock" arm64 x86_64

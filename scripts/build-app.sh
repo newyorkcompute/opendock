@@ -63,11 +63,26 @@ if [[ ${#ARCHS[@]} -gt 0 ]]; then
     "$ROOT/scripts/verify-archs.sh" "$BINARY" "${ARCHS[@]}" > /dev/null
 fi
 
+# The Now Playing helper: a dylib the app runs inside /usr/bin/perl (see Sources/NowPlayingHelper).
+# Built separately because the app must not link it.
+HELPER_PRODUCT="OpenDockNowPlayingHelper"
+HELPER_LIB="lib$HELPER_PRODUCT.dylib"
+echo "▸ swift build ($HELPER_PRODUCT)"
+swift build "${BUILD_FLAGS[@]}" --product "$HELPER_PRODUCT" 2>&1 | sed -E '/^(\[[0-9]+\/[0-9]+\]|[0-9]+%: )/d'
+HELPER_BINARY="$BIN_DIR/$HELPER_LIB"
+[[ -f "$HELPER_BINARY" ]] || { echo "build failed: $HELPER_BINARY not found" >&2; exit 1; }
+if [[ ${#ARCHS[@]} -gt 0 ]]; then
+    "$ROOT/scripts/verify-archs.sh" "$HELPER_BINARY" "${ARCHS[@]}" > /dev/null
+fi
+
 echo "▸ assembling $APP_DIR"
 rm -rf "$APP_DIR"
 mkdir -p "$CONTENTS/MacOS" "$CONTENTS/Resources"
 
 cp "$BINARY" "$CONTENTS/MacOS/$APP_NAME"
+
+mkdir -p "$CONTENTS/Frameworks"
+cp "$HELPER_BINARY" "$CONTENTS/Frameworks/$HELPER_LIB"
 
 cp "$ROOT/App/Resources/Info.plist" "$CONTENTS/Info.plist"
 plutil -replace CFBundleShortVersionString -string "$VERSION" "$CONTENTS/Info.plist"
