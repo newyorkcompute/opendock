@@ -1,10 +1,13 @@
+import AppKit
 import DockCore
 import SwiftUI
+import SystemServices
 
 /// Create, rename, duplicate, reorder, and delete profiles, and choose how to switch them.
 struct ProfilesTab: View {
     @Environment(DockStore.self) private var store
     @Environment(ProfileSwitcher.self) private var switcher
+    @Environment(FocusModeMonitor.self) private var focus
 
     @State private var renaming: DockProfile?
     @State private var draftName = ""
@@ -14,8 +17,16 @@ struct ProfilesTab: View {
         Form {
             profilesSection
             switchingSection
+            focusSection
         }
         .formStyle(.grouped)
+        .task {
+            focus.refresh()
+            // Coming back from System Settings, where Full Disk Access may have just been allowed.
+            for await _ in NotificationCenter.default.notifications(named: NSApplication.didBecomeActiveNotification) {
+                focus.refresh()
+            }
+        }
         .alert("Rename Profile", isPresented: isPresented($renaming), presenting: renaming) { profile in
             TextField("Name", text: $draftName)
             Button("Rename") { store.renameProfile(profile.id, to: draftName) }
@@ -82,7 +93,81 @@ struct ProfilesTab: View {
         }
     }
 
+    private var focusSection: some View {
+        Section {
+            switch focus.access {
+            case .granted:
+                if focus.modes.isEmpty {
+                    Text("No Focus modes are set up on this Mac.")
+                        .foregroundStyle(.secondary)
+                }
+                ForEach(focus.modes) { mode in
+                    focusRow(for: mode)
+                }
+                Picker(
+                    "When Focus turns off",
+                    selection: Binding(
+                        get: { store.settings.focusRules.whenFocusEnds },
+                        set: { value in store.updateSettings { $0.focusRules.whenFocusEnds = value } }
+                    )
+                ) {
+                    Text("Return to the previous profile").tag(FocusProfileRules.FocusEnd.returnToPrevious)
+                    Text("Keep the Focus’s profile").tag(FocusProfileRules.FocusEnd.stay)
+                }
+            case .denied:
+                LabeledContent {
+                    Button("Open System Settings…") { focus.openAccessSettings() }
+                } label: {
+                    Label(
+                        "Allow OpenDock Full Disk Access to see which Focus is on.",
+                        systemImage: "exclamationmark.triangle.fill"
+                    )
+                    .symbolRenderingMode(.multicolor)
+                }
+            case .unavailable, .unknown:
+                Text("Focus modes aren’t available on this Mac.")
+                    .foregroundStyle(.secondary)
+            }
+        } header: {
+            Text("Focus")
+        } footer: {
+            Text(focusFootnote)
+                .settingsFootnote()
+        }
+    }
+
+    private var focusFootnote: String {
+        switch focus.access {
+        case .denied:
+            "macOS keeps which Focus is on in a protected part of your Library folder, which OpenDock can only read with Full Disk Access. Add OpenDock under System Settings > Privacy & Security > Full Disk Access, then quit and reopen OpenDock. It only reads your Focus settings and never changes them."
+        default:
+            "When a Focus turns on, the dock switches to its profile. A Focus set to “Don’t change” leaves the dock as it is. If you pick another profile yourself while a Focus is on, it stays when the Focus ends. Focus modes are set up in System Settings > Focus."
+        }
+    }
+
     // MARK: - Rows
+
+    private func focusRow(for mode: FocusMode) -> some View {
+        Picker(selection: focusProfile(for: mode.id)) {
+            Text("Don’t change").tag(DockProfile.ID?.none)
+            ForEach(store.profiles) { profile in
+                Text(profile.name).tag(Optional(profile.id))
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Label(mode.name, systemImage: mode.symbolName ?? "moon.fill")
+                if mode.id == focus.activeModeID {
+                    Text("On")
+                        .font(.caption2.weight(.semibold))
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 1)
+                        .background(.tint.opacity(0.15), in: Capsule())
+                        .foregroundStyle(.tint)
+                        .accessibilityLabel("\(mode.name) is on")
+                }
+            }
+        }
+    }
 
     private func row(for profile: DockProfile, at index: Int) -> some View {
         let isActive = profile.id == store.activeProfileID
@@ -145,6 +230,19 @@ struct ProfilesTab: View {
 
     private func itemCount(_ profile: DockProfile) -> String {
         profile.items.count == 1 ? "1 item" : "\(profile.items.count) items"
+    }
+
+    /// A binding to the profile a Focus mode shows: nil for "Don't change", which is also what
+    /// a deleted profile reads as.
+    private func focusProfile(for mode: String) -> Binding<DockProfile.ID?> {
+        Binding(
+            get: {
+                guard let id = store.settings.focusRules.profile(for: mode), store.document.profile(id: id) != nil
+                else { return nil }
+                return id
+            },
+            set: { value in store.setFocusProfile(value, for: mode) }
+        )
     }
 
     /// A binding to one of the profile shortcuts. A shortcut can only do one thing, so

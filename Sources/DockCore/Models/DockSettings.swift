@@ -64,6 +64,8 @@ public struct DockSettings: Hashable, Codable, Sendable {
     /// Show the dock over a full-screen app while the pointer is held at the screen edge,
     /// like Apple's Dock. Off, the dock never appears on full-screen Spaces.
     public var revealInFullScreen: Bool
+    /// Which profile each macOS Focus mode shows, and what happens when Focus turns off.
+    public var focusRules: FocusProfileRules
 
     public init(
         edge: Edge = .bottom,
@@ -85,7 +87,8 @@ public struct DockSettings: Hashable, Codable, Sendable {
         showBadges: Bool = true,
         showRecentApps: Bool = false,
         recentAppsCount: Int = 3,
-        revealInFullScreen: Bool = true
+        revealInFullScreen: Bool = true,
+        focusRules: FocusProfileRules = .default
     ) {
         self.edge = edge
         self.display = display
@@ -107,6 +110,7 @@ public struct DockSettings: Hashable, Codable, Sendable {
         self.showRecentApps = showRecentApps
         self.recentAppsCount = recentAppsCount.clamped(to: Self.recentAppsCountRange)
         self.revealInFullScreen = revealInFullScreen
+        self.focusRules = focusRules
     }
 
     public static let `default` = DockSettings()
@@ -155,6 +159,7 @@ extension DockSettings {
         recentAppsCount = ((try? c.decodeIfPresent(Int.self, forKey: .recentAppsCount)) ?? d.recentAppsCount)
             .clamped(to: Self.recentAppsCountRange)
         revealInFullScreen = (try? c.decodeIfPresent(Bool.self, forKey: .revealInFullScreen)) ?? d.revealInFullScreen
+        focusRules = (try? c.decodeIfPresent(FocusProfileRules.self, forKey: .focusRules)) ?? d.focusRules
     }
 }
 

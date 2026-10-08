@@ -35,10 +35,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let badges = DockBadgeMonitor(source: AccessibilityDockBadgeSource())
     let launchAtLogin = LaunchAtLogin()
     let appleDock = AppleDockHider(backend: SystemAppleDockBackend())
+    let focus = FocusModeMonitor(source: DoNotDisturbDatabase())
     private(set) var dock: DockController?
     @ObservationIgnored private var appliedHideAppleDock: Bool?
     @ObservationIgnored private var signalSources: [any DispatchSourceSignal] = []
     @ObservationIgnored private(set) lazy var profiles = ProfileSwitcher(store: store)
+    @ObservationIgnored private lazy var focusProfiles = FocusProfileAutomation(
+        store: store, monitor: focus, switcher: profiles)
     @ObservationIgnored private(set) lazy var hotKeys = GlobalHotKeys { [weak self] action in
         self?.hotKeyPressed(action)
     }
@@ -50,6 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         windows: windows,
         badges: badges,
         profiles: profiles,
+        focus: focus,
         hotKeys: hotKeys,
         showWelcome: ShowWelcomeAction { [weak self] in self?.showWelcome() }
     )
@@ -80,6 +84,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         dock.start()
         syncAppleDock()
         syncHotKeys()
+        focus.start()
+        focusProfiles.start()
         terminateOnSignals()
         if store.needsWelcome { showWelcome() }
     }

@@ -19,6 +19,7 @@ final class SettingsWindowController: NSWindowController {
         windows: AppWindowManager,
         badges: DockBadgeMonitor,
         profiles: ProfileSwitcher,
+        focus: FocusModeMonitor,
         hotKeys: GlobalHotKeys,
         showWelcome: ShowWelcomeAction
     ) {
@@ -32,6 +33,7 @@ final class SettingsWindowController: NSWindowController {
                 .environment(windows)
                 .environment(badges)
                 .environment(profiles)
+                .environment(focus)
                 .environment(hotKeys)
                 .environment(\.showWelcome, showWelcome)
             let hosting = NSHostingController(rootView: pane)
