@@ -131,7 +131,7 @@ if [[ "$SIGN_IDENTITY" != "-" ]]; then
         echo "(security find-identity -v -p codesigning lists the usable ones; see CONTRIBUTING.md)" >&2
         exit 1
     fi
-    IDENTITY_NAME="$(sed -E 's/^[^"]*"(.*)"[[:space:]]*$/\1/' <<< "$IDENTITY_LINE")"
+    IDENTITY_NAME="$(sed -E 's/^[^"]*"([^"]*)".*$/\1/' <<< "$IDENTITY_LINE")"
 fi
 # The hardened runtime works with any signature, so it's always on: local builds
 # then behave like notarized releases.
