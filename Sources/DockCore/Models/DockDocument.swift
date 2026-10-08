@@ -218,4 +218,5 @@ public enum BuiltInWidgetID {
     public static let clock = "com.newyorkcompute.opendock.widget.clock"
     public static let battery = "com.newyorkcompute.opendock.widget.battery"
     public static let calendar = "com.newyorkcompute.opendock.widget.calendar"
+    public static let systemActivity = "com.newyorkcompute.opendock.widget.systemactivity"
 }

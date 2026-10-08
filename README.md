@@ -67,7 +67,7 @@ Dock. You can keep both, or have OpenDock hide Apple's while it runs. Inspired b
 - Profiles: keep several layouts (say, Work and Home) and switch between them from the menu
   bar, with your own global shortcuts, or by swiping sideways on the dock (⌘-scroll works
   with a mouse)
-- Widgets: Clock, Battery, and Calendar
+- Widgets: Clock, Battery, Calendar, and System Activity
 - Settings window with General, Profiles, Dock Items, Widgets, and About tabs
 - Export and import your layout as JSON
 - Launch at login
@@ -89,6 +89,7 @@ popover with more detail. Each widget has its own options in Settings > Dock Ite
 | Calendar | Today's date and your next event | Today's events, with a Join button for meetings that have a link | Show next event |
 | Clock | The time, with the date or your own label below | The full date, time zone, and a month calendar | Seconds, date, time zone, label |
 | Battery | Charge level and power source | Each battery, including connected accessories, and a shortcut to Battery Settings | Percentage, accessory batteries |
+| System Activity | CPU with a one-minute sparkline, plus memory and disk rings | Per-core CPU and load average, the memory breakdown and swap, the startup disk, and a shortcut to Activity Monitor | Which of CPU, memory, and disk to show; CPU history |
 
 The Calendar widget asks for calendar access when it first appears (on a fresh install,
 once the welcome window is closed). Without access it

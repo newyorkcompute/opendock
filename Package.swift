@@ -67,6 +67,12 @@ let package = Package(
             path: "Sources/Widgets/CalendarWidget",
             swiftSettings: uiSettings
         ),
+        .target(
+            name: "SystemActivityWidget",
+            dependencies: ["DockWidgetKit", "SystemServices"],
+            path: "Sources/Widgets/SystemActivityWidget",
+            swiftSettings: uiSettings
+        ),
 
         // MARK: Shell + App
 
@@ -88,6 +94,7 @@ let package = Package(
                 "ClockWidget",
                 "BatteryWidget",
                 "CalendarWidget",
+                "SystemActivityWidget",
             ],
             path: "App/OpenDock",
             swiftSettings: uiSettings
