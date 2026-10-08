@@ -25,8 +25,8 @@ nonisolated struct DockRowMetrics: Equatable {
     var edge: DockSettings.Edge
     var iconSize: CGFloat
     var peakScale: CGFloat
-    /// How far past its magnified size an icon can hop while its app launches: the top
-    /// of a hop of an icon at the peak scale. Zero when launches aren't animated.
+    /// How far past its magnified size an icon can hop (while its app launches, or when
+    /// something lands in a folder): the top of a hop of an icon at the peak scale.
     var launchBounceHeight: CGFloat
 
     var axis: DockAxis { edge.axis }
@@ -61,10 +61,8 @@ nonisolated struct DockRowMetrics: Equatable {
         edge = settings.edge
         iconSize = settings.iconSize
         peakScale = settings.peakMagnification
-        launchBounceHeight =
-            settings.animateOpeningApps
-            ? LaunchBounce.peakOffset(iconHeight: settings.iconSize * settings.peakMagnification)
-            : 0
+        // Folders hop whatever the launch animation setting says, so the room is always kept.
+        launchBounceHeight = LaunchBounce.peakOffset(iconHeight: settings.iconSize * settings.peakMagnification)
     }
 }
 

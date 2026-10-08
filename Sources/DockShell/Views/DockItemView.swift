@@ -182,6 +182,11 @@ struct FolderItemView: View {
     @Environment(\.dockEdge) private var edge
 
     @State private var showingContents = false
+    /// Notices items landing in the folder, which hops the icon once (see `FolderArrivals`).
+    @State private var watcher: FolderWatcher?
+    @State private var arrivals = FolderArrivals()
+    @State private var arrivalHop: LaunchBounce?
+    @State private var arrivalHopTask: Task<Void, Never>?
 
     private static let holdDuration = 0.4
 
@@ -189,10 +194,17 @@ struct FolderItemView: View {
         DockBaselineStack {
             Image(nsImage: AppIconProvider.shared.icon(for: folder.url))
                 .dockIcon(restingSize: iconSize)
+                .launchBounce(arrivalHop)
         } indicator: {
             Color.clear.frame(width: 4, height: 4) // keep baseline aligned with apps
         }
         .contentShape(Rectangle())
+        .onAppear(perform: watchForArrivals)
+        .onDisappear(perform: stopWatchingForArrivals)
+        .onChange(of: folder.url) {
+            stopWatchingForArrivals()
+            watchForArrivals()
+        }
         .gesture(
             // Exclusive, so letting go after the hold doesn't count as a click as well.
             LongPressGesture(minimumDuration: Self.holdDuration)
@@ -248,6 +260,45 @@ struct FolderItemView: View {
         var copy = item
         copy.kind = .folder(updated)
         store.updateItem(copy)
+    }
+
+    // MARK: Arrivals
+
+    /// Watches the folder so the icon can hop when something lands in it, as Apple's Dock
+    /// bounces Downloads. Only how many entries the folder has is read (from the folder's
+    /// own metadata), never what they are: listing Downloads, Desktop, or Documents would
+    /// ask the user for access to it, and the dock shouldn't do that on its own.
+    private func watchForArrivals() {
+        guard watcher == nil, FolderListing.isBrowsable(folder.url) else { return }
+        arrivals = FolderArrivals()
+        if let count = entryCount { _ = arrivals.update(count: count, at: .now) }
+        watcher = FolderWatcher(url: folder.url) { folderChanged() }
+    }
+
+    private func stopWatchingForArrivals() {
+        watcher?.stop()
+        watcher = nil
+        arrivalHopTask?.cancel()
+        arrivalHopTask = nil
+        arrivalHop = nil
+    }
+
+    private func folderChanged() {
+        guard let count = entryCount, arrivals.update(count: count, at: .now) else { return }
+        // One hop: a launch bounce whose launch ended as it started.
+        arrivalHop = LaunchBounce(start: .now, launchEnd: .now)
+        arrivalHopTask?.cancel()
+        arrivalHopTask = Task {
+            try? await Task.sleep(for: .seconds(LaunchBounce.hopDuration))
+            guard !Task.isCancelled else { return }
+            arrivalHop = nil
+        }
+    }
+
+    /// How many entries the folder has. On APFS and HFS+ a directory's link count is its
+    /// number of entries plus two, and reading it needs no access to the folder's contents.
+    private var entryCount: Int? {
+        (try? FileManager.default.attributesOfItem(atPath: folder.url.path))?[.referenceCount] as? Int
     }
 }
 
