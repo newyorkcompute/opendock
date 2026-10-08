@@ -104,10 +104,13 @@ struct AppItemView: View {
         }
         .contentShape(Rectangle())
         .onTapGesture {
-            controller.open(app)
+            controller.appClicked(app)
         }
         .accessibilityLabel(app.displayName)
-        .contextMenu { menu }
+        // Right-clicks open the menu through the controller (see `installContextClickMonitor`).
+        .accessibilityAction(.showMenu) {
+            controller.showAppMenu(for: app, pinnedID: pinnedID)
+        }
     }
 
     @ViewBuilder
@@ -116,27 +119,6 @@ struct AppItemView: View {
             .fill(.primary.opacity(0.75))
             .frame(width: 4, height: 4)
             .opacity(store.settings.showRunningIndicators && isRunning ? 1 : 0)
-    }
-
-    @ViewBuilder
-    private var menu: some View {
-        Text(app.displayName)
-        Divider()
-        if isRunning {
-            Button("Hide") { AppLauncher.hide(app, running: running) }
-            Button("Quit") { AppLauncher.quit(app, running: running) }
-        } else {
-            Button("Open") { controller.open(app) }
-        }
-        Button("New Window") { AppLauncher.openNewInstance(app) }
-        Divider()
-        Button("Show in Finder") { AppLauncher.revealInFinder(app.url) }
-        Divider()
-        if let pinnedID {
-            Button("Remove from Dock", role: .destructive) { store.remove(id: pinnedID) }
-        } else {
-            Button("Keep in Dock") { store.addApp(at: app.url) }
-        }
     }
 }
 

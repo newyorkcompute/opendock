@@ -1,11 +1,13 @@
 import AppKit
 import DockCore
 import SwiftUI
+import SystemServices
 
-/// Appearance, behavior, startup, and backup settings.
+/// Appearance, behavior, window, startup, and backup settings.
 struct GeneralSettingsTab: View {
     @Environment(DockStore.self) private var store
     @Environment(LaunchAtLogin.self) private var launchAtLogin
+    @Environment(AppWindowManager.self) private var windows
 
     @State private var confirmingReset = false
 
@@ -13,6 +15,7 @@ struct GeneralSettingsTab: View {
         Form {
             appearanceSection
             behaviorSection
+            windowsSection
             appleDockSection
             startupSection
             backupSection
@@ -20,8 +23,10 @@ struct GeneralSettingsTab: View {
         .formStyle(.grouped)
         .task {
             launchAtLogin.refresh()
+            windows.refreshTrust()
             for await _ in NotificationCenter.default.notifications(named: NSApplication.didBecomeActiveNotification) {
                 launchAtLogin.refresh()
+                windows.refreshTrust()
             }
         }
         .alert("Reset OpenDock to its defaults?", isPresented: $confirmingReset) {
@@ -119,6 +124,36 @@ struct GeneralSettingsTab: View {
                     }
                 }
             }
+        }
+    }
+
+    private var windowsSection: some View {
+        Section {
+            Toggle(
+                "Click the active app’s icon to minimize its windows",
+                isOn: Binding(
+                    get: { store.settings.clickToMinimize },
+                    set: { enabled in
+                        store.updateSettings { $0.clickToMinimize = enabled }
+                        if enabled { windows.requestAccess() }
+                    }
+                )
+            )
+
+            LabeledContent("Accessibility access") {
+                if windows.isTrusted {
+                    Text("Allowed").foregroundStyle(.secondary)
+                } else {
+                    Button("Allow…") { windows.requestAccess() }
+                }
+            }
+        } header: {
+            Text("Windows")
+        } footer: {
+            Text(
+                "Clicking the icon again restores the windows. OpenDock uses Accessibility access to list an app’s windows in its menu, bring one to the front, and minimize or restore them. It doesn’t read what’s in your windows."
+            )
+            .settingsFootnote()
         }
     }
 

@@ -30,6 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let store = DockStore.load()
     let registry = WidgetRegistry()
     let running = RunningAppsMonitor()
+    let windows = AppWindowManager()
     let launchAtLogin = LaunchAtLogin()
     let appleDock = AppleDockHider(backend: SystemAppleDockBackend())
     private(set) var dock: DockController?
@@ -44,6 +45,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         store: store,
         registry: registry,
         launchAtLogin: launchAtLogin,
+        windows: windows,
         profiles: profiles,
         hotKeys: hotKeys
     )
@@ -58,6 +60,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             store: store,
             registry: registry,
             running: running,
+            windows: windows,
             actions: DockActions(
                 openSettings: { [weak self] in self?.showSettings() },
                 quit: { NSApp.terminate(nil) }

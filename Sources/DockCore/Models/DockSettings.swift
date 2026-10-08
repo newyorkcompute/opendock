@@ -45,6 +45,9 @@ public struct DockSettings: Hashable, Codable, Sendable {
     /// Bounce an app's icon while the app launches, like the Dock's "Animate opening
     /// applications" setting.
     public var animateOpeningApps: Bool
+    /// Clicking the frontmost app's icon minimizes its windows, and clicking it again
+    /// restores them. Needs Accessibility access.
+    public var clickToMinimize: Bool
 
     public init(
         edge: Edge = .bottom,
@@ -61,7 +64,8 @@ public struct DockSettings: Hashable, Codable, Sendable {
         nextProfileHotKey: HotKey? = nil,
         previousProfileHotKey: HotKey? = nil,
         switchProfilesByScrolling: Bool = true,
-        animateOpeningApps: Bool = true
+        animateOpeningApps: Bool = true,
+        clickToMinimize: Bool = false
     ) {
         self.edge = edge
         self.display = display
@@ -78,6 +82,7 @@ public struct DockSettings: Hashable, Codable, Sendable {
         self.previousProfileHotKey = previousProfileHotKey
         self.switchProfilesByScrolling = switchProfilesByScrolling
         self.animateOpeningApps = animateOpeningApps
+        self.clickToMinimize = clickToMinimize
     }
 
     public static let `default` = DockSettings()
@@ -119,6 +124,7 @@ extension DockSettings {
             (try? c.decodeIfPresent(Bool.self, forKey: .switchProfilesByScrolling))
             ?? d.switchProfilesByScrolling
         animateOpeningApps = (try? c.decodeIfPresent(Bool.self, forKey: .animateOpeningApps)) ?? d.animateOpeningApps
+        clickToMinimize = (try? c.decodeIfPresent(Bool.self, forKey: .clickToMinimize)) ?? d.clickToMinimize
     }
 }
 
