@@ -47,7 +47,9 @@ struct DockSurfaceView: View {
 
     var body: some View {
         let metrics = DockRowMetrics(settings: store.settings)
-        let extras = store.settings.showRunningApps ? unpinnedRunningApps : []
+        let extras = store.settings.showRunningApps
+            ? running.snapshot.unpinnedApps(pinned: store.items, excludingBundleID: Bundle.main.bundleIdentifier)
+            : []
         DockMagnifyingLayout(
             metrics: metrics,
             pointerX: shellState.pointerX,
@@ -66,7 +68,7 @@ struct DockSurfaceView: View {
             ForEach(store.items) { item in
                 DockItemView(item: item, controller: controller)
                     .dockLayoutRole(.item(
-                        item.id,
+                        .pinned(item.id),
                         growth: DockMagnification.growth(for: item),
                         hoverable: !item.isSpacer && !item.isDivider
                     ))
@@ -75,15 +77,18 @@ struct DockSurfaceView: View {
             if !extras.isEmpty {
                 DockDivider()
                     .dockLayoutRole(.item(nil, growth: 0, hoverable: false))
-                ForEach(extras, id: \.item.id) { extra in
-                    AppItemView(item: extra.item, app: extra.app, controller: controller, isPinned: false)
-                        .dockLayoutRole(.item(extra.item.id, growth: 1, hoverable: true))
+                    .transition(.dockRunningApp)
+                ForEach(extras) { extra in
+                    AppItemView(app: extra.app, pinnedID: nil, controller: controller)
+                        .dockLayoutRole(.item(.running(extra.id), growth: 1, hoverable: true))
+                        .transition(.dockRunningApp)
                 }
             }
 
             DockItemLabel(title: label(for: shellState.hoveredItemID, extras: extras))
                 .dockLayoutRole(.label)
         }
+        .animation(.dockRunningApps, value: extras.map(\.id))
         .onContinuousHover { phase in
             controller.pointerHoverChanged(phase)
         }
@@ -103,42 +108,31 @@ struct DockSurfaceView: View {
             .contextMenu { DockBackgroundMenu(controller: controller) }
     }
 
-    private func label(for id: DockItem.ID?, extras: [UnpinnedApp]) -> String? {
-        guard let id else { return nil }
-        if let item = store.items.first(where: { $0.id == id }) {
-            switch item.kind {
+    private func label(for id: DockRowItemID?, extras: [RunningDockApp]) -> String? {
+        switch id {
+        case nil:
+            return nil
+        case let .pinned(id):
+            switch store.items.first(where: { $0.id == id })?.kind {
             case let .app(app): return app.displayName
             case let .folder(folder): return folder.displayName
             case let .widget(instance): return registry.displayName(for: instance)
-            case .spacer, .divider: return nil
+            case .spacer, .divider, nil: return nil
             }
-        }
-        return extras.first { $0.item.id == id }?.app.displayName
-    }
-
-    struct UnpinnedApp {
-        let item: DockItem
-        let app: AppItem
-    }
-
-    /// Running GUI apps that aren't pinned, shown after a divider (like Apple's Dock).
-    private var unpinnedRunningApps: [UnpinnedApp] {
-        let pinnedIDs = Set(store.items.compactMap { $0.appItem?.bundleIdentifier })
-        let pinnedPaths = Set(store.items.compactMap { $0.appItem?.url.normalizedPath })
-        return running.snapshot.regularApps.compactMap { app in
-            guard let url = app.bundleURL else { return nil }
-            if let id = app.bundleIdentifier, pinnedIDs.contains(id) { return nil }
-            if pinnedPaths.contains(url.normalizedPath) { return nil }
-            guard app.bundleIdentifier != Bundle.main.bundleIdentifier else { return nil }
-            let appItem = AppItem(url: url, bundleIdentifier: app.bundleIdentifier)
-            // Ephemeral item: stable ID derived from the pid so hover state works.
-            let item = DockItem(
-                id: UUID(uuidString: String(format: "00000000-0000-0000-0000-%012d", abs(Int(app.processIdentifier)))) ?? UUID(),
-                kind: .app(appItem)
-            )
-            return UnpinnedApp(item: item, app: appItem)
+        case let .running(id):
+            return extras.first { $0.id == id }?.app.displayName
         }
     }
+}
+
+extension AnyTransition {
+    /// Running apps grow in from the baseline as they launch and shrink away as they quit,
+    /// while their neighbors slide over.
+    static let dockRunningApp = AnyTransition.scale(scale: 0.4, anchor: .bottom).combined(with: .opacity)
+}
+
+extension Animation {
+    static let dockRunningApps = Animation.easeInOut(duration: 0.25)
 }
 
 /// Keeps the pointer "on the dock" between and above magnified icons. Nearly transparent

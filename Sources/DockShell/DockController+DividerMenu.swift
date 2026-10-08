@@ -140,9 +140,10 @@ extension DockController {
         let geometry = shellState.geometry
         let margin = geometry.halfGap
         guard let hit = geometry.itemFrames.first(where: { $0.frame.insetBy(dx: -margin, dy: -margin).contains(point) }),
-              store.profile.item(id: hit.id)?.isDivider == true
+              let id = hit.id.pinnedID,
+              store.profile.item(id: id)?.isDivider == true
         else { return nil }
-        return hit.id
+        return id
     }
 }
 

@@ -1,5 +1,17 @@
 import DockCore
 import SwiftUI
+import SystemServices
+
+/// An item in the dock row: one of the pinned items, or a running app shown after them.
+nonisolated enum DockRowItemID: Hashable, Sendable {
+    case pinned(DockItem.ID)
+    case running(RunningDockApp.ID)
+
+    var pinnedID: DockItem.ID? {
+        if case let .pinned(id) = self { return id }
+        return nil
+    }
+}
 
 /// Sizes and spacing of the dock row, derived from settings.
 nonisolated struct DockRowMetrics: Equatable {
@@ -39,7 +51,7 @@ nonisolated enum DockLayoutRole: Equatable {
     /// An item in the row, with its share of the peak growth (see
     /// `DockMagnification.Slot.growth`). `hoverable` items get a label; spacers and
     /// dividers don't.
-    case item(DockItem.ID?, growth: Double, hoverable: Bool)
+    case item(DockRowItemID?, growth: Double, hoverable: Bool)
 }
 
 private nonisolated struct DockLayoutRoleKey: LayoutValueKey {
@@ -69,15 +81,15 @@ nonisolated struct DockDropGap: Equatable {
 /// reading it must never cause a re-render.
 final class DockGeometry {
     nonisolated struct Slot {
-        var id: DockItem.ID?
+        var id: DockRowItemID?
         var width: CGFloat
         var growth: Double
     }
 
     var hitZone: CGRect = .zero
-    var hoverTargets: [(id: DockItem.ID, frame: CGRect)] = []
+    var hoverTargets: [(id: DockRowItemID, frame: CGRect)] = []
     /// Every item with an ID (spacers included) except the one being dragged.
-    var itemFrames: [(id: DockItem.ID, frame: CGRect)] = []
+    var itemFrames: [(id: DockRowItemID, frame: CGRect)] = []
     /// Every item in the row at rest, in order, with no gap and nothing left out.
     var restingSlots: [Slot] = []
     /// The row is centered here.
@@ -86,12 +98,12 @@ final class DockGeometry {
     /// Origin of the layout in the hosting view (top-left origin).
     var containerOrigin: CGPoint = .zero
 
-    func item(atX x: CGFloat) -> DockItem.ID? {
+    func item(atX x: CGFloat) -> DockRowItemID? {
         hoverTargets.first { x >= $0.frame.minX - halfGap && x < $0.frame.maxX + halfGap }?.id
     }
 
     /// The item (spacers included) under `x`, if any.
-    func anyItem(atX x: CGFloat) -> DockItem.ID? {
+    func anyItem(atX x: CGFloat) -> DockRowItemID? {
         itemFrames.first { x >= $0.frame.minX - halfGap && x < $0.frame.maxX + halfGap }?.id
     }
 }
@@ -114,7 +126,7 @@ nonisolated struct DockMagnifyingLayout: Layout {
     /// Pointer x in the layout's local coordinates.
     var pointerX: CGFloat?
     var amount: CGFloat
-    var hoveredID: DockItem.ID?
+    var hoveredID: DockRowItemID?
     /// Item being reordered: out of the row while the gap stands in for it.
     var draggedID: DockItem.ID?
     var gap: DockDropGap
@@ -134,15 +146,15 @@ nonisolated struct DockMagnifyingLayout: Layout {
         var itemIndices: [Int?] = []
         var sizes: [CGSize] = []
         var slots: [DockMagnification.Slot] = []
-        var hoverIDs: [DockItem.ID?] = []
-        var ids: [DockItem.ID?] = []
+        var hoverIDs: [DockRowItemID?] = []
+        var ids: [DockRowItemID?] = []
         var height: CGFloat = 0
         var restingWidth: CGFloat = 0
         /// The dragged item's subview and size, when it's out of the row.
         var dragged: (index: Int, size: CGSize)?
         var resting: [DockGeometry.Slot] = []
 
-        mutating func append(_ index: Int?, id: DockItem.ID?, size: CGSize, slot: DockMagnification.Slot, hoverable: Bool) {
+        mutating func append(_ index: Int?, id: DockRowItemID?, size: CGSize, slot: DockMagnification.Slot, hoverable: Bool) {
             itemIndices.append(index)
             sizes.append(size)
             slots.append(slot)
@@ -169,7 +181,7 @@ nonisolated struct DockMagnifyingLayout: Layout {
             let slot = DockMagnification.Slot(width: size.width + metrics.spacing, growth: growth)
             row.resting.append(.init(id: id, width: slot.width, growth: growth))
             row.height = max(row.height, size.height)
-            if withGap, let id, id == draggedID {
+            if withGap, let draggedID, id == .pinned(draggedID) {
                 row.dragged = (index, size)
                 continue
             }

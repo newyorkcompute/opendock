@@ -34,7 +34,7 @@ public final class DockShellState {
     var isDragging: Bool { draggingItemID != nil || dropIndex != nil }
 
     /// The item under the pointer, for its label.
-    var hoveredItemID: DockItem.ID?
+    var hoveredItemID: DockRowItemID?
 
     /// Pointer x in the dock layout's coordinates. Kept after the pointer leaves so the
     /// row settles back around where it was, like Apple's Dock.
