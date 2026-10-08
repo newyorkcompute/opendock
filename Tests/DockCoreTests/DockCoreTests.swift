@@ -114,6 +114,19 @@ struct DockDocumentCodecTests {
         #expect(!decoded.animateOpeningApps)
     }
 
+    @Test func clickToMinimizeIsOffUnlessTurnedOn() throws {
+        let decoder = JSONDecoder()
+        #expect(try decoder.decode(DockSettings.self, from: Data("{}".utf8)).clickToMinimize == false)
+        #expect(
+            try decoder.decode(DockSettings.self, from: Data(#"{"clickToMinimize": "yes"}"#.utf8)).clickToMinimize
+                == false)
+
+        var settings = DockSettings.default
+        settings.clickToMinimize = true
+        let decoded = try decoder.decode(DockSettings.self, from: JSONEncoder().encode(settings))
+        #expect(decoded.clickToMinimize)
+    }
+
     @Test func rejectsNewerVersions() throws {
         let profile = DockProfile(name: "X")
         let doc = DockDocument(

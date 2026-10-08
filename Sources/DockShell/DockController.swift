@@ -10,7 +10,8 @@ import os
 ///
 /// Usage from the app:
 /// ```swift
-/// let controller = DockController(store: store, registry: registry, running: running, actions: actions)
+/// let controller = DockController(
+///     store: store, registry: registry, running: running, windows: windows, actions: actions)
 /// controller.start()
 /// ```
 @MainActor
@@ -18,6 +19,8 @@ public final class DockController {
     public let store: DockStore
     public let registry: WidgetRegistry
     public let running: RunningAppsMonitor
+    /// Windows for app menus and click-to-minimize.
+    public let windows: AppWindowManager
     public let shellState = DockShellState()
     public var actions: DockActions
 
@@ -66,11 +69,13 @@ public final class DockController {
         store: DockStore,
         registry: WidgetRegistry,
         running: RunningAppsMonitor,
+        windows: AppWindowManager,
         actions: DockActions = .noop
     ) {
         self.store = store
         self.registry = registry
         self.running = running
+        self.windows = windows
         self.actions = actions
     }
 

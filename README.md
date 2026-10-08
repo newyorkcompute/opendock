@@ -58,6 +58,8 @@ Dock. You can keep both, or have OpenDock hide Apple's while it runs. Inspired b
 - Auto-hide with a configurable delay
 - Optionally hides Apple's Dock while it runs, and puts your Dock settings back when it quits
 - Drag items in the dock to reorder them, and drop apps or folders from Finder to add them
+- Right-click an app to see its windows and bring one to the front, and optionally click
+  the active app's icon to minimize its windows (see [Window management](#window-management))
 - Profiles: keep several layouts (say, Work and Home) and switch between them from the menu
   bar, with your own global shortcuts, or by swiping sideways on the dock (⌘-scroll works
   with a mouse)
@@ -86,6 +88,21 @@ The Calendar widget asks for calendar access when it first appears. Without acce
 shows "Tap to allow", and its popover has a button to allow access or open Privacy
 Settings. To build your own widget, see [Writing a widget](#writing-a-widget).
 
+## Window management
+
+Right-click a running app in the dock to list its open windows, like Apple's Dock: the
+current one is checked, minimized ones have a diamond, and choosing one brings it to the
+front. With "Click the active app's icon to minimize its windows" on (Settings > General >
+Windows), clicking the icon of the app you're using minimizes its windows, and clicking it
+again restores them.
+
+Both need Accessibility access, because macOS only lets apps see and arrange other apps'
+windows through the Accessibility API. OpenDock doesn't ask at launch. It asks when you
+turn on click-to-minimize, or choose "Allow Access to Windows…" in an app's menu, and you
+can allow it in System Settings > Privacy & Security > Accessibility at any time. OpenDock
+only reads window titles and whether a window is minimized; it doesn't read what's in your
+windows. Without access, the dock works as before.
+
 ## Build and run
 
 Requirements:
@@ -109,7 +126,9 @@ Notes:
 
 - If the build fails with a license error, run `sudo xcodebuild -license accept`.
 - The app is ad-hoc signed. macOS ties privacy permissions to the signature, so the
-  Calendar permission prompt shows up again after each rebuild.
+  Calendar permission prompt shows up again after each rebuild. Accessibility access stops
+  working too, even if System Settings still shows it as allowed: remove OpenDock from the
+  list there and allow it again.
 - Launch at login only works from the `.app` bundle, not from `swift run`.
 - Your layout is stored in `~/Library/Application Support/OpenDock/dock.json`.
 

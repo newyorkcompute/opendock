@@ -98,8 +98,9 @@ extension DockController {
 
     /// Sees every right-click and control-click on the dock before SwiftUI does. Records
     /// where it was, for items added from the menu it opens (`menuInsertionIndex`), and
-    /// opens this menu for dividers: SwiftUI has no secondary-click gesture, and a
-    /// `.contextMenu` would be a second copy of the menu.
+    /// opens this menu for dividers, and the app menu for apps: SwiftUI has no
+    /// secondary-click gesture, and a `.contextMenu` would be a second copy of the menu
+    /// (and, for apps, can't look up the windows only once it opens).
     func installContextClickMonitor() {
         guard contextClickMonitor == nil else { return }
         contextClickMonitor = NSEvent.addLocalMonitorForEvents(matching: [.rightMouseDown, .leftMouseDown]) {
@@ -116,15 +117,21 @@ extension DockController {
         contextClickMonitor = nil
     }
 
-    /// Returns true when the click opened the divider menu and should go no further.
+    /// Returns true when the click opened a divider's or an app's menu and should go no further.
     private func handleContextClick(inWindow windowNumber: Int) -> Bool {
         guard let panel, panel.windowNumber == windowNumber,
             let point = layoutPoint(fromScreen: NSEvent.mouseLocation)
         else { return false }
         shellState.contextClickX = point.x - shellState.geometry.rowCenterX
-        guard let id = dividerID(at: point) else { return false }
-        showDividerMenu(for: id)
-        return true
+        if let id = dividerID(at: point) {
+            showDividerMenu(for: id)
+            return true
+        }
+        if let target = appMenuTarget(at: point) {
+            showAppMenu(for: target.app, pinnedID: target.pinnedID, processIdentifier: target.processIdentifier)
+            return true
+        }
+        return false
     }
 
     /// Where an item added from a context menu on the dock goes: right after `anchor` (the
@@ -154,7 +161,7 @@ extension DockController {
 }
 
 /// A menu item that runs `handler` when chosen.
-private func actionMenuItem(_ title: String, handler: @escaping () -> Void) -> NSMenuItem {
+func actionMenuItem(_ title: String, handler: @escaping () -> Void) -> NSMenuItem {
     let action = MenuAction(handler)
     let item = NSMenuItem(title: title, action: #selector(MenuAction.fire(_:)), keyEquivalent: "")
     item.target = action
