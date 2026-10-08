@@ -27,6 +27,17 @@ public final class DockShellState {
     /// Notices a reorder released away from the dock, where the dock gets no drag events.
     @ObservationIgnored var dragEndWatcher: Task<Void, Never>?
 
+    /// Whether letting go of the reorder away from the dock removes the item (see
+    /// `DockController+DragOff.swift`).
+    @ObservationIgnored var dragOffRemoval = DragOffRemoval()
+
+    /// Where on the dragged item it was picked up: its center relative to the pointer, in
+    /// the layout's coordinates, for placing the "Remove" label and the poof on the icon.
+    @ObservationIgnored var dragGrabOffset: CGPoint = .zero
+
+    /// Takes the drag-off overlay down once its poof has played.
+    @ObservationIgnored var dragOffPoofTask: Task<Void, Never>?
+
     /// Where along the row the last right-click or control-click on the dock was, relative
     /// to the row's center, so items added from the menu it opened go there.
     @ObservationIgnored var contextClickOffset: CGFloat?
