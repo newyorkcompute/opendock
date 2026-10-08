@@ -84,7 +84,7 @@ extension DockController {
 }
 
 extension ProfileScrollGesture.Event {
-    init(_ event: NSEvent) {
+    nonisolated init(_ event: NSEvent) {
         let phase: ProfileScrollGesture.Phase =
             if event.phase.contains(.began) {
                 .began
