@@ -1,4 +1,4 @@
-.PHONY: build run test widget-docs format lint release release-native install notarize dist clean
+.PHONY: build run test widget-docs format lint release release-native install notarize dist xcodeproj xcode clean
 
 SWIFT_SOURCES = Sources App Tests
 
@@ -35,5 +35,13 @@ notarize:     ## Notarize + staple build/OpenDock.app (see RELEASING.md)
 dist:         ## Zip build/OpenDock.app + SHA-256 into build/dist
 	scripts/package-app.sh
 
+xcodeproj:    ## Generate App/OpenDock.xcodeproj from App/project.yml (needs XcodeGen)
+	@command -v xcodegen >/dev/null \
+	    || { echo "xcodegen not found. Install it with: brew install xcodegen" >&2; exit 1; }
+	xcodegen generate --spec App/project.yml
+
+xcode: xcodeproj ## Generate the Xcode project and open it
+	open App/OpenDock.xcodeproj
+
 clean:
-	rm -rf .build build
+	rm -rf .build build App/OpenDock.xcodeproj
