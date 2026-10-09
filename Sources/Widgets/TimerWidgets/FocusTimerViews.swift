@@ -19,7 +19,7 @@ struct FocusTimerTileView: View {
         let plan = settings.plan
         let timer = sessions.focusTimer(for: id, plan: plan)
         let color = TimerStyle.color(for: timer.phase)
-        TimerTicking(interval: 1, active: timer.isRunning) { now in
+        WidgetTicking(interval: 1, active: timer.isRunning) { now in
             WidgetTile {
                 WidgetStack(spacing: iconSize * (edge.isVertical ? 0.08 : 0.16)) {
                     ring(timer, color: color, at: now)
@@ -105,7 +105,7 @@ struct FocusTimerPopoutView: View {
         let plan = settings.plan
         let timer = sessions.focusTimer(for: id, plan: plan)
         let color = TimerStyle.color(for: timer.phase)
-        TimerTicking(interval: 1, active: timer.isRunning) { now in
+        WidgetTicking(interval: 1, active: timer.isRunning) { now in
             VStack(spacing: 14) {
                 HStack {
                     Text("Focus Timer").font(.headline)

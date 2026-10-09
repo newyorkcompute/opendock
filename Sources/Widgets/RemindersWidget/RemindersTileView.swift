@@ -17,16 +17,16 @@ struct RemindersTileView: View {
     private var settings: RemindersSettings { RemindersSettings(instance: instance) }
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: isVisible ? 60 : 900)) { context in
+        WidgetTicking(interval: 60) { now in
             let list = settings.list(in: service.lists)
             WidgetTile {
                 WidgetStack(spacing: iconSize * (edge.isVertical ? 0.08 : 0.16)) {
                     RemindersListIcon(color: list.map { Color(hex: $0.colorHex) } ?? .blue, size: iconSize * 0.72)
-                    summary(list: list, at: context.date)
+                    summary(list: list, at: now)
                 }
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(tileAccessibilityLabel(list: list, at: context.date))
+            .accessibilityLabel(tileAccessibilityLabel(list: list, at: now))
         }
         .task(id: mayRequestAccess) {
             if mayRequestAccess { await service.requestAccessIfNeeded() }

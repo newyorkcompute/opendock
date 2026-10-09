@@ -16,17 +16,17 @@ struct CalendarTileView: View {
     var body: some View {
         Group {
             if CalendarSettings.showNextEvent.boolValue(in: instance.settings) {
-                TimelineView(.periodic(from: .now, by: isVisible ? 60 : 900)) { context in
+                WidgetTicking(interval: 60) { now in
                     WidgetTile {
                         WidgetStack(spacing: iconSize * (edge.isVertical ? 0.08 : 0.16)) {
-                            CalendarDateIcon(date: context.date, size: iconSize * 0.72)
-                            summary(at: context.date)
+                            CalendarDateIcon(date: now, size: iconSize * 0.72)
+                            summary(at: now)
                         }
                     }
                 }
             } else {
-                TimelineView(.periodic(from: .now, by: isVisible ? 60 : 900)) { context in
-                    CalendarDateIcon(date: context.date, size: iconSize)
+                WidgetTicking(interval: 60) { now in
+                    CalendarDateIcon(date: now, size: iconSize)
                 }
             }
         }
