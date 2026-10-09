@@ -17,13 +17,25 @@ enum BatteryFormatting {
 
     /// Short caption for the internal battery / power adapter state.
     static func caption(for monitor: PowerSourceMonitor) -> String {
-        guard monitor.hasBattery else { return "Power adapter" }
-        if monitor.isFullyCharged { return "Charged" }
-        if monitor.isCharging {
-            return monitor.timeRemainingMinutes.map { "\(duration(minutes: $0)) to full" } ?? "Charging"
+        caption(
+            hasBattery: monitor.hasBattery,
+            isFullyCharged: monitor.isFullyCharged,
+            isCharging: monitor.isCharging,
+            isPluggedIn: monitor.isPluggedIn,
+            timeRemainingMinutes: monitor.timeRemainingMinutes)
+    }
+
+    /// `caption(for:)` on the monitor's values, so it can be tested without IOKit.
+    static func caption(
+        hasBattery: Bool, isFullyCharged: Bool, isCharging: Bool, isPluggedIn: Bool, timeRemainingMinutes: Int?
+    ) -> String {
+        guard hasBattery else { return "Power adapter" }
+        if isFullyCharged { return "Charged" }
+        if isCharging {
+            return timeRemainingMinutes.map { "\(duration(minutes: $0)) to full" } ?? "Charging"
         }
-        if monitor.isPluggedIn { return "Plugged in" }
-        return monitor.timeRemainingMinutes.map { "\(duration(minutes: $0)) left" } ?? "On battery"
+        if isPluggedIn { return "Plugged in" }
+        return timeRemainingMinutes.map { "\(duration(minutes: $0)) left" } ?? "On battery"
     }
 
     /// SF Symbol for an accessory, guessed from its name.
