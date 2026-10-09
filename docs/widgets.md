@@ -221,6 +221,20 @@ A note to yourself, on colored paper.
 | `text` | Any text | `""` | The note itself, line breaks included. The tile shows its first few lines; the popover shows and edits all of it. |
 | `color` | One of `"yellow"`, `"orange"`, `"pink"`, `"green"`, `"blue"`, `"purple"`, `"white"`, `"black"`, or `"translucent"` | `"yellow"` | The paper the note is written on. The colors and white take dark text, black takes white text, and translucent is the same surface as the other widgets. |
 
+## Stocks
+
+Type ID: `com.newyorkcompute.opendock.widget.stocks`
+
+Prices and the day's change for a watchlist.
+
+| Key | Value | Default | What it does |
+| --- | --- | --- | --- |
+| `symbols` | Any text | `"AAPL, MSFT, ^GSPC"` | The symbols to watch, separated by commas, as Yahoo Finance writes them: `"AAPL"`, `"BRK-B"`, `"^GSPC"` for the S&P 500, `"EURUSD=X"` for a currency pair, `"BTC-USD"` for Bitcoin. Up to 20. |
+| `style` | One of `"single"`, `"cycle"`, or `"list"` | `"single"` | What the tile shows: the first symbol with its price and change (`"single"`), each symbol in turn for a few seconds at a time (`"cycle"`), or every symbol's change on its own row (`"list"`). |
+| `change` | One of `"percent"` or `"amount"` | `"percent"` | Show the day's move as a percentage, or as an amount in the symbol's currency. |
+| `showChart` | `"true"` or `"false"` | `"true"` | Draw the day's price line beside the quote. The list style has no room for it. |
+| `refreshMinutes` | A whole number from 1 to 60 | `"5"` | How often to fetch new quotes while the dock is visible, in minutes. A hidden dock fetches nothing, and no symbol is fetched more than once a minute. |
+
 <!-- END GENERATED -->
 
 ## Declaring settings in your own widget
