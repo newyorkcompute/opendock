@@ -2,8 +2,8 @@ import DockCore
 import DockWidgetKit
 import SwiftUI
 
-// Pieces the four time widgets share: a ring, a tile button, a ticking container, and a
-// binding for integer settings.
+// Pieces the four time widgets share: a tile button, a ticking container, and a binding for
+// integer settings.
 
 /// Redraws its content every `interval` seconds while `active` and the dock is on screen,
 /// on ticks aligned to whole intervals so a clock's digits change on the second. Otherwise
@@ -22,26 +22,6 @@ struct TimerTicking<Content: View>: View {
         TimelineView(.periodic(from: start, by: period)) { context in
             content(context.date)
         }
-    }
-}
-
-/// A ring that empties as time runs out: a faint track plus a colored arc from 12 o'clock
-/// covering `fraction` of the circle. Moves smoothly between one-second ticks.
-struct TimerRing: View {
-    let fraction: Double
-    let color: Color
-    let lineWidth: Double
-
-    var body: some View {
-        ZStack {
-            Circle().stroke(color.opacity(0.22), lineWidth: lineWidth)
-            Circle()
-                .trim(from: 0, to: max(0.001, min(1, fraction)))
-                .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
-                .rotationEffect(.degrees(-90))
-        }
-        .padding(lineWidth / 2)
-        .animation(.linear(duration: 1), value: fraction)
     }
 }
 

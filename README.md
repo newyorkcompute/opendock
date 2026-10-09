@@ -249,7 +249,8 @@ Guidelines:
 - Wrap the content in `WidgetTile` and use `WidgetPrimaryText` and `WidgetSecondaryText`
   so the tile scales with the icon-size setting (`\.dockIconSize`). Size anything else
   from `\.dockIconSize` too: it includes the tile's magnification, so the tile is laid
-  out again, with sharp text, as it grows under the pointer.
+  out again, with sharp text, as it grows under the pointer. For a circular gauge, use
+  `WidgetRing` rather than drawing your own.
 - Pause polling when `\.dockIsVisible` is false.
 - If the widget needs a permission, ask for it on its own only while
   `\.widgetsMayRequestAccess` is true. It's false while the welcome window is open on a

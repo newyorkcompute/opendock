@@ -1,4 +1,5 @@
 import AppKit
+import DockWidgetKit
 import SwiftUI
 import SystemServices
 
@@ -46,7 +47,7 @@ private struct PowerSourceRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            ProgressRing(progress: Double(source.percentage ?? 0) / 100, color: color, lineWidth: 3.5)
+            WidgetRing(fraction: Double(source.percentage ?? 0) / 100, color: color, lineWidth: 3.5)
                 .frame(width: 34, height: 34)
                 .overlay {
                     Image(systemName: source.isCharging ? "bolt.fill" : symbol)

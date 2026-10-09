@@ -27,25 +27,6 @@ enum SystemActivityStyle {
     }
 }
 
-/// A circular gauge: faint track plus a colored arc from 12 o'clock.
-struct ActivityRing: View {
-    let progress: Double
-    let color: Color
-    let lineWidth: Double
-
-    var body: some View {
-        ZStack {
-            Circle().stroke(color.opacity(0.22), lineWidth: lineWidth)
-            Circle()
-                .trim(from: 0, to: max(0.001, min(1, progress)))
-                .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
-                .rotationEffect(.degrees(-90))
-        }
-        .padding(lineWidth / 2)
-        .animation(.easeOut(duration: 0.4), value: progress)
-    }
-}
-
 /// A line chart of 0...1 samples with a soft fill underneath. Samples are spread over
 /// the full width, so a history that isn't full yet grows in from the left.
 struct Sparkline: View {

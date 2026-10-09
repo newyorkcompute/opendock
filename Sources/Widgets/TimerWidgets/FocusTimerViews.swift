@@ -45,14 +45,17 @@ struct FocusTimerTileView: View {
 
     private func ring(_ timer: FocusTimer, color: Color, at now: Date) -> some View {
         let ringSize = iconSize * 0.6
-        return TimerRing(fraction: timer.fractionRemaining(at: now), color: color, lineWidth: max(2.5, iconSize * 0.07))
-            .frame(width: ringSize, height: ringSize)
-            .overlay {
-                Image(systemName: timer.phase.isBreak ? "cup.and.saucer.fill" : "timer")
-                    .font(.system(size: ringSize * 0.38, weight: .bold))
-                    .foregroundStyle(color)
-            }
-            .opacity(timer.isIdle ? 0.7 : 1)
+        return WidgetRing(
+            fraction: timer.fractionRemaining(at: now), color: color, lineWidth: max(2.5, iconSize * 0.07),
+            animation: .linear(duration: 1)
+        )
+        .frame(width: ringSize, height: ringSize)
+        .overlay {
+            Image(systemName: timer.phase.isBreak ? "cup.and.saucer.fill" : "timer")
+                .font(.system(size: ringSize * 0.38, weight: .bold))
+                .foregroundStyle(color)
+        }
+        .opacity(timer.isIdle ? 0.7 : 1)
     }
 
     /// Hand the settings' durations to the shared timer.
@@ -110,18 +113,21 @@ struct FocusTimerPopoutView: View {
                     sessionDots(timer, color: color)
                 }
 
-                TimerRing(fraction: timer.fractionRemaining(at: now), color: color, lineWidth: 8)
-                    .frame(width: 128, height: 128)
-                    .overlay {
-                        VStack(spacing: 2) {
-                            Text(TimerFormatting.countdown(timer.remaining(at: now)))
-                                .font(.system(size: 30, weight: .semibold, design: .rounded))
-                                .monospacedDigit()
-                            Text(FocusTimerText.caption(for: timer))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
+                WidgetRing(
+                    fraction: timer.fractionRemaining(at: now), color: color, lineWidth: 8,
+                    animation: .linear(duration: 1)
+                )
+                .frame(width: 128, height: 128)
+                .overlay {
+                    VStack(spacing: 2) {
+                        Text(TimerFormatting.countdown(timer.remaining(at: now)))
+                            .font(.system(size: 30, weight: .semibold, design: .rounded))
+                            .monospacedDigit()
+                        Text(FocusTimerText.caption(for: timer))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
+                }
 
                 HStack(spacing: 10) {
                     Button("Reset") { sessions.resetFocus(id, plan: plan) }

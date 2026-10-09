@@ -50,7 +50,7 @@ struct SystemActivityTileView: View {
 
     private func ring(for metric: SystemActivityMetric, progress: Double?, color: Color) -> some View {
         let size = iconSize * 0.62
-        return ActivityRing(progress: progress ?? 0, color: color, lineWidth: max(2.5, iconSize * 0.07))
+        return WidgetRing(fraction: progress ?? 0, color: color, lineWidth: max(2.5, iconSize * 0.07))
             .frame(width: size, height: size)
             .overlay {
                 Image(systemName: metric.systemImage)
