@@ -77,7 +77,7 @@ Dock. You can keep both, or have OpenDock hide Apple's while it runs. Inspired b
   along it, Return opens, Space browses a folder or opens a widget, Delete removes, Escape
   puts the keyboard back. The selection is announced to VoiceOver
 - Widgets: Clock, Battery, Calendar, System Activity, Weather, Now Playing, Time Progress, Network,
-  Reminders, Focus Timer, Countdown, Stopwatch, Alarm, Sticky Note, Stocks, and Shortcuts
+  Reminders, Focus Timer, Countdown, Stopwatch, Alarm, Sticky Note, Stocks, Shortcuts, and AirDrop
 - Settings window with General, Profiles, Dock Items, Widgets, and About tabs
 - Export and import your layout as JSON
 - Launch at login
@@ -112,6 +112,7 @@ popover with more detail. Each widget has its own options in Settings > Dock Ite
 | Sticky Note | The first lines of a note on colored paper; each tile is its own note | A larger editor for the whole note, the paper colors, and a word count | Color (yellow, orange, pink, green, blue, purple, white, black, or translucent), the note |
 | Stocks | A symbol's price and the day's change with its price line, each symbol in turn, or a short list of changes | The whole watchlist, a chart with 1D, 5D, 1M, 6M and 1Y tabs, the market's state, and a shortcut to the Stocks app | Symbols (with search), style, percent or amount, chart, refresh interval |
 | Shortcuts | A shortcut's icon and name; click to run it without the Shortcuts app coming to the front | The shortcut's last result, the ones run lately, and every shortcut on the Mac, each a click away, with a menu to put one in the tile or edit it in Shortcuts | Which shortcut, icon, color, show name |
+| AirDrop | The AirDrop icon; drop files, folders, or links on it to send them, and the AirDrop sheet lists the devices nearby | The AirDrop window in Finder | Show the name |
 
 The Calendar widget asks for calendar access when it first appears (on a fresh install,
 once the welcome window is closed), and the Reminders widget asks for reminders access the
@@ -243,8 +244,9 @@ public enum HelloWidget: DockWidget {
         AnyView(HelloTile(instance: instance))
     }
 
-    // Optional: makePopout(instance:) for a click-to-open popover and
-    // makeSettingsView(instance:) for options in Settings > Dock Items.
+    // Optional: makePopout(instance:) for a click-to-open popover,
+    // makeSettingsView(instance:) for options in Settings > Dock Items, and
+    // acceptsDrop(_:instance:) with performDrop(_:instance:) to take drops on the tile.
 }
 
 struct HelloTile: View {

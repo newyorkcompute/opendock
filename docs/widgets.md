@@ -249,6 +249,16 @@ A shortcut that runs when you click it.
 | `showName` | `"true"` or `"false"` | `"true"` | Show the shortcut's name beside the icon. When off, the tile is just the icon. |
 | `recents` | Any text | `""` | The shortcuts last run from this tile, newest first, one name per line. The tile keeps this up to date; there's no need to edit it. |
 
+## AirDrop
+
+Type ID: `com.newyorkcompute.opendock.widget.airdrop`
+
+Drop files or links on it to send them over AirDrop.
+
+| Key | Value | Default | What it does |
+| --- | --- | --- | --- |
+| `showLabel` | `"true"` or `"false"` | `"true"` | Show the name AirDrop beside the icon. Off, the tile is the icon alone. |
+
 <!-- END GENERATED -->
 
 ## Declaring settings in your own widget

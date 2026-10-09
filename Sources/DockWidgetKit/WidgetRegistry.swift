@@ -57,6 +57,16 @@ public final class WidgetRegistry {
     public func displayName(for instance: WidgetInstance) -> String {
         widget(for: instance)?.displayName ?? "Unknown widget"
     }
+
+    /// Whether `instance`'s tile takes `drop` (see `DockWidget.acceptsDrop(_:instance:)`).
+    public func acceptsDrop(_ drop: WidgetDrop, on instance: WidgetInstance) -> Bool {
+        widget(for: instance)?.acceptsDrop(drop, instance: instance) ?? false
+    }
+
+    /// Hands `drop` to `instance`'s widget. Returns whether it was taken.
+    public func performDrop(_ drop: WidgetDrop, on instance: WidgetInstance) -> Bool {
+        widget(for: instance)?.performDrop(drop, instance: instance) ?? false
+    }
 }
 
 /// Value-type summary of a widget type. `Identifiable` by `typeID` so it works

@@ -275,4 +275,5 @@ public enum BuiltInWidgetID {
     public static let stickyNote = "com.newyorkcompute.opendock.widget.stickynote"
     public static let stocks = "com.newyorkcompute.opendock.widget.stocks"
     public static let shortcuts = "com.newyorkcompute.opendock.widget.shortcuts"
+    public static let airDrop = "com.newyorkcompute.opendock.widget.airdrop"
 }

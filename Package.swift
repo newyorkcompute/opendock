@@ -145,6 +145,12 @@ let package = Package(
             path: "Sources/Widgets/ShortcutsWidget",
             swiftSettings: uiSettings
         ),
+        .target(
+            name: "AirDropWidget",
+            dependencies: ["DockWidgetKit", "SystemServices"],
+            path: "Sources/Widgets/AirDropWidget",
+            swiftSettings: uiSettings
+        ),
 
         // MARK: Helpers
 
@@ -164,7 +170,7 @@ let package = Package(
             dependencies: [
                 "DockWidgetKit", "ClockWidget", "BatteryWidget", "CalendarWidget", "SystemActivityWidget",
                 "WeatherWidget", "NowPlayingWidget", "TimeProgressWidget", "NetworkWidget", "RemindersWidget",
-                "TimerWidgets", "StickyNoteWidget", "StocksWidget", "ShortcutsWidget",
+                "TimerWidgets", "StickyNoteWidget", "StocksWidget", "ShortcutsWidget", "AirDropWidget",
             ],
             path: "Sources/Widgets/BuiltInWidgets",
             swiftSettings: uiSettings
