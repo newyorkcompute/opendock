@@ -17,12 +17,16 @@
             return ScriptedWidgetEngine(package: try ScriptedWidgetPackage.load(from: directory), limits: limits)
         }
 
-        private func failure(of body: () async throws(ScriptedWidgetError) -> Void) async -> ScriptedWidgetError? {
+        /// The `ScriptedWidgetError` that `body` throws, or nil when it doesn't throw one.
+        private func failure(of body: () async throws -> Void) async -> ScriptedWidgetError? {
             do {
                 try await body()
                 return nil
-            } catch {
+            } catch let error as ScriptedWidgetError {
                 return error
+            } catch {
+                Issue.record("expected a ScriptedWidgetError, got \(error)")
+                return nil
             }
         }
 
