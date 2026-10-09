@@ -29,14 +29,7 @@ struct TrashItemView: View {
         DockBaselineStack {
             Image(nsImage: icon)
                 .dockIcon(restingSize: iconSize)
-                .overlay {
-                    if shellState.isDragOverTrash {
-                        RoundedRectangle(cornerRadius: iconSize * 0.22 + 3, style: .continuous)
-                            .strokeBorder(.primary.opacity(0.7), lineWidth: 2)
-                            .padding(-3)
-                            .allowsHitTesting(false)
-                    }
-                }
+                .dropTargetRing(shown: shellState.isDragOverTrash, cornerRadius: iconSize * 0.22)
                 .modifier(
                     HeadShakeEffect(trigger: shellState.trashShakes, distance: reduceMotion ? 0 : iconSize * 0.12))
         } indicator: {

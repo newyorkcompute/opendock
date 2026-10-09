@@ -49,6 +49,10 @@ public final class DockShellState {
     /// Counts the drops the Trash has refused; the Trash shakes its head each time it goes up.
     var trashShakes = 0
 
+    /// The widget tile a drag is over that takes what it carries (the AirDrop tile, say),
+    /// highlighted like the Trash; the drop goes to the widget (`DockController+WidgetDrops.swift`).
+    var dropTargetItemID: DockItem.ID?
+
     var isDragging: Bool { draggingItemID != nil || dropIndex != nil }
 
     /// The item under the pointer, for its label.

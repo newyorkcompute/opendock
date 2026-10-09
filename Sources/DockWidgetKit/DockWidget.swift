@@ -36,6 +36,16 @@ public protocol DockWidget {
 
     /// Optional settings UI, shown in the app's Settings window for this instance.
     static func makeSettingsView(instance: WidgetInstance) -> AnyView?
+
+    /// Whether the tile takes `drop`, dragged over it from Finder or another app. While it
+    /// does, the dock highlights the tile instead of opening a gap in the row, and a release
+    /// there calls `performDrop`. The dock handles drops itself (SwiftUI drop destinations
+    /// inside the dock don't work), so widgets declare them here rather than with `onDrop`.
+    /// By default a widget takes nothing.
+    static func acceptsDrop(_ drop: WidgetDrop, instance: WidgetInstance) -> Bool
+
+    /// `drop` was released on the tile. Returns whether it was taken; the dock beeps if not.
+    static func performDrop(_ drop: WidgetDrop, instance: WidgetInstance) -> Bool
 }
 
 public extension DockWidget {
@@ -43,6 +53,8 @@ public extension DockWidget {
     static var defaultSettings: [String: String] { settingsSchema.defaults }
     static func makePopout(instance: WidgetInstance) -> AnyView? { nil }
     static func makeSettingsView(instance: WidgetInstance) -> AnyView? { nil }
+    static func acceptsDrop(_ drop: WidgetDrop, instance: WidgetInstance) -> Bool { false }
+    static func performDrop(_ drop: WidgetDrop, instance: WidgetInstance) -> Bool { false }
 
     /// Convenience for creating a new instance of this widget with its defaults.
     static func makeInstance() -> WidgetInstance {

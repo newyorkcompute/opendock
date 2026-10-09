@@ -379,6 +379,10 @@ struct WidgetItemView: View {
                 .environment(\.dockIconSize, iconSize * scale)
                 .environment(\.dockWidgetScale, scale)
                 .environment(\.widgetUpdateSettings, updater)
+                // Widgets that take drops (the AirDrop tile) are highlighted like the Trash.
+                .dropTargetRing(
+                    shown: shellState.dropTargetItemID == item.id,
+                    cornerRadius: WidgetMetrics.cornerRadius(for: iconSize * scale))
         }
         .onGeometryChange(for: Double.self) { [iconSize, axis = edge.axis] proxy in
             // Tiles are an icon thick across the dock; that's what magnification grows.
