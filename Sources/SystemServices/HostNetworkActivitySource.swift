@@ -59,11 +59,11 @@ public struct HostNetworkActivitySource: NetworkActivitySource {
         let result = getnameinfo(
             address, socklen_t(address.pointee.sa_len), &host, socklen_t(host.count), nil, 0, NI_NUMERICHOST)
         guard result == 0 else { return nil }
-        return String(cString: host)
+        return String(decoding: host.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }, as: UTF8.self)
     }
 
     public func descriptions() -> [String: NetworkInterfaceDescription] {
-        let all = (SCNetworkInterfaceCopyAll() as NSArray).compactMap { $0 as? SCNetworkInterface }
+        guard let all = SCNetworkInterfaceCopyAll() as? [SCNetworkInterface] else { return [:] }
         var result: [String: NetworkInterfaceDescription] = [:]
         for interface in all {
             guard let bsdName = SCNetworkInterfaceGetBSDName(interface) as String? else { continue }
@@ -85,9 +85,7 @@ public struct HostNetworkActivitySource: NetworkActivitySource {
         kSCNetworkInterfaceTypeWWAN as String: .cellular,
         kSCNetworkInterfaceTypePPP as String: .tunnel,
         kSCNetworkInterfaceTypeIPSec as String: .tunnel,
-        kSCNetworkInterfaceTypeVPN as String: .tunnel,
         kSCNetworkInterfaceTypeL2TP as String: .tunnel,
-        kSCNetworkInterfaceTypeBridge as String: .virtual,
         kSCNetworkInterfaceTypeBond as String: .virtual,
         kSCNetworkInterfaceTypeVLAN as String: .virtual,
         kSCNetworkInterfaceType6to4 as String: .virtual,
