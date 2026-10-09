@@ -155,7 +155,7 @@ struct ScriptedElementView: View {
         case .caption:
             Text(text.text)
                 .font(.system(size: WidgetMetrics.secondaryFontSize(for: iconSize) * 0.85, weight: .medium))
-                .foregroundStyle(text.color?.color ?? .tertiary)
+                .foregroundStyle(text.color.map { AnyShapeStyle($0.color) } ?? AnyShapeStyle(.tertiary))
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
         }
