@@ -1,6 +1,7 @@
 import AppKit
 import DockCore
 import SwiftUI
+import SystemServices
 import UniformTypeIdentifiers
 
 /// Adding items from drops and open panels, and reordering.
