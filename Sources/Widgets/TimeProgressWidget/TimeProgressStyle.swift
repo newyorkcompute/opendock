@@ -50,22 +50,3 @@ struct TimeProgressBar: View {
         .animation(.easeOut(duration: 0.3), value: fraction)
     }
 }
-
-/// A circular gauge: faint track plus a colored arc from 12 o'clock.
-struct TimeProgressRing: View {
-    let fraction: Double
-    let color: Color
-    let lineWidth: Double
-
-    var body: some View {
-        ZStack {
-            Circle().stroke(color.opacity(0.22), lineWidth: lineWidth)
-            Circle()
-                .trim(from: 0, to: max(0.001, min(1, fraction)))
-                .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
-                .rotationEffect(.degrees(-90))
-        }
-        .padding(lineWidth / 2)
-        .animation(.easeOut(duration: 0.3), value: fraction)
-    }
-}

@@ -47,22 +47,3 @@ enum BatteryFormatting {
         }
     }
 }
-
-/// A circular progress ring: faint track plus a rounded colored arc starting at 12 o'clock.
-struct ProgressRing: View {
-    let progress: Double
-    let color: Color
-    let lineWidth: Double
-
-    var body: some View {
-        ZStack {
-            Circle().stroke(color.opacity(0.22), lineWidth: lineWidth)
-            Circle()
-                .trim(from: 0, to: max(0.001, min(1, progress)))
-                .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
-                .rotationEffect(.degrees(-90))
-        }
-        .padding(lineWidth / 2)
-        .animation(.easeOut(duration: 0.3), value: progress)
-    }
-}

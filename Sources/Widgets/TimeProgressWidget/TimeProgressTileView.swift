@@ -74,7 +74,7 @@ struct TimeProgressTileView: View {
         let color = TimeProgressStyle.color(for: progress.period)
         let ringSize = iconSize * 0.6
         return HStack(spacing: iconSize * 0.16) {
-            TimeProgressRing(fraction: progress.fraction, color: color, lineWidth: max(2.5, iconSize * 0.07))
+            WidgetRing(fraction: progress.fraction, color: color, lineWidth: max(2.5, iconSize * 0.07))
                 .frame(width: ringSize, height: ringSize)
                 .overlay {
                     Text(TimeProgressStyle.letter(for: progress.period))
@@ -170,7 +170,7 @@ struct TimeProgressTileView: View {
             ForEach(progress, id: \.period) { item in
                 let color = TimeProgressStyle.color(for: item.period)
                 VStack(spacing: iconSize * 0.03) {
-                    TimeProgressRing(fraction: item.fraction, color: color, lineWidth: max(2, iconSize * 0.055))
+                    WidgetRing(fraction: item.fraction, color: color, lineWidth: max(2, iconSize * 0.055))
                         .frame(width: ringSize, height: ringSize)
                         .overlay {
                             Text(TimeProgressStyle.letter(for: item.period))

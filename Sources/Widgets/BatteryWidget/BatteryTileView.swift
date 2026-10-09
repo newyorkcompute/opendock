@@ -40,7 +40,7 @@ struct BatteryTileView: View {
         let color = BatteryFormatting.color(percentage: percentage, isCharging: monitor.isCharging)
         let ringSize = iconSize * 0.6
 
-        ProgressRing(progress: Double(percentage ?? 0) / 100, color: color, lineWidth: max(2.5, iconSize * 0.07))
+        WidgetRing(fraction: Double(percentage ?? 0) / 100, color: color, lineWidth: max(2.5, iconSize * 0.07))
             .frame(width: ringSize, height: ringSize)
             .overlay {
                 if monitor.isCharging {
@@ -75,8 +75,8 @@ struct BatteryTileView: View {
                     let color = BatteryFormatting.color(
                         percentage: accessory.percentage, isCharging: accessory.isCharging)
                     let size = iconSize * 0.38
-                    ProgressRing(
-                        progress: Double(accessory.percentage) / 100, color: color,
+                    WidgetRing(
+                        fraction: Double(accessory.percentage) / 100, color: color,
                         lineWidth: max(1.8, iconSize * 0.045)
                     )
                     .frame(width: size, height: size)

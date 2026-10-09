@@ -161,7 +161,7 @@ private struct MetricHeader: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            ActivityRing(progress: progress, color: color, lineWidth: 3.5)
+            WidgetRing(fraction: progress, color: color, lineWidth: 3.5)
                 .frame(width: 34, height: 34)
                 .overlay {
                     Image(systemName: systemImage)
