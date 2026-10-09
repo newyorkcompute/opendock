@@ -17,12 +17,8 @@ struct CalendarPopoutView: View {
             Divider()
 
             HStack {
-                Button("Open Calendar") {
-                    NSWorkspace.shared.openApplication(
-                        at: URL(fileURLWithPath: "/System/Applications/Calendar.app"),
-                        configuration: NSWorkspace.OpenConfiguration()
-                    )
-                }
+                Button("Open Calendar") { SystemApp.calendar.open() }
+                    .disabled(!SystemApp.calendar.isInstalled)
                 if service.isUndetermined {
                     Button("Allow Calendar Access") {
                         Task { await service.requestAccess() }

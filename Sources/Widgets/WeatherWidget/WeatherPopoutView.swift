@@ -187,11 +187,8 @@ struct WeatherPopoutView: View {
                     }
                 }
 
-                if let weatherApp = Self.weatherAppURL {
-                    Button("Open Weather") {
-                        NSWorkspace.shared.openApplication(
-                            at: weatherApp, configuration: NSWorkspace.OpenConfiguration())
-                    }
+                if SystemApp.weather.isInstalled {
+                    Button("Open Weather") { SystemApp.weather.open() }
                 }
             }
             .controlSize(.small)
@@ -224,12 +221,6 @@ struct WeatherPopoutView: View {
         return speed.formatted(
             .measurement(width: .abbreviated, usage: .general, numberFormatStyle: .number.precision(.fractionLength(0)))
         )
-    }
-
-    /// Apple's Weather app, which ships with macOS 14 and later.
-    private static var weatherAppURL: URL? {
-        let url = URL(fileURLWithPath: "/System/Applications/Weather.app")
-        return FileManager.default.fileExists(atPath: url.path) ? url : nil
     }
 
     static func openLocationPrivacySettings() {

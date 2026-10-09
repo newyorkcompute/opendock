@@ -39,7 +39,8 @@ struct ShortcutsPopoutView: View {
             Divider()
 
             HStack {
-                Button("Open Shortcuts") { Self.openShortcutsApp() }
+                Button("Open Shortcuts") { SystemApp.shortcuts.open() }
+                    .disabled(!SystemApp.shortcuts.isInstalled)
                 Spacer()
                 Button {
                     Task { await service.refresh(force: true) }
@@ -253,11 +254,5 @@ struct ShortcutsPopoutView: View {
 
     private func pin(_ name: String) {
         updater.set(ShortcutsSettings.shortcut.name, to: name, in: instance)
-    }
-
-    static func openShortcutsApp() {
-        NSWorkspace.shared.openApplication(
-            at: URL(fileURLWithPath: "/System/Applications/Shortcuts.app"),
-            configuration: NSWorkspace.OpenConfiguration())
     }
 }

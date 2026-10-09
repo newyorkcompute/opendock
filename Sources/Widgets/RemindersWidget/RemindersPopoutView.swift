@@ -37,12 +37,8 @@ struct RemindersPopoutView: View {
             Divider()
 
             HStack {
-                Button("Open Reminders") {
-                    NSWorkspace.shared.openApplication(
-                        at: URL(fileURLWithPath: "/System/Applications/Reminders.app"),
-                        configuration: NSWorkspace.OpenConfiguration()
-                    )
-                }
+                Button("Open Reminders") { SystemApp.reminders.open() }
+                    .disabled(!SystemApp.reminders.isInstalled)
                 if service.isUndetermined {
                     Button("Allow Reminders Access") {
                         Task { await service.requestAccess() }

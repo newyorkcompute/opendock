@@ -21,12 +21,8 @@ struct SystemActivityPopoutView: View {
             diskSection
             Divider()
 
-            Button("Open Activity Monitor") {
-                guard
-                    let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.ActivityMonitor")
-                else { return }
-                NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
-            }
+            Button("Open Activity Monitor") { SystemApp.activityMonitor.open() }
+                .disabled(!SystemApp.activityMonitor.isInstalled)
         }
         .padding(16)
         .frame(width: 300, alignment: .leading)
