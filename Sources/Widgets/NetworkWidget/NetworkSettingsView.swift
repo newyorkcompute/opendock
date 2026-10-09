@@ -34,9 +34,7 @@ struct NetworkSettingsView: View {
                 }
             }
 
-            Text("The tile shows both speeds when both are turned off.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            WidgetCaption("The tile shows both speeds when both are turned off.")
         }
         .onAppear { monitor.refreshIfStale() }
     }

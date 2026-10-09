@@ -17,24 +17,16 @@ struct TimeProgressSettingsView: View {
             Toggle("Month", isOn: updater.boolBinding(TimeProgressSettings.showMonth, in: $instance))
             Toggle("Week", isOn: updater.boolBinding(TimeProgressSettings.showWeek, in: $instance))
             Toggle("Day", isOn: updater.boolBinding(TimeProgressSettings.showDay, in: $instance))
-            Text("The tile shows the day when every period is turned off.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            WidgetCaption("The tile shows the day when every period is turned off.")
 
-            Picker("Style", selection: styleBinding) {
+            Picker(
+                "Style",
+                selection: updater.choiceBinding(
+                    TimeProgressSettings.style, in: $instance, default: TimeProgressSettings.Style.bars)
+            ) {
                 Text("Bars").tag(TimeProgressSettings.Style.bars)
                 Text("Rings").tag(TimeProgressSettings.Style.rings)
             }
         }
-    }
-
-    private var styleBinding: Binding<TimeProgressSettings.Style> {
-        Binding(
-            get: { TimeProgressSettings(instance: instance).style },
-            set: { newValue in
-                instance.settings[TimeProgressSettings.style.name] = newValue.rawValue
-                updater(instance)
-            }
-        )
     }
 }

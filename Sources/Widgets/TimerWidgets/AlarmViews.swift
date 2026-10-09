@@ -183,11 +183,9 @@ struct AlarmPopoutView: View {
 struct AlarmSettingsView: View {
     @Environment(\.widgetUpdateSettings) private var updater
     @State private var instance: WidgetInstance
-    @State private var label: String
 
     init(instance: WidgetInstance) {
         _instance = State(initialValue: instance)
-        _label = State(initialValue: AlarmSettings.label.value(in: instance.settings))
     }
 
     private var settings: AlarmSettings { AlarmSettings(instance: instance) }
@@ -201,20 +199,16 @@ struct AlarmSettingsView: View {
                     Text(repeats.title).tag(repeats.rawValue)
                 }
             }
-            TextField("Label", text: $label, prompt: Text("Name"))
-                .onSubmit(commitLabel)
+            WidgetTextSetting("Label", key: AlarmSettings.label, instance: $instance, prompt: Text("Name"))
             Stepper(
                 "Snooze: \(settings.snoozeMinutes) min",
                 value: updater.intBinding(AlarmSettings.snoozeMinutes, in: $instance), in: 1 ... 60)
             Toggle("Play a sound while ringing", isOn: updater.boolBinding(AlarmSettings.sound, in: $instance))
-            Text(
+            WidgetCaption(
                 "The alarm rings while its tile is in the dock and OpenDock is running, and shows a notification; "
                     + "macOS asks once to allow those."
             )
-            .font(.caption)
-            .foregroundStyle(.secondary)
         }
-        .onDisappear(perform: commitLabel)
     }
 
     private var timeBinding: Binding<Date> {
@@ -225,12 +219,5 @@ struct AlarmSettingsView: View {
                 updater(instance)
             }
         )
-    }
-
-    /// Committed on submit and when the view goes away, not on every keystroke.
-    private func commitLabel() {
-        guard label != AlarmSettings.label.value(in: instance.settings) else { return }
-        instance.settings[AlarmSettings.label.name] = label
-        updater(instance)
     }
 }

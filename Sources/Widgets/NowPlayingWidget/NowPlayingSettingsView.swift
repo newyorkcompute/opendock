@@ -23,9 +23,7 @@ struct NowPlayingSettingsView: View {
                 isOn: updater.boolBinding(NowPlayingSettings.showWhenIdle, in: $instance))
 
             Section {
-                Text(sourceDescription)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                WidgetCaption(sourceDescription)
             }
         }
     }

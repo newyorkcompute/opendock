@@ -35,7 +35,10 @@ struct RemindersSettingsView: View {
                 }
             }
 
-            Picker("Show", selection: scopeBinding) {
+            Picker(
+                "Show",
+                selection: updater.choiceBinding(RemindersSettings.scope, in: $instance, default: ReminderScope.all)
+            ) {
                 Text("All reminders").tag(ReminderScope.all)
                 Text("Due today and overdue").tag(ReminderScope.today)
             }
@@ -59,9 +62,7 @@ struct RemindersSettingsView: View {
             LabeledContent("Reminders access") {
                 Button("Open Privacy Settings") { SystemSettingsPane.reminders.open() }
             }
-            Text("Reminders access is off, so the tile can't show your lists.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            WidgetCaption("Reminders access is off, so the tile can't show your lists.")
         }
     }
 
@@ -73,16 +74,6 @@ struct RemindersSettingsView: View {
             get: { settings.list(in: service.lists)?.id ?? "" },
             set: { newValue in
                 instance.settings[RemindersSettings.listID.name] = newValue
-                updater(instance)
-            }
-        )
-    }
-
-    private var scopeBinding: Binding<ReminderScope> {
-        Binding(
-            get: { settings.scope },
-            set: { newValue in
-                instance.settings[RemindersSettings.scope.name] = newValue.rawValue
                 updater(instance)
             }
         )

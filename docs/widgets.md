@@ -244,7 +244,8 @@ value type (`.bool`, `.text`, `.choice([...])`, `.integer(range)`, `.number(rang
 `.timeZone`), default, and a one-sentence description. A key's default always counts as
 valid, so an optional number or choice can default to `""` for "not set", as the Weather
 widget's coordinates do. `defaultSettings` comes from the schema, settings views can bind
-to a key with `updater.boolBinding(key, in: $instance)` or `stringBinding`, and reading
+to a key with `updater.boolBinding(key, in: $instance)`, `stringBinding`, `intBinding`, or
+`choiceBinding` (for a `.choice` key backed by a `String` enum), and reading
 through the key (`key.value(in: instance.settings)`, `key.boolValue(in:)`,
 `key.intValue(in:)`, `key.doubleValue(in:)`) gives you the default whenever the stored
 value is missing or invalid. See [Writing a widget](../README.md#writing-a-widget) for the

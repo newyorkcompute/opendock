@@ -1,4 +1,5 @@
 import AppKit
+import DockWidgetKit
 import SwiftUI
 import SystemServices
 
@@ -50,15 +51,15 @@ struct SystemActivityPopoutView: View {
             if let cpu {
                 let user = SystemActivityFormatting.percent(cpu.user)
                 let system = SystemActivityFormatting.percent(cpu.system)
-                Caption("User \(user) · System \(system)")
+                WidgetCaption("User \(user) · System \(system)")
             } else {
-                Caption("Reading…")
+                WidgetCaption("Reading…")
             }
 
             if !snapshot.cores.isEmpty {
                 CoreBars(cores: snapshot.cores)
                     .frame(height: 28)
-                Caption(coresCaption)
+                WidgetCaption(coresCaption)
             }
         }
     }
@@ -100,7 +101,7 @@ struct SystemActivityPopoutView: View {
 
                 let used = SystemActivityFormatting.bytes(memory.used)
                 let total = SystemActivityFormatting.bytes(memory.total)
-                Caption("\(used) of \(total) used · Pressure \(pressure.label.lowercased())")
+                WidgetCaption("\(used) of \(total) used · Pressure \(pressure.label.lowercased())")
 
                 DetailGrid(rows: [
                     ("App memory", SystemActivityFormatting.bytes(memory.app)),
@@ -110,7 +111,7 @@ struct SystemActivityPopoutView: View {
                     ("Swap used", Self.swapText(memory)),
                 ])
             } else {
-                Caption("Unavailable")
+                WidgetCaption("Unavailable")
             }
         }
     }
@@ -142,21 +143,11 @@ struct SystemActivityPopoutView: View {
                 let used = SystemActivityFormatting.bytes(disk.used)
                 let total = SystemActivityFormatting.bytes(disk.total)
                 let available = SystemActivityFormatting.bytes(disk.available)
-                Caption("\(used) of \(total) used · \(available) available")
+                WidgetCaption("\(used) of \(total) used · \(available) available")
             } else {
-                Caption("Unavailable")
+                WidgetCaption("Unavailable")
             }
         }
-    }
-}
-
-/// Secondary explanatory text under a section header.
-private struct Caption: View {
-    let text: String
-    init(_ text: String) { self.text = text }
-
-    var body: some View {
-        Text(text).font(.caption).foregroundStyle(.secondary)
     }
 }
 

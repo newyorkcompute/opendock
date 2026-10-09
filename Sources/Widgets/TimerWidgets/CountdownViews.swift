@@ -130,11 +130,9 @@ struct CountdownPopoutView: View {
 struct CountdownSettingsView: View {
     @Environment(\.widgetUpdateSettings) private var updater
     @State private var instance: WidgetInstance
-    @State private var label: String
 
     init(instance: WidgetInstance) {
         _instance = State(initialValue: instance)
-        _label = State(initialValue: CountdownSettings.label.value(in: instance.settings))
     }
 
     private var settings: CountdownSettings { CountdownSettings(instance: instance) }
@@ -149,12 +147,10 @@ struct CountdownSettingsView: View {
                 }
             }
 
-            TextField("Label", text: $label, prompt: Text("What it's for"))
-                .onSubmit(commitLabel)
+            WidgetTextSetting("Label", key: CountdownSettings.label, instance: $instance, prompt: Text("What it's for"))
 
             Toggle("Notify when it reaches zero", isOn: updater.boolBinding(CountdownSettings.notify, in: $instance))
         }
-        .onDisappear(perform: commitLabel)
     }
 
     private var dateBinding: Binding<Date> {
@@ -165,12 +161,5 @@ struct CountdownSettingsView: View {
                 updater(instance)
             }
         )
-    }
-
-    /// Committed on submit and when the view goes away, not on every keystroke.
-    private func commitLabel() {
-        guard label != CountdownSettings.label.value(in: instance.settings) else { return }
-        instance.settings[CountdownSettings.label.name] = label
-        updater(instance)
     }
 }
