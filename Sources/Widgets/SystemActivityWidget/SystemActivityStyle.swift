@@ -1,3 +1,4 @@
+import DockWidgetKit
 import SwiftUI
 import SystemServices
 
@@ -54,47 +55,20 @@ struct Sparkline: View {
     let color: Color
 
     var body: some View {
-        GeometryReader { proxy in
-            let points = Self.points(for: samples, capacity: capacity, in: proxy.size)
-            if points.count >= 2 {
-                ZStack {
-                    Path { path in
-                        path.move(to: CGPoint(x: points[0].x, y: proxy.size.height))
-                        for point in points { path.addLine(to: point) }
-                        path.addLine(to: CGPoint(x: points[points.count - 1].x, y: proxy.size.height))
-                        path.closeSubpath()
-                    }
-                    .fill(
-                        LinearGradient(
-                            colors: [color.opacity(0.35), color.opacity(0.02)], startPoint: .top, endPoint: .bottom))
-                    Path { path in
-                        path.move(to: points[0])
-                        for point in points.dropFirst() { path.addLine(to: point) }
-                    }
-                    .stroke(color, style: StrokeStyle(lineWidth: max(1, proxy.size.height * 0.1), lineJoin: .round))
-                }
+        ZStack {
+            if samples.count >= 2 {
+                WidgetSparklineSeries(samples: samples, capacity: capacity, color: color, lineWidthFraction: 0.1)
             } else {
-                Path { path in
-                    path.move(to: CGPoint(x: 0, y: proxy.size.height - 0.5))
-                    path.addLine(to: CGPoint(x: proxy.size.width, y: proxy.size.height - 0.5))
+                GeometryReader { proxy in
+                    Path { path in
+                        path.move(to: CGPoint(x: 0, y: proxy.size.height - 0.5))
+                        path.addLine(to: CGPoint(x: proxy.size.width, y: proxy.size.height - 0.5))
+                    }
+                    .stroke(color.opacity(0.3), lineWidth: 1)
                 }
-                .stroke(color.opacity(0.3), lineWidth: 1)
             }
         }
         .animation(.linear(duration: 0.3), value: samples)
-    }
-
-    /// Lays out `samples` across `size`, one slot per `capacity`, newest at the right edge.
-    static func points(for samples: [Double], capacity: Int, in size: CGSize) -> [CGPoint] {
-        let slots = max(2, capacity)
-        let step = size.width / Double(slots - 1)
-        let first = slots - samples.count
-        return samples.enumerated().map { index, sample in
-            let clamped = min(1, max(0, sample))
-            return CGPoint(
-                x: Double(first + index) * step,
-                y: size.height - clamped * size.height)
-        }
     }
 }
 
