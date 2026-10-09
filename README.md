@@ -76,8 +76,8 @@ Dock. You can keep both, or have OpenDock hide Apple's while it runs. Inspired b
 - Keyboard control: a global shortcut shows the dock and selects an item; arrow keys move
   along it, Return opens, Space browses a folder or opens a widget, Delete removes, Escape
   puts the keyboard back. The selection is announced to VoiceOver
-- Widgets: Clock, Battery, Calendar, System Activity, Weather, Now Playing, Time Progress, Network, and
-  Reminders
+- Widgets: Clock, Battery, Calendar, System Activity, Weather, Now Playing, Time Progress, Network,
+  Reminders, Focus Timer, Countdown, Stopwatch, and Alarm
 - Settings window with General, Profiles, Dock Items, Widgets, and About tabs
 - Export and import your layout as JSON
 - Launch at login
@@ -105,6 +105,10 @@ popover with more detail. Each widget has its own options in Settings > Dock Ite
 | Time Progress | How much of the year, month, week, and day has passed, as bars or rings with a percentage | All four periods with a precise percentage, the day of the period, and what's left | Which periods to show; bars or rings |
 | Network | Download and upload speeds with a one-minute sparkline | A bigger chart, each connected interface with its speeds and addresses, and a shortcut to Network Settings | Which speeds to show, history, bytes or bits, interface |
 | Reminders | How many reminders are waiting, and the list's name | Your reminders grouped into overdue, today, upcoming, and no date, each with a circle to complete it, and a shortcut to Reminders | Which list, all or only due today, list name |
+| Focus Timer | A pomodoro ring with the time left in the session or break, and a play/pause button | A bigger ring with Start, Pause, Skip and Reset, and the cycle's progress; a notification and chime when a phase ends | Focus, break and long-break lengths, sessions per cycle, auto-start, notifications |
+| Countdown | Days and hours (or hours, minutes and seconds) until a date, with your label | The time left in words, and the date to change | Date, label, notification at zero |
+| Stopwatch | Elapsed time, the latest lap, and start/stop and lap buttons | The time to a tenth of a second, with laps and their splits | Show laps |
+| Alarm | The alarm time with its name, or Off; rings with a sound and a notification, with Snooze and Stop on the tile | On/off, time, repeat (once, daily, weekdays, weekends), label and snooze length | Same as the popover, plus sound |
 
 The Calendar widget asks for calendar access when it first appears (on a fresh install,
 once the welcome window is closed), and the Reminders widget asks for reminders access the
