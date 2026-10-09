@@ -13,16 +13,23 @@ public final class DockShellState {
     /// even if the pointer leaves it.
     var interactionDepth = 0
 
-    /// Item currently being dragged for reordering, if any. It's hidden, and the drop gap
-    /// stands in for it in the row.
-    var draggingItemID: DockItem.ID?
+    /// The row item being dragged, if any: a pinned item being reordered, or a running or
+    /// recent app on its way to being pinned (see `DockRowDrag`). It's hidden, and the drop
+    /// gap stands in for it in the row.
+    var draggingRowID: DockRowItemID?
 
     /// The gap that previews where the drag over the dock would land.
     var dropGap = DockDropGap()
 
     /// Where a drop now would insert, among the pinned items without the dragged one.
-    /// Nil while no drag is over the dock (a reorder dragged out of it cancels on release).
+    /// Nil while no drag is over the dock (a reorder dragged out of it cancels on release),
+    /// and while a running or recent app is over the sections after the pinned items,
+    /// where it can't land (`DockRowDrag.Placement.home`).
     @ObservationIgnored var dropIndex: Int?
+
+    /// Where the dragged row item would land now (see `DockRowDrag.Placement`): where the
+    /// gap stands. Nil while the drag is off the dock, or over the Trash or a widget.
+    @ObservationIgnored var rowPlacement: DockRowDrag.Placement?
 
     /// Notices a reorder released away from the dock, where the dock gets no drag events.
     @ObservationIgnored var dragEndWatcher: Task<Void, Never>?
@@ -53,7 +60,7 @@ public final class DockShellState {
     /// highlighted like the Trash; the drop goes to the widget (`DockController+WidgetDrops.swift`).
     var dropTargetItemID: DockItem.ID?
 
-    var isDragging: Bool { draggingItemID != nil || dropIndex != nil }
+    var isDragging: Bool { draggingRowID != nil || dropIndex != nil }
 
     /// The item under the pointer, for its label.
     var hoveredItemID: DockRowItemID?

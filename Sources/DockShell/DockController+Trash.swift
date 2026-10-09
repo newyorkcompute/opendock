@@ -70,6 +70,7 @@ extension DockController {
     /// the Trash's highlight says where the drop goes now.
     func dragMovedOverTrash() {
         shellState.dropIndex = nil
+        shellState.rowPlacement = nil
         if !shellState.isDragOverTrash { shellState.isDragOverTrash = true }
     }
 
@@ -77,19 +78,19 @@ extension DockController {
         if shellState.isDragOverTrash { shellState.isDragOverTrash = false }
     }
 
-    /// A drop on the Trash. An item dragged out of the dock is removed from it (not from
-    /// disk), with the same sound as dragging it off the dock; files from Finder, or from a
-    /// folder's popover, go to the Trash. Returns whether anything was taken.
+    /// A drop on the Trash. A pinned item dragged out of the dock is removed from it (not
+    /// from disk), with the same sound as dragging it off the dock, and a recent app is
+    /// forgotten; a running app isn't going anywhere, and the Trash shakes its head (see
+    /// `DockRowDrag`). Files from Finder, or from a folder's popover, go to the Trash.
+    /// Returns whether anything was taken.
     ///
     /// The Trash is inside the dock's panel, which sits above the drag-off overlay
     /// (`DockController+DragOff.swift`), so a drag over it comes here and not to the
     /// overlay, whatever the removal's state: the drop lands on the Trash.
     func dropOnTrash(_ info: any NSDraggingInfo, isReorder: Bool) -> Bool {
         if isReorder {
-            guard let dragged = shellState.draggingItemID else { return false }
-            store.remove(id: dragged)
-            SystemSounds.playPoof()
-            return true
+            guard let dragged = shellState.draggingRowID else { return false }
+            return finishDrag(of: dragged, at: .trash)
         }
         return trashFiles(droppedFileURLs(info))
     }

@@ -1,6 +1,7 @@
 import AppKit
 import DockCore
 import SwiftUI
+import SystemServices
 import UniformTypeIdentifiers
 
 /// Adding items from drops and open panels, and reordering.
@@ -34,12 +35,14 @@ extension DockController {
     // MARK: - Drops (see `DockHostingView`)
     //
     // While a drag is over the dock, a gap opens where it would land and follows the
-    // pointer (`DockReorder` places it). Reordering takes the dragged item out of the row,
-    // the gap standing in for it, so the other items close up behind it and make room
-    // ahead of it. Releasing commits the move; releasing away from the dock cancels, unless
-    // the item was held well away from it, which removes it (`DockController+DragOff.swift`).
-    // Over the Trash the drop goes there instead (see `DockController+Trash.swift`), and
-    // over a widget that takes it, to the widget (`DockController+WidgetDrops.swift`).
+    // pointer (`DockReorder` places it). Dragging one of the row's own items takes it out
+    // of the row, the gap standing in for it, so the other items close up behind it and
+    // make room ahead of it. Releasing commits the move (or pins a running or recent app
+    // where the gap is); releasing away from the dock cancels, unless the item was held
+    // well away from it, which removes it (`DockController+DragOff.swift`). Over the Trash
+    // the drop goes there instead (see `DockController+Trash.swift`), and over a widget
+    // that takes it, to the widget (`DockController+WidgetDrops.swift`). What each kind of
+    // item allows is decided by `DockRowDrag`.
 
     func dragUpdated(_ info: any NSDraggingInfo) -> NSDragOperation {
         guard let location = dropLocation(info) else { return [] }
@@ -49,7 +52,7 @@ extension DockController {
         // A widget may take what the dock itself can't, a link for instance.
         let widgetTarget = isReorder ? nil : widgetDropTarget(at: location, for: info)
         if isReorder {
-            guard shellState.draggingItemID != nil || beginReorder(at: location) else { return [] }
+            guard shellState.draggingRowID != nil || beginReorder(at: location) else { return [] }
         } else if files.isEmpty, widgetTarget == nil {
             dragLeftWidget()
             return []
@@ -73,12 +76,29 @@ extension DockController {
             return .generic
         }
         dragLeftWidget()
-        // Files already in the dock have nowhere to go in it but the Trash, or a widget.
-        if !isReorder, addableURLs(files).isEmpty { return [] }
-        let width = isReorder ? shellState.dropGap.width : DockRowMetrics(settings: store.settings).dropGapWidth
-        moveDropGap(to: dropIndex(at: location, gapWidth: width), width: width)
         pointerMoved(to: location)
-        return isReorder ? .move : .copy
+        guard isReorder else {
+            // Files already in the dock have nowhere to go in it but the Trash, or a widget.
+            if addableURLs(files).isEmpty { return [] }
+            let width = DockRowMetrics(settings: store.settings).dropGapWidth
+            let index = fileDropIndex(at: location, gapWidth: width)
+            shellState.dropIndex = index
+            moveDropGap(to: index, width: width)
+            return .copy
+        }
+        guard let dragged = shellState.draggingRowID, let placement = rowPlacement(at: location, for: dragged)
+        else { return [] }
+        shellState.rowPlacement = placement
+        switch placement {
+        case let .insert(index):
+            moveDropGap(to: index, width: shellState.dropGap.width)
+            return .move
+        case let .home(index):
+            // Nowhere to land: the gap waits in the item's own slot, and letting go here is
+            // refused, so the icon slides back into it.
+            moveDropGap(to: index, width: shellState.dropGap.width)
+            return []
+        }
     }
 
     func dragExited() {
@@ -94,24 +114,83 @@ extension DockController {
             defer { endDrag() }
             return dropOnWidget(target, info)
         }
-        guard let index = shellState.dropIndex else { return false }
-        defer { endDrag() }
         guard isReorderDrag(info) else {
+            guard let index = shellState.dropIndex else { return false }
+            defer { endDrag() }
             return handleDroppedURLs(droppedFileURLs(info), at: index)
         }
-        guard let dragged = shellState.draggingItemID else { return false }
-        if store.items.firstIndex(where: { $0.id == dragged }) != index {
-            store.move(id: dragged, to: index)
-        }
-        return true
+        guard let dragged = shellState.draggingRowID, let placement = shellState.rowPlacement else { return false }
+        return finishDrag(of: dragged, at: .row(placement))
     }
 
     func dragEnded() {
         endDrag()
     }
 
-    /// Drags that start in the dock are items being reordered. Other drags from this app
-    /// are not: rows of the Settings item list carry no files, and files dragged out of a
+    /// Let go of `dragged` at `target`: does what `DockRowDrag` says and ends the drag.
+    /// Returns whether the drop was taken; a refused one slides the icon back to its slot.
+    ///
+    /// Changes to the row are made without animation: the gap already stands where a pinned
+    /// or moved item lands, and the slot of a removed one has already closed, so the row
+    /// looks the same before and after. Animating would only have the dragged item's old
+    /// view shrink away from a slot it had already left.
+    @discardableResult
+    func finishDrag(of dragged: DockRowItemID, at target: DockRowDrag.Target) -> Bool {
+        guard let item = dragged.dragItem else {
+            endDrag()
+            return false
+        }
+        let outcome = DockRowDrag.outcome(of: item, at: target)
+        var taken = true
+        withoutAnimation {
+            switch outcome {
+            case let .move(index):
+                if let id = dragged.pinnedID, store.items.firstIndex(where: { $0.id == id }) != index {
+                    store.move(id: id, to: index)
+                }
+            case let .pin(index):
+                if let app = app(for: dragged) {
+                    store.insert(DockItem(kind: .app(app)), at: index)
+                } else {
+                    taken = false
+                }
+            case .remove:
+                if let id = dragged.pinnedID { store.remove(id: id) }
+                SystemSounds.playPoof()
+            case .forgetRecent:
+                if let app = app(for: dragged) { store.removeRecentApp(app) }
+                SystemSounds.playPoof()
+            case .refuse:
+                if case .trash = target { refuseTrashDrop() }
+                taken = false
+            case .cancel:
+                taken = false
+            }
+            endDrag()
+        }
+        return taken
+    }
+
+    /// The app a dragged row item is: the pinned app, or the running or recent app.
+    func app(for id: DockRowItemID) -> AppItem? {
+        switch id {
+        case let .pinned(pinnedID): store.profile.item(id: pinnedID)?.appItem
+        case let .running(runningID): runningSection.first { $0.id == runningID }?.app
+        case let .recent(recentID): recentSection.first { $0.id == recentID }?.app
+        case .trash: nil
+        }
+    }
+
+    /// Runs `body` with animations off, for changes the row has already made room for.
+    func withoutAnimation(_ body: () -> Void) {
+        var transaction = Transaction(animation: nil)
+        transaction.disablesAnimations = true
+        withTransaction(transaction, body)
+    }
+
+    /// Drags that start in the dock are items of the row being dragged (a reorder, or a
+    /// running or recent app on its way to being pinned). Other drags from this app are
+    /// not: rows of the Settings item list carry no files, and files dragged out of a
     /// folder's popover are added like files from Finder.
     private func isReorderDrag(_ info: any NSDraggingInfo) -> Bool {
         guard let source = info.draggingSource else { return false }
@@ -120,19 +199,21 @@ extension DockController {
     }
 
     /// The dragged item is the one under the drag when it first shows up: the drag starts
-    /// a few points from where the mouse went down on it.
+    /// a few points from where the mouse went down on it. Pinned items, running apps, and
+    /// recent apps can all be dragged; the Trash can't.
     private func beginReorder(at location: CGPoint) -> Bool {
         let geometry = shellState.geometry
-        guard let id = geometry.anyItem(at: location)?.pinnedID,
-            let index = store.items.firstIndex(where: { $0.id == id }),
-            let slot = geometry.restingSlots.first(where: { $0.id == .pinned(id) })
+        guard let id = geometry.anyItem(at: location), id.dragItem != nil,
+            let index = homeIndex(of: id),
+            let slot = geometry.restingSlots.first(where: { $0.id == id })
         else { return false }
         // The gap opens in the item's own slot, so nothing moves until the pointer does.
-        shellState.draggingItemID = id
+        shellState.draggingRowID = id
+        shellState.rowPlacement = .home(index)
         shellState.dropGap = DockDropGap(position: CGFloat(index), open: 1, width: slot.width, growth: slot.growth)
         shellState.hoveredItemID = nil
         // Where on the item it was picked up, for labeling the dragged icon off the dock.
-        if let frame = geometry.itemFrames.first(where: { $0.id == .pinned(id) })?.frame {
+        if let frame = geometry.itemFrames.first(where: { $0.id == id })?.frame {
             shellState.dragGrabOffset = CGPoint(x: frame.midX - location.x, y: frame.midY - location.y)
         } else {
             shellState.dragGrabOffset = .zero
@@ -140,23 +221,56 @@ extension DockController {
         return true
     }
 
-    /// Insertion index for a drop at `location`, among the pinned items other than the
-    /// dragged one. Running apps that aren't pinned come after those and take no drops.
-    private func dropIndex(at location: CGPoint, gapWidth: CGFloat) -> Int {
-        let geometry = shellState.geometry
-        let dragged = shellState.draggingItemID.map(DockRowItemID.pinned)
-        let slots = geometry.restingSlots.filter { $0.id == nil || $0.id != dragged }
+    /// The dragged item's own place in the row: the index of its slot, which is also the
+    /// insertion index among the slots without it. A pinned item's is its index among the
+    /// pinned items, which lead the row; a running or recent app's comes from the last
+    /// layout, and is nil once the app has left the row (it quit, say).
+    func homeIndex(of id: DockRowItemID) -> Int? {
+        if let pinnedID = id.pinnedID { return store.items.firstIndex { $0.id == pinnedID } }
+        return shellState.geometry.restingSlots.firstIndex { $0.id == id }
+    }
+
+    /// Where `dragged` would land if let go at `location`, and so where the gap goes (see
+    /// `DockRowDrag.placement`). Nil once the item has left the row.
+    private func rowPlacement(at location: CGPoint, for dragged: DockRowItemID) -> DockRowDrag.Placement? {
+        guard let item = dragged.dragItem, let home = homeIndex(of: dragged) else { return nil }
+        let slots = rowSlots(without: dragged)
+        return DockRowDrag.placement(
+            of: item,
+            insertionIndex: insertionIndex(at: location, slots: slots, gapWidth: shellState.dropGap.width, limit: nil),
+            pinnedCount: slots.prefix { $0.id?.pinnedID != nil }.count,
+            homeIndex: home
+        )
+    }
+
+    /// Insertion index for files dropped at `location`, among the pinned items. The
+    /// sections after them take no files.
+    private func fileDropIndex(at location: CGPoint, gapWidth: CGFloat) -> Int {
+        let slots = rowSlots(without: nil)
         let limit = slots.prefix { $0.id?.pinnedID != nil }.count
+        return insertionIndex(at: location, slots: slots, gapWidth: gapWidth, limit: limit)
+    }
+
+    /// The row's resting slots, leaving out the dragged item's.
+    private func rowSlots(without dragged: DockRowItemID?) -> [DockGeometry.Slot] {
+        shellState.geometry.restingSlots.filter { $0.id == nil || $0.id != dragged }
+    }
+
+    /// Where among `slots` a drop at `location` inserts; clamped to `limit` leading slots,
+    /// or to none of them.
+    private func insertionIndex(at location: CGPoint, slots: [DockGeometry.Slot], gapWidth: CGFloat, limit: Int?)
+        -> Int
+    {
+        let geometry = shellState.geometry
         return DockReorder.insertionIndex(
             pointer: Double(geometry.along(location) - geometry.rowCenter),
             slots: slots.map { Double($0.width) },
             gapWidth: Double(gapWidth),
-            limit: limit
+            limit: limit ?? slots.count
         )
     }
 
     private func moveDropGap(to index: Int, width: CGFloat) {
-        shellState.dropIndex = index
         let target = CGFloat(index)
         // Only a gap for files opens from nothing (a reordered item's is open from the start).
         // Put it in place first, or it would sweep across the row from wherever it last was.
@@ -179,13 +293,13 @@ extension DockController {
     /// for files closes.
     private func dragLeftDock() {
         shellState.dropIndex = nil
+        shellState.rowPlacement = nil
         dragLeftTrash()
         dragLeftWidget()
         pointerMoved(to: nil)
-        if let dragged = shellState.draggingItemID {
+        if let dragged = shellState.draggingRowID {
             // Once the removal is armed the slot has closed up, and stays closed.
-            if !shellState.dragOffRemoval.isArmed,
-                let index = store.items.firstIndex(where: { $0.id == dragged }),
+            if !shellState.dragOffRemoval.isArmed, let index = homeIndex(of: dragged),
                 shellState.dropGap.position != CGFloat(index)
             {
                 withAnimation(.dockDropGap) { shellState.dropGap.position = CGFloat(index) }
@@ -206,7 +320,8 @@ extension DockController {
             shellState.isDragging || shellState.dropGap.open != 0 || shellState.isDragOverTrash
                 || shellState.dropTargetItemID != nil
         else { return }
-        shellState.draggingItemID = nil
+        shellState.draggingRowID = nil
+        shellState.rowPlacement = nil
         shellState.dropIndex = nil
         shellState.dropGap.open = 0
         shellState.isDragOverTrash = false

@@ -3,19 +3,19 @@ import DockCore
 import SwiftUI
 import SystemServices
 
-/// Removing a pinned item by dragging it off the dock, like Apple's Dock.
+/// Removing an item by dragging it off the dock, like Apple's Dock.
 ///
 /// Once the item has been held well clear of the dock for a moment (`DragOffRemoval`
 /// decides when), its slot closes up and the icon is labeled "Remove"; letting go then
 /// removes it, with a puff of smoke and the system's poof sound. Letting go sooner, or
-/// bringing it back, snaps it back into the row.
+/// bringing it back, snaps it back into the row. That's for pinned items and recent apps
+/// (which are forgotten); a running app never arms, and just snaps back (`DockRowDrag`).
 ///
-/// The dock's window gets no drag events once the drag has left it, so while a reorder is
-/// off the dock a `DragOffOverlayPanel` covers the screen under the drag and reports it
+/// The dock's window gets no drag events once the drag has left it, so while a drag is
+/// off the dock a `DragOffOverlayPanel` covers the screen under it and reports it
 /// (`dragOffUpdated`, `performDragOffDrop`); the drag-end watcher in
 /// `DockController+Items.swift` feeds the pointer too, for a pointer resting in one place
-/// or on another display. Running and recent apps that aren't pinned can't be dragged at
-/// all, so only pinned items ever get here.
+/// or on another display.
 extension DockController {
     /// The drag left the dock (see `dragLeftDock`): put the overlay up, if it isn't yet,
     /// to follow the drag across the screen.
@@ -36,21 +36,23 @@ extension DockController {
     /// The drag is over the overlay, here. Only a removal that's armed takes the drop;
     /// otherwise letting go is refused, and the icon slides back to the dock.
     func dragOffUpdated(_ info: any NSDraggingInfo) -> NSDragOperation {
-        guard shellState.draggingItemID != nil, let overlay = dragOffOverlay else { return [] }
+        guard shellState.draggingRowID != nil, let overlay = dragOffOverlay else { return [] }
         dragOffPointerMoved(toScreen: overlay.convertPoint(toScreen: info.draggingLocation))
         return shellState.dragOffRemoval.isArmed ? .move : []
     }
 
     /// Where the pointer is now, in screen coordinates, while the drag is off the dock.
+    /// An item that can't be removed this way (a running app) is only followed, never armed.
     func dragOffPointerMoved(toScreen point: NSPoint) {
-        guard let dragged = shellState.draggingItemID, let overlay = dragOffOverlay else { return }
+        guard let dragged = shellState.draggingRowID, let overlay = dragOffOverlay else { return }
+        overlay.state.iconCenter = overlay.viewPoint(fromScreen: draggedIconCenter(pointer: point))
+        guard let item = dragged.dragItem, DockRowDrag.removesWhenDraggedOff(item) else { return }
         let zone = hitZoneOnScreen ?? panel?.frame ?? .zero
         let change = shellState.dragOffRemoval.pointerMoved(
             distance: DragOffRemoval.distance(from: point, to: zone),
             threshold: DragOffRemoval.threshold(iconSize: store.settings.iconSize),
             now: ProcessInfo.processInfo.systemUptime
         )
-        overlay.state.iconCenter = overlay.viewPoint(fromScreen: draggedIconCenter(pointer: point))
         switch change {
         case .armed:
             // The row closes up over the item's slot: it's leaving.
@@ -76,23 +78,22 @@ extension DockController {
         if let overlay = dragOffOverlay {
             withAnimation(.dockDropGap) { overlay.state.isArmed = false }
         }
-        if let dragged = shellState.draggingItemID { reopenGap(for: dragged) }
+        if let dragged = shellState.draggingRowID { reopenGap(for: dragged) }
     }
 
     /// Let go on the overlay: remove the item if the removal is armed.
     func performDragOffDrop(_ info: any NSDraggingInfo) -> Bool {
-        guard let dragged = shellState.draggingItemID, shellState.dragOffRemoval.isArmed,
+        guard let dragged = shellState.draggingRowID, shellState.dragOffRemoval.isArmed,
             let overlay = dragOffOverlay
         else { return false }
-        removeDraggedItem(dragged, pointer: overlay.convertPoint(toScreen: info.draggingLocation))
-        return true
+        return removeDraggedItem(dragged, pointer: overlay.convertPoint(toScreen: info.draggingLocation))
     }
 
     /// Let go away from the dock with no drop delivered (on another display, say, or
     /// over the dock's window but off the dock): a removal that's armed still removes;
     /// anything else just ends the drag.
     func dragOffReleased(atScreen point: NSPoint) {
-        guard let dragged = shellState.draggingItemID, shellState.dragOffRemoval.isArmed else {
+        guard let dragged = shellState.draggingRowID, shellState.dragOffRemoval.isArmed else {
             endDrag()
             return
         }
@@ -115,13 +116,13 @@ extension DockController {
         dragOffOverlay = nil
     }
 
-    /// Takes `id` out of the dock, with the poof where its icon is. The row has already
-    /// closed up over its slot, so nothing else moves.
-    private func removeDraggedItem(_ id: DockItem.ID, pointer: NSPoint) {
+    /// Takes `id` out of the dock (a pinned item) or out of the recent apps, with the poof
+    /// where its icon is. The row has already closed up over its slot, so nothing else
+    /// moves. Returns whether it was taken out.
+    @discardableResult
+    private func removeDraggedItem(_ id: DockRowItemID, pointer: NSPoint) -> Bool {
         poof(at: draggedIconCenter(pointer: pointer))
-        store.remove(id: id)
-        endDrag()
-        SystemSounds.playPoof()
+        return finishDrag(of: id, at: .offDock(armed: true))
     }
 
     /// Play the poof on the overlay, centered on `center` (in screen coordinates), and take
@@ -151,8 +152,8 @@ extension DockController {
     }
 
     /// Open the gap in the dragged item's own slot again, after a removal closed it.
-    private func reopenGap(for dragged: DockItem.ID) {
-        guard let index = store.items.firstIndex(where: { $0.id == dragged }) else { return }
+    private func reopenGap(for dragged: DockRowItemID) {
+        guard let index = homeIndex(of: dragged) else { return }
         withAnimation(.dockDropGap) {
             shellState.dropGap.position = CGFloat(index)
             shellState.dropGap.open = 1

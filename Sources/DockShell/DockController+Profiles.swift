@@ -22,7 +22,7 @@ extension DockController {
         let profiles = store.profiles
         guard id != store.activeProfileID,
             let newIndex = profiles.firstIndex(where: { $0.id == id }),
-            shellState.draggingItemID == nil
+            shellState.draggingRowID == nil
         else { return }
         let oldIndex = profiles.firstIndex { $0.id == store.activeProfileID } ?? 0
 

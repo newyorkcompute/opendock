@@ -86,7 +86,7 @@ struct DockSurfaceView: View {
             amount: shellState.magnification,
             // A profile's name is centered over the dock rather than over an item.
             hoveredID: shellState.profileBanner == nil ? shellState.hoveredItemID : nil,
-            draggedID: shellState.draggingItemID,
+            draggedID: shellState.draggingRowID,
             gap: shellState.dropGap,
             geometry: shellState.geometry
         ) {
@@ -119,7 +119,7 @@ struct DockSurfaceView: View {
                     .dockLayoutRole(.item(nil, growth: 0, hoverable: false))
                     .transition(.dockRunningApp(edge: metrics.edge))
                 ForEach(extras) { extra in
-                    AppItemView(app: extra.app, rowID: .running(extra.id), controller: controller)
+                    SectionAppItemView(app: extra.app, rowID: .running(extra.id), controller: controller)
                         .keyboardSelection(shellState.keyboardSelection == .running(extra.id))
                         .dockLayoutRole(.item(.running(extra.id), growth: 1, hoverable: true))
                         .transition(.dockRunningApp(edge: metrics.edge))
@@ -131,7 +131,7 @@ struct DockSurfaceView: View {
                     .dockLayoutRole(.item(nil, growth: 0, hoverable: false))
                     .transition(.dockRunningApp(edge: metrics.edge))
                 ForEach(recents) { recent in
-                    AppItemView(app: recent.app, rowID: .recent(recent.id), controller: controller)
+                    SectionAppItemView(app: recent.app, rowID: .recent(recent.id), controller: controller)
                         .keyboardSelection(shellState.keyboardSelection == .recent(recent.id))
                         .dockLayoutRole(.item(.recent(recent.id), growth: 1, hoverable: true))
                         .transition(.dockRunningApp(edge: metrics.edge))

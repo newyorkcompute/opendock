@@ -75,7 +75,7 @@ public final class DockController {
     let trash = TrashMonitor()
     /// Clears the next bounce to finish, once it has landed.
     var launchBounceTask: Task<Void, Never>?
-    /// Follows a pinned item dragged off the dock, and shows the poof when it's let go
+    /// Follows a row item dragged off the dock, and shows the poof when it's let go
     /// (see `DockController+DragOff.swift`). Up only during such a drag.
     var dragOffOverlay: DragOffOverlayPanel?
     /// The keyboard's selection while it controls the dock (see `DockController+Keyboard`).
@@ -433,7 +433,7 @@ public final class DockController {
         holdUntilPointerEnters = false
         guard let panel, let screen = targetScreen, shellState.isVisible else { return }
         // A reorder dragged off the dock may still come back; it's held up until it ends.
-        guard !shellState.isInteracting, shellState.draggingItemID == nil else { return }
+        guard !shellState.isInteracting, shellState.draggingRowID == nil else { return }
         shellState.isVisible = false
         resetMagnification()
         NSAnimationContext.runAnimationGroup(

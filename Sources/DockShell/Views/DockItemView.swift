@@ -16,7 +16,7 @@ struct DockItemView: View {
 
     var body: some View {
         content
-            .opacity(shellState.draggingItemID == item.id ? 0 : 1)
+            .opacity(shellState.draggingRowID == .pinned(item.id) ? 0 : 1)
             .draggable(item.id.uuidString) {
                 dragPreview
             }
@@ -112,6 +112,30 @@ struct DockBaselineStack<Icon: View, Indicator: View>: View {
 }
 
 // MARK: - App
+
+/// A running or recent app in the sections after the pinned items. Draggable like a pinned
+/// item (the controller tells the drags apart by their row ID, see `DockRowDrag`): into the
+/// pinned items to pin it there, and a recent app off the dock or onto the Trash to forget it.
+struct SectionAppItemView: View {
+    let app: AppItem
+    let rowID: DockRowItemID
+    let controller: DockController
+
+    @Environment(DockShellState.self) private var shellState
+    @Environment(\.dockIconSize) private var iconSize
+
+    var body: some View {
+        AppItemView(app: app, rowID: rowID, controller: controller)
+            .opacity(shellState.draggingRowID == rowID ? 0 : 1)
+            // What the drag carries is never read: the drop knows the item from where the
+            // drag began (see `DockController.beginReorder`), as for pinned items.
+            .draggable(app.url.lastPathComponent) {
+                Image(nsImage: AppIconProvider.shared.icon(for: app.url))
+                    .resizable()
+                    .frame(width: iconSize, height: iconSize)
+            }
+    }
+}
 
 struct AppItemView: View {
     let app: AppItem

@@ -14,6 +14,17 @@ nonisolated enum DockRowItemID: Hashable, Sendable {
         if case let .pinned(id) = self { return id }
         return nil
     }
+
+    /// What dragging this item does (see `DockRowDrag`); nil for the Trash, which can't be
+    /// dragged.
+    var dragItem: DockRowDrag.Item? {
+        switch self {
+        case .pinned: .pinned
+        case .running: .running
+        case .recent: .recent
+        case .trash: nil
+        }
+    }
 }
 
 /// Sizes and spacing of the dock row, derived from settings.
@@ -179,8 +190,8 @@ nonisolated struct DockMagnifyingLayout: Layout {
     var selectedID: DockRowItemID?
     var amount: CGFloat
     var hoveredID: DockRowItemID?
-    /// Item being reordered: out of the row while the gap stands in for it.
-    var draggedID: DockItem.ID?
+    /// Item being dragged: out of the row while the gap stands in for it.
+    var draggedID: DockRowItemID?
     var gap: DockDropGap
     let geometry: DockGeometry
 
@@ -246,7 +257,7 @@ nonisolated struct DockMagnifyingLayout: Layout {
                 width: hidden ? 0 : length + metrics.spacing, growth: hidden ? 0 : growth)
             row.resting.append(.init(id: id, width: slot.width, growth: slot.growth))
             if !hidden { row.thickness = max(row.thickness, axis.thickness(of: size)) }
-            if withGap, let draggedID, id == .pinned(draggedID) {
+            if withGap, let draggedID, id == draggedID {
                 row.dragged = (index, size)
                 continue
             }
