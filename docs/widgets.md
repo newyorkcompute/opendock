@@ -210,6 +210,17 @@ An alarm that rings at a time of day.
 | `snoozeMinutes` | A whole number from 1 to 60 | `"9"` | How long Snooze waits before the alarm rings again. |
 | `sound` | `"true"` or `"false"` | `"true"` | Play a sound while the alarm rings, as well as showing a notification. |
 
+## Sticky Note
+
+Type ID: `com.newyorkcompute.opendock.widget.stickynote`
+
+A note to yourself, on colored paper.
+
+| Key | Value | Default | What it does |
+| --- | --- | --- | --- |
+| `text` | Any text | `""` | The note itself, line breaks included. The tile shows its first few lines; the popover shows and edits all of it. |
+| `color` | One of `"yellow"`, `"orange"`, `"pink"`, `"green"`, `"blue"`, `"purple"`, `"white"`, `"black"`, or `"translucent"` | `"yellow"` | The paper the note is written on. The colors and white take dark text, black takes white text, and translucent is the same surface as the other widgets. |
+
 <!-- END GENERATED -->
 
 ## Declaring settings in your own widget

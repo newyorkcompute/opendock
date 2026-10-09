@@ -6,6 +6,7 @@ import DockWidgetKit
 import NetworkWidget
 import NowPlayingWidget
 import RemindersWidget
+import StickyNoteWidget
 import SystemActivityWidget
 import TimeProgressWidget
 import TimerWidgets
@@ -30,6 +31,7 @@ public enum BuiltInWidgets {
         CountdownWidget.self,
         StopwatchWidget.self,
         AlarmWidget.self,
+        StickyNoteWidget.self,
     ]
 
     /// Settings schemas by type ID, for `DockStorage`.
