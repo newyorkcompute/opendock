@@ -26,6 +26,7 @@ struct WidgetSchemaTests {
             "com.newyorkcompute.opendock.widget.stickynote",
             "com.newyorkcompute.opendock.widget.stocks",
             "com.newyorkcompute.opendock.widget.shortcuts",
+            "com.newyorkcompute.opendock.widget.airdrop",
         ]
         #expect(BuiltInWidgets.all.map { $0.typeID } == pinned)
         #expect(
@@ -35,6 +36,7 @@ struct WidgetSchemaTests {
                 BuiltInWidgetID.timeProgress, BuiltInWidgetID.network, BuiltInWidgetID.reminders,
                 BuiltInWidgetID.focusTimer, BuiltInWidgetID.countdown, BuiltInWidgetID.stopwatch,
                 BuiltInWidgetID.alarm, BuiltInWidgetID.stickyNote, BuiltInWidgetID.stocks, BuiltInWidgetID.shortcuts,
+                BuiltInWidgetID.airDrop,
             ] == pinned)
     }
 

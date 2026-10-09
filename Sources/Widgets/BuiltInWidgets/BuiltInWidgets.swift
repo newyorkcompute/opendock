@@ -1,3 +1,4 @@
+import AirDropWidget
 import BatteryWidget
 import CalendarWidget
 import ClockWidget
@@ -36,6 +37,7 @@ public enum BuiltInWidgets {
         StickyNoteWidget.self,
         StocksWidget.self,
         ShortcutsWidget.self,
+        AirDropWidget.self,
     ]
 
     /// Settings schemas by type ID, for `DockStorage`.
