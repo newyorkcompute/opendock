@@ -1,5 +1,6 @@
 import AppKit
 import DockCore
+import DockWidgetKit
 import SwiftUI
 import SystemServices
 
@@ -54,7 +55,7 @@ struct NetworkPopoutView: View {
                 }
                 Spacer(minLength: 0)
             }
-            Caption(totalsCaption)
+            WidgetCaption(totalsCaption)
         }
     }
 
@@ -124,10 +125,10 @@ private struct InterfaceRow: View {
                     Text(speeds).font(.caption).monospacedDigit().foregroundStyle(.secondary)
                 }
                 if status.reading.addresses.isEmpty {
-                    Caption(status.reading.isRunning ? "No address" : "Not connected")
+                    WidgetCaption(status.reading.isRunning ? "No address" : "Not connected")
                 } else {
                     ForEach(status.reading.addresses, id: \.self) { address in
-                        Caption(address)
+                        WidgetCaption(address)
                             .textSelection(.enabled)
                     }
                 }
@@ -140,15 +141,5 @@ private struct InterfaceRow: View {
         return NetworkDirection.allCases.map {
             NetworkFormatting.directedRate($0.bytesPerSecond(in: throughput), download: $0 == .download, unit: unit)
         }.joined(separator: "  ")
-    }
-}
-
-/// Secondary explanatory text.
-private struct Caption: View {
-    let text: String
-    init(_ text: String) { self.text = text }
-
-    var body: some View {
-        Text(text).font(.caption).foregroundStyle(.secondary)
     }
 }

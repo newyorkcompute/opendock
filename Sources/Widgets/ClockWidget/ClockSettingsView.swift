@@ -6,13 +6,11 @@ import SwiftUI
 struct ClockSettingsView: View {
     @Environment(\.widgetUpdateSettings) private var updater
     @State private var instance: WidgetInstance
-    @State private var label: String
 
     private static let zoneIdentifiers = TimeZone.knownTimeZoneIdentifiers.sorted()
 
     init(instance: WidgetInstance) {
         _instance = State(initialValue: instance)
-        _label = State(initialValue: ClockSettings.label.value(in: instance.settings))
     }
 
     var body: some View {
@@ -27,17 +25,7 @@ struct ClockSettingsView: View {
                 }
             }
 
-            TextField("Label (replaces the date)", text: $label)
-                .onSubmit(commitLabel)
+            WidgetTextSetting("Label (replaces the date)", key: ClockSettings.label, instance: $instance)
         }
-        .onDisappear(perform: commitLabel)
-    }
-
-    /// The label is committed on submit and when the view goes away, not on every
-    /// keystroke, so typing doesn't write the file over and over.
-    private func commitLabel() {
-        guard label != ClockSettings.label.value(in: instance.settings) else { return }
-        instance.settings[ClockSettings.label.name] = label
-        updater(instance)
     }
 }

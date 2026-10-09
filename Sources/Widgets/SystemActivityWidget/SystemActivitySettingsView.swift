@@ -17,9 +17,7 @@ struct SystemActivitySettingsView: View {
             Toggle("Show memory", isOn: updater.boolBinding(SystemActivitySettings.showMemory, in: $instance))
             Toggle("Show disk", isOn: updater.boolBinding(SystemActivitySettings.showDisk, in: $instance))
             Toggle("Show CPU history", isOn: updater.boolBinding(SystemActivitySettings.showCPUHistory, in: $instance))
-            Text("The tile shows CPU when every metric is turned off.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            WidgetCaption("The tile shows CPU when every metric is turned off.")
         }
     }
 }

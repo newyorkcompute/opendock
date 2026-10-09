@@ -255,8 +255,10 @@ Guidelines:
   `\.widgetsMayRequestAccess` is true. It's false while the welcome window is open on a
   fresh install.
 - Save settings through `\.widgetUpdateSettings`, never through your own files. In a
-  settings view, `updater.boolBinding(key, in: $instance)` and `stringBinding` give you
-  bindings that read through the schema and persist each change.
+  settings view, `updater.boolBinding(key, in: $instance)`, `stringBinding`, `intBinding`
+  and `choiceBinding` give you bindings that read through the schema and persist each
+  change; `WidgetTextSetting` is a text field that saves on submit rather than on every
+  keystroke, and `WidgetCaption` is the footnote under a control.
 
 Then add a target under `Sources/Widgets/` in `Package.swift`, add it as a dependency of
 `BuiltInWidgets`, and append it to `BuiltInWidgets.all`. That registers it at launch,

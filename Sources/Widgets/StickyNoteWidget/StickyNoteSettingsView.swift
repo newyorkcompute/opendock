@@ -27,9 +27,7 @@ struct StickyNoteSettingsView: View {
                             .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(.separator))
                     )
             }
-            Text("Click the tile in the dock to edit the note in a larger editor.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            WidgetCaption("Click the tile in the dock to edit the note in a larger editor.")
         }
     }
 

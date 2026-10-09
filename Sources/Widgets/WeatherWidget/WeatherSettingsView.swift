@@ -25,12 +25,18 @@ struct WeatherSettingsView: View {
 
     var body: some View {
         Form {
-            Picker("Temperature", selection: unitBinding) {
+            Picker(
+                "Temperature",
+                selection: updater.choiceBinding(
+                    WeatherSettings.unit, in: $instance, default: TemperatureUnit.preferred())
+            ) {
                 Text("Celsius (°C)").tag(TemperatureUnit.celsius)
                 Text("Fahrenheit (°F)").tag(TemperatureUnit.fahrenheit)
             }
 
-            Picker("Caption", selection: captionBinding) {
+            Picker(
+                "Caption", selection: updater.choiceBinding(WeatherSettings.caption, in: $instance, default: .location)
+            ) {
                 Text("Location name").tag(WeatherSettings.Caption.location)
                 Text("Conditions").tag(WeatherSettings.Caption.condition)
             }
@@ -69,9 +75,7 @@ struct WeatherSettingsView: View {
         if isSearching {
             ProgressView().controlSize(.small)
         } else if searchFailed {
-            Text("Couldn't search. Check your internet connection and try again.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            WidgetCaption("Couldn't search. Check your internet connection and try again.")
         } else if !results.isEmpty {
             VStack(alignment: .leading, spacing: 2) {
                 ForEach(results) { place in
@@ -92,9 +96,7 @@ struct WeatherSettingsView: View {
                 }
             }
         } else if query.trimmingCharacters(in: .whitespaces).count >= 2 {
-            Text("No places found.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            WidgetCaption("No places found.")
         }
     }
 
@@ -146,35 +148,14 @@ struct WeatherSettingsView: View {
                     WeatherPopoutView.openLocationPrivacySettings()
                 }
             }
-            Text("Location access is off, so the tile can't find your weather. Allow it, or pick a city instead.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            WidgetCaption(
+                "Location access is off, so the tile can't find your weather. Allow it, or pick a city instead.")
         case .authorized:
             EmptyView()
         }
     }
 
     // MARK: Bindings
-
-    private var unitBinding: Binding<TemperatureUnit> {
-        Binding(
-            get: { settings.unit },
-            set: { newValue in
-                instance.settings[WeatherSettings.unit.name] = newValue.rawValue
-                updater(instance)
-            }
-        )
-    }
-
-    private var captionBinding: Binding<WeatherSettings.Caption> {
-        Binding(
-            get: { settings.caption },
-            set: { newValue in
-                instance.settings[WeatherSettings.caption.name] = newValue.rawValue
-                updater(instance)
-            }
-        )
-    }
 
     private var usesCityBinding: Binding<Bool> {
         Binding(

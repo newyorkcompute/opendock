@@ -69,20 +69,6 @@ struct TimerButton: View {
     }
 }
 
-extension WidgetSettingsUpdater {
-    /// A binding for an `.integer` key, for steppers. Reads through the key, so an invalid
-    /// stored value shows as the default.
-    func intBinding(_ key: WidgetSettingKey, in instance: Binding<WidgetInstance>) -> Binding<Int> {
-        Binding(
-            get: { key.intValue(in: instance.wrappedValue.settings) },
-            set: { newValue in
-                instance.wrappedValue.settings[key.name] = String(newValue)
-                self(instance.wrappedValue)
-            }
-        )
-    }
-}
-
 enum TimerStyle {
     /// Focus sessions are warm, breaks are green.
     static func color(for phase: FocusTimer.Phase) -> Color {
