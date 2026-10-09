@@ -120,6 +120,13 @@ let package = Package(
             path: "Sources/Widgets/RemindersWidget",
             swiftSettings: uiSettings
         ),
+        /// Focus Timer, Countdown, Stopwatch and Alarm: four widgets sharing one model.
+        .target(
+            name: "TimerWidgets",
+            dependencies: ["DockWidgetKit", "SystemServices"],
+            path: "Sources/Widgets/TimerWidgets",
+            swiftSettings: uiSettings
+        ),
 
         // MARK: Helpers
 
@@ -139,6 +146,7 @@ let package = Package(
             dependencies: [
                 "DockWidgetKit", "ClockWidget", "BatteryWidget", "CalendarWidget", "SystemActivityWidget",
                 "WeatherWidget", "NowPlayingWidget", "TimeProgressWidget", "NetworkWidget", "RemindersWidget",
+                "TimerWidgets",
             ],
             path: "Sources/Widgets/BuiltInWidgets",
             swiftSettings: uiSettings

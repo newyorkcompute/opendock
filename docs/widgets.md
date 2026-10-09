@@ -158,6 +158,58 @@ How many reminders are waiting, and the list to tick them off.
 | `scope` | One of `"all"` or `"today"` | `"all"` | Which reminders the tile counts and the popover lists: every incomplete reminder, or only those due today or overdue. |
 | `showListName` | `"true"` or `"false"` | `"true"` | Show the list's name under the count. When off, the tile is just the icon and the count. |
 
+## Focus Timer
+
+Type ID: `com.newyorkcompute.opendock.widget.focustimer`
+
+Pomodoro-style focus sessions and breaks.
+
+| Key | Value | Default | What it does |
+| --- | --- | --- | --- |
+| `focusMinutes` | A whole number from 1 to 180 | `"25"` | Length of a focus session, in minutes. |
+| `shortBreakMinutes` | A whole number from 1 to 60 | `"5"` | Length of the break after a focus session, in minutes. |
+| `longBreakMinutes` | A whole number from 1 to 120 | `"15"` | Length of the long break that ends a cycle, in minutes. |
+| `sessionsBeforeLongBreak` | A whole number from 1 to 12 | `"4"` | Focus sessions in a cycle; the break after the last one is the long one. |
+| `autoStart` | `"true"` or `"false"` | `"false"` | Start the next focus session or break as soon as one ends. |
+| `notify` | `"true"` or `"false"` | `"true"` | Show a notification and play a sound when a session or break ends. |
+
+## Countdown
+
+Type ID: `com.newyorkcompute.opendock.widget.countdown`
+
+Time left until a date.
+
+| Key | Value | Default | What it does |
+| --- | --- | --- | --- |
+| `date` | Any text | `""` | The moment to count down to: ISO 8601 such as `"2026-12-25T18:00:00Z"`, or a date alone such as `"2026-12-25"` for midnight. Empty means no date is set. |
+| `label` | Any text | `""` | What the countdown is for, shown under the time left. |
+| `notify` | `"true"` or `"false"` | `"true"` | Show a notification and play a sound when the countdown reaches zero. |
+
+## Stopwatch
+
+Type ID: `com.newyorkcompute.opendock.widget.stopwatch`
+
+Elapsed time, with laps.
+
+| Key | Value | Default | What it does |
+| --- | --- | --- | --- |
+| `showLaps` | `"true"` or `"false"` | `"true"` | Show the latest lap under the elapsed time. |
+
+## Alarm
+
+Type ID: `com.newyorkcompute.opendock.widget.alarm`
+
+An alarm that rings at a time of day.
+
+| Key | Value | Default | What it does |
+| --- | --- | --- | --- |
+| `enabled` | `"true"` or `"false"` | `"false"` | Whether the alarm is set. A one-off alarm turns itself off once it has been stopped. |
+| `time` | Any text | `"07:00"` | When the alarm rings, as 24-hour `"HH:mm"`. |
+| `repeats` | One of `"once"`, `"daily"`, `"weekdays"`, or `"weekends"` | `"once"` | Which days the alarm rings. |
+| `label` | Any text | `""` | A name for the alarm, shown in the tile and in the notification. |
+| `snoozeMinutes` | A whole number from 1 to 60 | `"9"` | How long Snooze waits before the alarm rings again. |
+| `sound` | `"true"` or `"false"` | `"true"` | Play a sound while the alarm rings, as well as showing a notification. |
+
 <!-- END GENERATED -->
 
 ## Declaring settings in your own widget

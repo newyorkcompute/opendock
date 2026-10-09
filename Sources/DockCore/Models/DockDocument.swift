@@ -268,4 +268,8 @@ public enum BuiltInWidgetID {
     public static let timeProgress = "com.newyorkcompute.opendock.widget.timeprogress"
     public static let network = "com.newyorkcompute.opendock.widget.network"
     public static let reminders = "com.newyorkcompute.opendock.widget.reminders"
+    public static let focusTimer = "com.newyorkcompute.opendock.widget.focustimer"
+    public static let countdown = "com.newyorkcompute.opendock.widget.countdown"
+    public static let stopwatch = "com.newyorkcompute.opendock.widget.stopwatch"
+    public static let alarm = "com.newyorkcompute.opendock.widget.alarm"
 }

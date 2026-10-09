@@ -19,6 +19,10 @@ struct WidgetSchemaTests {
             "com.newyorkcompute.opendock.widget.timeprogress",
             "com.newyorkcompute.opendock.widget.network",
             "com.newyorkcompute.opendock.widget.reminders",
+            "com.newyorkcompute.opendock.widget.focustimer",
+            "com.newyorkcompute.opendock.widget.countdown",
+            "com.newyorkcompute.opendock.widget.stopwatch",
+            "com.newyorkcompute.opendock.widget.alarm",
         ]
         #expect(BuiltInWidgets.all.map { $0.typeID } == pinned)
         #expect(
@@ -26,6 +30,8 @@ struct WidgetSchemaTests {
                 BuiltInWidgetID.clock, BuiltInWidgetID.battery, BuiltInWidgetID.calendar,
                 BuiltInWidgetID.systemActivity, BuiltInWidgetID.weather, BuiltInWidgetID.nowPlaying,
                 BuiltInWidgetID.timeProgress, BuiltInWidgetID.network, BuiltInWidgetID.reminders,
+                BuiltInWidgetID.focusTimer, BuiltInWidgetID.countdown, BuiltInWidgetID.stopwatch,
+                BuiltInWidgetID.alarm,
             ] == pinned)
     }
 

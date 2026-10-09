@@ -8,6 +8,7 @@ import NowPlayingWidget
 import RemindersWidget
 import SystemActivityWidget
 import TimeProgressWidget
+import TimerWidgets
 import WeatherWidget
 
 /// The widgets that ship with OpenDock. The app registers them, `DockStorage` validates
@@ -25,6 +26,10 @@ public enum BuiltInWidgets {
         TimeProgressWidget.self,
         NetworkWidget.self,
         RemindersWidget.self,
+        FocusTimerWidget.self,
+        CountdownWidget.self,
+        StopwatchWidget.self,
+        AlarmWidget.self,
     ]
 
     /// Settings schemas by type ID, for `DockStorage`.
