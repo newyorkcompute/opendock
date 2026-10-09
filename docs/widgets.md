@@ -235,6 +235,20 @@ Prices and the day's change for a watchlist.
 | `showChart` | `"true"` or `"false"` | `"true"` | Draw the day's price line beside the quote. The list style has no room for it. |
 | `refreshMinutes` | A whole number from 1 to 60 | `"5"` | How often to fetch new quotes while the dock is visible, in minutes. A hidden dock fetches nothing, and no symbol is fetched more than once a minute. |
 
+## Shortcuts
+
+Type ID: `com.newyorkcompute.opendock.widget.shortcuts`
+
+A shortcut that runs when you click it.
+
+| Key | Value | Default | What it does |
+| --- | --- | --- | --- |
+| `shortcut` | Any text | `""` | The name of the shortcut the tile runs, exactly as the Shortcuts app shows it. Empty means none is chosen yet; the popover still lists every shortcut. |
+| `symbol` | Any text | `""` | The SF Symbol drawn on the tile, such as `"bolt.fill"`. Empty, or a name this Mac doesn't have, draws the default sparkles. |
+| `color` | One of `"red"`, `"orange"`, `"yellow"`, `"green"`, `"mint"`, `"teal"`, `"cyan"`, `"blue"`, `"indigo"`, `"purple"`, `"pink"`, `"brown"`, or `"gray"` | `"indigo"` | The color behind the symbol, like the icon colors in the Shortcuts app. |
+| `showName` | `"true"` or `"false"` | `"true"` | Show the shortcut's name beside the icon. When off, the tile is just the icon. |
+| `recents` | Any text | `""` | The shortcuts last run from this tile, newest first, one name per line. The tile keeps this up to date; there's no need to edit it. |
+
 <!-- END GENERATED -->
 
 ## Declaring settings in your own widget
