@@ -1,0 +1,54 @@
+{
+  "chart": {
+    "result": [
+      {
+        "meta": {
+          "currency": "USD",
+          "symbol": "AAPL",
+          "exchangeName": "NMS",
+          "fullExchangeName": "NasdaqGS",
+          "instrumentType": "EQUITY",
+          "firstTradeDate": 345479400,
+          "regularMarketTime": 1728590401,
+          "hasPrePostMarketData": true,
+          "gmtoffset": -14400,
+          "timezone": "EDT",
+          "exchangeTimezoneName": "America/New_York",
+          "regularMarketPrice": 229.04,
+          "fiftyTwoWeekHigh": 237.49,
+          "fiftyTwoWeekLow": 164.08,
+          "regularMarketDayHigh": 229.5,
+          "regularMarketDayLow": 227.62,
+          "regularMarketVolume": 31668210,
+          "longName": "Apple Inc.",
+          "shortName": "Apple Inc.",
+          "chartPreviousClose": 229.54,
+          "previousClose": 229.54,
+          "scale": 3,
+          "priceHint": 2,
+          "currentTradingPeriod": {
+            "pre": { "timezone": "EDT", "start": 1728547200, "end": 1728567000, "gmtoffset": -14400 },
+            "regular": { "timezone": "EDT", "start": 1728567000, "end": 1728590400, "gmtoffset": -14400 },
+            "post": { "timezone": "EDT", "start": 1728590400, "end": 1728604800, "gmtoffset": -14400 }
+          },
+          "dataGranularity": "5m",
+          "range": "1d",
+          "validRanges": ["1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"]
+        },
+        "timestamp": [1728567000, 1728567300, 1728567600, 1728567900, 1728568200, 1728590400],
+        "indicators": {
+          "quote": [
+            {
+              "open": [229.3, 229.12, null, 228.9, 229.31, 229.0],
+              "close": [229.1, 228.95, null, 229.3, 229.0, 229.04],
+              "high": [229.5, 229.2, null, 229.4, 229.35, 229.1],
+              "low": [228.9, 228.8, null, 228.85, 228.95, 228.98],
+              "volume": [1502310, 912400, null, 640221, 588102, 2201455]
+            }
+          ]
+        }
+      }
+    ],
+    "error": null
+  }
+}
