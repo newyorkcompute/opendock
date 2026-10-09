@@ -23,11 +23,7 @@ struct NetworkPopoutView: View {
             interfaces
             Divider()
 
-            Button("Open Network Settings") {
-                if let url = URL(string: "x-apple.systempreferences:com.apple.Network-Settings.extension") {
-                    NSWorkspace.shared.open(url)
-                }
-            }
+            Button("Open Network Settings") { SystemSettingsPane.network.open() }
         }
         .padding(16)
         .frame(width: 320, alignment: .leading)

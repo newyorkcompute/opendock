@@ -24,11 +24,7 @@ struct BatteryPopoutView: View {
 
             Divider()
 
-            Button("Open Battery Settings") {
-                if let url = URL(string: "x-apple.systempreferences:com.apple.Battery-Settings-extension") {
-                    NSWorkspace.shared.open(url)
-                }
-            }
+            Button("Open Battery Settings") { SystemSettingsPane.battery.open() }
         }
         .padding(16)
         .frame(width: 280, alignment: .leading)

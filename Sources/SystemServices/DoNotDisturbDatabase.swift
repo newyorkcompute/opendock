@@ -66,9 +66,7 @@ public final class DoNotDisturbDatabase: FocusStateSource {
     }
 
     public func openAccessSettings() {
-        guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles")
-        else { return }
-        NSWorkspace.shared.open(url)
+        SystemSettingsPane.fullDiskAccess.open()
     }
 
     // MARK: - Files

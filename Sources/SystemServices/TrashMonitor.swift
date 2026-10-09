@@ -41,9 +41,7 @@ public struct SystemFinderAutomationPermission: FinderAutomationPermission {
     }
 
     public func openSystemSettings() {
-        guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation")
-        else { return }
-        NSWorkspace.shared.open(url)
+        SystemSettingsPane.automation.open()
     }
 }
 
