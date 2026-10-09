@@ -46,6 +46,14 @@ public protocol DockWidget {
 
     /// `drop` was released on the tile. Returns whether it was taken; the dock beeps if not.
     static func performDrop(_ drop: WidgetDrop, instance: WidgetInstance) -> Bool
+
+    /// Where this widget's instances are in the layout, at launch and whenever that changes:
+    /// one is added, removed or has its settings changed, the profile switches, or
+    /// `WidgetPlacements.mayRequestAccess` turns true. Tiles come and go with the view
+    /// hierarchy (the dock hiding, profile transitions), so a widget with something to do
+    /// while its tile isn't drawn, like ringing an alarm, keeps that state from here rather
+    /// than from `onAppear` and `onDisappear`. By default nothing happens.
+    static func placementsChanged(_ placements: WidgetPlacements)
 }
 
 public extension DockWidget {
@@ -55,6 +63,7 @@ public extension DockWidget {
     static func makeSettingsView(instance: WidgetInstance) -> AnyView? { nil }
     static func acceptsDrop(_ drop: WidgetDrop, instance: WidgetInstance) -> Bool { false }
     static func performDrop(_ drop: WidgetDrop, instance: WidgetInstance) -> Bool { false }
+    static func placementsChanged(_ placements: WidgetPlacements) {}
 
     /// Convenience for creating a new instance of this widget with its defaults.
     static func makeInstance() -> WidgetInstance {

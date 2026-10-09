@@ -41,6 +41,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @ObservationIgnored private(set) lazy var profiles = ProfileSwitcher(store: store)
     @ObservationIgnored private lazy var focusProfiles = FocusProfileAutomation(
         store: store, monitor: focus, switcher: profiles)
+    /// Keeps widgets with off-screen work (alarms, countdowns) in step with the layout.
+    @ObservationIgnored private lazy var widgetPlacements = WidgetPlacementObserver(store: store, registry: registry)
     @ObservationIgnored private(set) lazy var hotKeys = GlobalHotKeys { [weak self] action in
         self?.hotKeyPressed(action)
     }
@@ -86,6 +88,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         syncHotKeys()
         focus.start()
         focusProfiles.start()
+        widgetPlacements.start()
         terminateOnSignals()
         if store.needsWelcome { showWelcome() }
     }

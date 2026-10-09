@@ -25,6 +25,12 @@ public enum FocusTimerWidget: DockWidget {
     public static func makeSettingsView(instance: WidgetInstance) -> AnyView? {
         AnyView(FocusTimerSettingsView(instance: instance))
     }
+
+    /// A running timer keeps going while its profile isn't shown; it's forgotten once its
+    /// item is gone from every profile.
+    public static func placementsChanged(_ placements: WidgetPlacements) {
+        TimerSessions.shared.pruneFocusTimers(keeping: placements.allIDs)
+    }
 }
 
 /// Counts down to a date and time.
@@ -45,6 +51,17 @@ public enum CountdownWidget: DockWidget {
 
     public static func makeSettingsView(instance: WidgetInstance) -> AnyView? {
         AnyView(CountdownSettingsView(instance: instance))
+    }
+
+    /// The countdowns of the active profile notify when they reach zero, whether or not
+    /// their tiles are drawn.
+    public static func placementsChanged(_ placements: WidgetPlacements) {
+        TimerSessions.shared.syncCountdowns(
+            placements.active.compactMap { placement in
+                let settings = CountdownSettings(instance: placement.instance)
+                guard settings.notify, let target = settings.target else { return nil }
+                return TimerSessions.CountdownRequest(id: placement.id, target: target, label: settings.label)
+            })
     }
 }
 
@@ -67,6 +84,12 @@ public enum StopwatchWidget: DockWidget {
     public static func makeSettingsView(instance: WidgetInstance) -> AnyView? {
         AnyView(StopwatchSettingsView(instance: instance))
     }
+
+    /// A stopwatch keeps running while its profile isn't shown; it's forgotten once its
+    /// item is gone from every profile.
+    public static func placementsChanged(_ placements: WidgetPlacements) {
+        TimerSessions.shared.pruneStopwatches(keeping: placements.allIDs)
+    }
 }
 
 /// An alarm that rings at a time of day, with a notification.
@@ -87,6 +110,23 @@ public enum AlarmWidget: DockWidget {
 
     public static func makeSettingsView(instance: WidgetInstance) -> AnyView? {
         AnyView(AlarmSettingsView(instance: instance))
+    }
+
+    /// The enabled alarms of the active profile are set, whether or not their tiles are
+    /// drawn (the dock may be hidden); the rest are cleared. The permission prompt waits
+    /// for the welcome window, like every widget's.
+    public static func placementsChanged(_ placements: WidgetPlacements) {
+        TimerSessions.shared.syncAlarms(
+            placements.active.compactMap { placement in
+                let settings = AlarmSettings(instance: placement.instance)
+                guard settings.isEnabled else { return nil }
+                return TimerSessions.AlarmRequest(
+                    id: placement.id, schedule: settings.schedule, label: settings.label, sound: settings.sound
+                ) {
+                    // A one-off alarm that has rung and been stopped turns itself off.
+                    placement.updater.set(AlarmSettings.enabled.name, to: "false", in: placement.instance)
+                }
+            }, mayPrompt: placements.mayRequestAccess)
     }
 }
 
