@@ -3,6 +3,7 @@ import CalendarWidget
 import ClockWidget
 import DockCore
 import DockWidgetKit
+import NetworkWidget
 import NowPlayingWidget
 import SystemActivityWidget
 import TimeProgressWidget
@@ -21,6 +22,7 @@ public enum BuiltInWidgets {
         WeatherWidget.self,
         NowPlayingWidget.self,
         TimeProgressWidget.self,
+        NetworkWidget.self,
     ]
 
     /// Settings schemas by type ID, for `DockStorage`.

@@ -76,7 +76,7 @@ Dock. You can keep both, or have OpenDock hide Apple's while it runs. Inspired b
 - Keyboard control: a global shortcut shows the dock and selects an item; arrow keys move
   along it, Return opens, Space browses a folder or opens a widget, Delete removes, Escape
   puts the keyboard back. The selection is announced to VoiceOver
-- Widgets: Clock, Battery, Calendar, System Activity, Weather, Now Playing, and Time Progress
+- Widgets: Clock, Battery, Calendar, System Activity, Weather, Now Playing, Time Progress, and Network
 - Settings window with General, Profiles, Dock Items, Widgets, and About tabs
 - Export and import your layout as JSON
 - Launch at login
@@ -102,6 +102,7 @@ popover with more detail. Each widget has its own options in Settings > Dock Ite
 | Weather | Current conditions and temperature for your location or a city | Feels-like, humidity and wind, the next 12 hours, and a 4-day forecast | °C or °F, caption, location |
 | Now Playing | Artwork, title and artist of whatever is playing in any app, with previous, play/pause and next buttons; hidden while nothing plays | The album, a position bar, bigger controls, and an Open button for the player | Buttons, stay visible when idle |
 | Time Progress | How much of the year, month, week, and day has passed, as bars or rings with a percentage | All four periods with a precise percentage, the day of the period, and what's left | Which periods to show; bars or rings |
+| Network | Download and upload speeds with a one-minute sparkline | A bigger chart, each connected interface with its speeds and addresses, and a shortcut to Network Settings | Which speeds to show, history, bytes or bits, interface |
 
 The Calendar widget asks for calendar access when it first appears (on a fresh install,
 once the welcome window is closed). Without access it
@@ -260,7 +261,7 @@ validates its saved settings against the schema, and adds it to the widget docs;
 Tracked as [GitHub issues](https://github.com/newyorkcompute/opendock/issues); the ones
 labeled `good first issue` are self-contained. Highlights:
 
-- More widgets: Reminders, Network, Timer, Sticky Note, Stocks
+- More widgets: Reminders, Timer, Sticky Note, Stocks
 - Left and right screen edges
 - Notification badges
 - Minimized windows in the dock
