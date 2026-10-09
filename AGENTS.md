@@ -16,11 +16,14 @@ Don't commit a generated project or add an Xcode project of your own.
 | `Sources/SystemServices` | Wrappers over macOS APIs: running apps, launching, icons, power, EventKit, hot keys, hiding Apple's Dock. |
 | `Sources/DockWidgetKit` | The `DockWidget` protocol, `WidgetRegistry`, shared tile views, environment values. |
 | `Sources/Widgets/*` | One target per built-in widget (`ClockWidget`, `TimerWidgets`, and so on), plus `BuiltInWidgets`, the list of them. `docs/widgets.md` and the README's Widgets table cover every widget; tests check both. |
+| `Sources/ScriptedWidgetRuntime` | Scripted (JavaScript) widgets: manifest and package loading, the tile description, limits, and the JavaScriptCore engine (`ScriptedWidgetEngine`, an actor). No UI; nonisolated like `DockCore`. |
+| `Sources/Widgets/ScriptedWidgets` | The `Scripted Widget` host: the tile that draws a `ScriptedTile`, the settings view built from a manifest, and the library that scans the Widgets folder. |
+| `Examples/Widgets` | Sample scripted widgets. `hello` is loaded by the tests. |
 | `Sources/DockShell` | The dock panel: `DockPanel`, `DockController` (frame math, auto-hide, magnification), views, drag and drop. |
 | `App/OpenDock` | The `@main` menu bar app, the AppKit-hosted Settings window, and menus. |
 | `App/Resources` | `Info.plist`, entitlements, app icon. |
 | `App/project.yml` | XcodeGen spec for the generated `App/OpenDock.xcodeproj`. Mirrors `ExistentialAny` and main-actor default isolation from `Package.swift`; new modules go in `Package.swift`'s `appModules` only. |
-| `Tests/DockCoreTests`, `Tests/SystemServicesTests`, `Tests/WidgetTests` | Unit tests. `WidgetTests` also checks `docs/widgets.md` against the widget schemas. |
+| `Tests/DockCoreTests`, `Tests/SystemServicesTests`, `Tests/WidgetTests`, `Tests/ScriptedWidgetTests` | Unit tests. `WidgetTests` also checks `docs/widgets.md` against the widget schemas. `ScriptedWidgetTests` covers the runtime; the tests that run JavaScript sit behind `#if canImport(JavaScriptCore)`. |
 | `scripts/` | `build-app.sh` wraps the SwiftPM binary into `build/OpenDock.app`. |
 
 ## Commands

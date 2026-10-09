@@ -259,6 +259,16 @@ Drop files or links on it to send them over AirDrop.
 | --- | --- | --- | --- |
 | `showLabel` | `"true"` or `"false"` | `"true"` | Show the name AirDrop beside the icon. Off, the tile is the icon alone. |
 
+## Scripted Widget
+
+Type ID: `com.newyorkcompute.opendock.widget.scripted`
+
+A widget written in JavaScript, from your Widgets folder.
+
+| Key | Value | Default | What it does |
+| --- | --- | --- | --- |
+| `package` | Any text | `""` | The `id` from the manifest of the installed scripted widget this tile runs, as chosen in Settings. Empty means none is chosen yet. The widget's own settings, declared in its manifest, are stored beside this key under their own names. |
+
 <!-- END GENERATED -->
 
 ## Declaring settings in your own widget

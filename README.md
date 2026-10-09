@@ -115,6 +115,7 @@ popover with more detail. Each widget has its own options in Settings > Dock Ite
 | Stocks | A symbol's price and the day's change with its price line, each symbol in turn, or a short list of changes | The whole watchlist, a chart with 1D, 5D, 1M, 6M and 1Y tabs, the market's state, and a shortcut to the Stocks app | Symbols (with search), style, percent or amount, chart, refresh interval |
 | Shortcuts | A shortcut's icon and name; click to run it without the Shortcuts app coming to the front | The shortcut's last result, the ones run lately, and every shortcut on the Mac, each a click away, with a menu to put one in the tile or edit it in Shortcuts | Which shortcut, icon, color, show name |
 | AirDrop | The AirDrop icon; drop files, folders, or links on it to send them, and the AirDrop sheet lists the devices nearby | The AirDrop window in Finder | Show the name |
+| Scripted Widget | Whatever a small JavaScript file in your Widgets folder describes: text, numbers, rings, bars, icons, and sparklines in rows and columns, redrawn on the schedule the script asks for | Nothing yet | Which widget to run, plus the settings its manifest declares |
 
 The Calendar widget asks for calendar access when it first appears (on a fresh install,
 once the welcome window is closed), and the Reminders widget asks for reminders access the
@@ -142,6 +143,16 @@ comes with macOS, so a shortcut runs in the background without the Shortcuts app
 front (its own dialogs still appear). "Edit in Shortcuts" in the popover opens the editor
 through the `shortcuts://` URL scheme. No permission is needed beyond what the shortcut itself
 asks for.
+
+The Scripted Widget runs widgets written in JavaScript: a folder with a `manifest.json` and a
+`main.js` in `~/Library/Application Support/OpenDock/Widgets`. The script's `render()` returns
+a description of the tile, and OpenDock draws it with the same views as the built-in widgets.
+Each script runs in its own JavaScriptCore context off the main thread, with no file or network
+access and a time limit on every call; an error shows in the tile and in the widget's
+settings, and never takes the dock down. Editing a file in the folder reloads the widget.
+`Examples/Widgets/hello` is a complete one, and
+[docs/scripted-widgets.md](docs/scripted-widgets.md) is the format and the API. This is an
+early preview: scripts can't fetch from the network or react to clicks yet.
 
 ## Window management
 
@@ -216,12 +227,18 @@ generates a git-ignored project; see
 | `DockWidgetKit` | The widget contract (`DockWidget`), the `WidgetRegistry`, shared tile views, and environment values. |
 | `SystemServices` | Thin wrappers over macOS APIs: running apps, power sources, EventKit, icons, launching, hiding Apple's Dock. |
 | `Widgets/*` | One target per built-in widget (see [Widgets](#widgets) for the list), plus `BuiltInWidgets`, which registers them. |
+| `ScriptedWidgetRuntime` | The scripted-widget package format (manifest, tile description, limits) and the JavaScriptCore engine that runs one script on its own actor. No UI, unit-tested. |
 | `DockShell` | The dock panel: window, positioning, auto-hide, item views, drag and drop. |
 | `OpenDock` (`App/`) | The menu bar app: wires everything together, plus the menu, Settings window, and launch at login. |
 
 UI targets compile with main-actor default isolation under Swift 6 strict concurrency.
 
 ## Writing a widget
+
+For a widget that shows some text, a number, a ring, or a chart, you don't need to build
+OpenDock: write it in JavaScript and drop it in your Widgets folder, as
+[docs/scripted-widgets.md](docs/scripted-widgets.md) explains. The rest of this section is
+about built-in widgets, written in Swift.
 
 A widget is a type that conforms to `DockWidget`. The dock stores `WidgetInstance` values
 (a type ID plus a `[String: String]` settings bag) and asks the registry to render them.
