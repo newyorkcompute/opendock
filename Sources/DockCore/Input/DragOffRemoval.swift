@@ -1,9 +1,10 @@
 import CoreGraphics
 import Foundation
 
-/// Decides when a pinned item dragged off the dock is removed, with the semantics of
-/// Apple's Dock: the item has to be well clear of the dock, and stay there for a moment,
-/// before letting go removes it. A quick overshoot while reordering snaps the item back.
+/// Decides when an item dragged off the dock is removed, with the semantics of Apple's
+/// Dock: the item has to be well clear of the dock, and stay there for a moment, before
+/// letting go removes it. A quick overshoot while reordering snaps the item back. Which
+/// items can be removed this way at all is `DockRowDrag`'s call.
 ///
 /// Once the hold completes the removal is *armed*: the dock closes the item's slot and the
 /// dragged icon is labeled "Remove". Bringing the item back toward the dock disarms it and
