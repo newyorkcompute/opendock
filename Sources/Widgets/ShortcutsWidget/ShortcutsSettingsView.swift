@@ -47,7 +47,10 @@ struct ShortcutsSettingsView: View {
 
             Toggle("Show name", isOn: updater.boolBinding(ShortcutsSettings.showName, in: $instance))
 
-            Picker("Color", selection: tintBinding) {
+            Picker(
+                "Color",
+                selection: updater.choiceBinding(ShortcutsSettings.color, in: $instance, default: ShortcutTint.default)
+            ) {
                 ForEach(ShortcutTint.allCases, id: \.self) { tint in
                     Label {
                         Text(tint.displayName)
@@ -82,13 +85,9 @@ struct ShortcutsSettingsView: View {
     @ViewBuilder
     private var availability: some View {
         if !service.isAvailable {
-            Text("The shortcuts command-line tool isn't on this Mac, so the tile can't run anything.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            WidgetCaption("The shortcuts command-line tool isn't on this Mac, so the tile can't run anything.")
         } else if service.hasLoaded, service.shortcuts.isEmpty {
-            Text("No shortcuts found. Create one in the Shortcuts app, then come back here.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            WidgetCaption("No shortcuts found. Create one in the Shortcuts app, then come back here.")
         }
     }
 
@@ -129,16 +128,6 @@ struct ShortcutsSettingsView: View {
             get: { settings.shortcutName ?? "" },
             set: { newValue in
                 instance.settings[ShortcutsSettings.shortcut.name] = newValue
-                updater(instance)
-            }
-        )
-    }
-
-    private var tintBinding: Binding<ShortcutTint> {
-        Binding(
-            get: { settings.tint },
-            set: { newValue in
-                instance.settings[ShortcutsSettings.color.name] = newValue.rawValue
                 updater(instance)
             }
         )

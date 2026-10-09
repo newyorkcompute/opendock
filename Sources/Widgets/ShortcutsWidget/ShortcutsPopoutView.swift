@@ -140,9 +140,7 @@ struct ShortcutsPopoutView: View {
                         .textFieldStyle(.roundedBorder)
                 }
                 if filtered.isEmpty {
-                    Text("No shortcut matches “\(query)”.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    WidgetCaption("No shortcut matches “\(query)”.")
                 } else {
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 2) {
