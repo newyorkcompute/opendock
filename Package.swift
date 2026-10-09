@@ -127,6 +127,12 @@ let package = Package(
             path: "Sources/Widgets/TimerWidgets",
             swiftSettings: uiSettings
         ),
+        .target(
+            name: "StickyNoteWidget",
+            dependencies: ["DockWidgetKit"],
+            path: "Sources/Widgets/StickyNoteWidget",
+            swiftSettings: uiSettings
+        ),
 
         // MARK: Helpers
 
@@ -146,7 +152,7 @@ let package = Package(
             dependencies: [
                 "DockWidgetKit", "ClockWidget", "BatteryWidget", "CalendarWidget", "SystemActivityWidget",
                 "WeatherWidget", "NowPlayingWidget", "TimeProgressWidget", "NetworkWidget", "RemindersWidget",
-                "TimerWidgets",
+                "TimerWidgets", "StickyNoteWidget",
             ],
             path: "Sources/Widgets/BuiltInWidgets",
             swiftSettings: uiSettings

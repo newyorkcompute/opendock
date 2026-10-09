@@ -15,12 +15,17 @@ public struct WidgetTile<Content: View>: View {
     @Environment(\.dockEdge) private var edge
 
     private let minWidth: Double?
+    private let fill: AnyShapeStyle?
     private let content: Content
 
-    /// - Parameter minWidth: The tile's least length along the dock, so it doesn't change
-    ///   size as its content does: its width on the bottom edge, its height on a side.
-    public init(minWidth: Double? = nil, @ViewBuilder content: () -> Content) {
+    /// - Parameters:
+    ///   - minWidth: The tile's least length along the dock, so it doesn't change size as
+    ///     its content does: its width on the bottom edge, its height on a side.
+    ///   - fill: What to paint the tile with instead of the standard faint surface, for a
+    ///     tile that is a colored object in its own right, such as a sticky note.
+    public init(minWidth: Double? = nil, fill: AnyShapeStyle? = nil, @ViewBuilder content: () -> Content) {
         self.minWidth = minWidth
+        self.fill = fill
         self.content = content()
     }
 
@@ -29,7 +34,7 @@ public struct WidgetTile<Content: View>: View {
         let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
         sized
             .background(
-                shape.fill(.primary.opacity(0.06))
+                shape.fill(fill ?? AnyShapeStyle(.primary.opacity(0.06)))
                     .overlay(shape.strokeBorder(.primary.opacity(0.08), lineWidth: 0.5))
             )
             .clipShape(shape)

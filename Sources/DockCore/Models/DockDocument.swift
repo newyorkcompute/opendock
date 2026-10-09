@@ -272,4 +272,5 @@ public enum BuiltInWidgetID {
     public static let countdown = "com.newyorkcompute.opendock.widget.countdown"
     public static let stopwatch = "com.newyorkcompute.opendock.widget.stopwatch"
     public static let alarm = "com.newyorkcompute.opendock.widget.alarm"
+    public static let stickyNote = "com.newyorkcompute.opendock.widget.stickynote"
 }

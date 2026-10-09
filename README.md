@@ -77,7 +77,7 @@ Dock. You can keep both, or have OpenDock hide Apple's while it runs. Inspired b
   along it, Return opens, Space browses a folder or opens a widget, Delete removes, Escape
   puts the keyboard back. The selection is announced to VoiceOver
 - Widgets: Clock, Battery, Calendar, System Activity, Weather, Now Playing, Time Progress, Network,
-  Reminders, Focus Timer, Countdown, Stopwatch, and Alarm
+  Reminders, Focus Timer, Countdown, Stopwatch, Alarm, and Sticky Note
 - Settings window with General, Profiles, Dock Items, Widgets, and About tabs
 - Export and import your layout as JSON
 - Launch at login
@@ -109,6 +109,7 @@ popover with more detail. Each widget has its own options in Settings > Dock Ite
 | Countdown | Days and hours (or hours, minutes and seconds) until a date, with your label | The time left in words, and the date to change | Date, label, notification at zero |
 | Stopwatch | Elapsed time, the latest lap, and start/stop and lap buttons | The time to a tenth of a second, with laps and their splits | Show laps |
 | Alarm | The alarm time with its name, or Off; rings with a sound and a notification, with Snooze and Stop on the tile | On/off, time, repeat (once, daily, weekdays, weekends), label and snooze length | Same as the popover, plus sound |
+| Sticky Note | The first lines of a note on colored paper; each tile is its own note | A larger editor for the whole note, the paper colors, and a word count | Color (yellow, orange, pink, green, blue, purple, white, black, or translucent), the note |
 
 The Calendar widget asks for calendar access when it first appears (on a fresh install,
 once the welcome window is closed), and the Reminders widget asks for reminders access the
@@ -267,7 +268,7 @@ validates its saved settings against the schema, and adds it to the widget docs;
 Tracked as [GitHub issues](https://github.com/newyorkcompute/opendock/issues); the ones
 labeled `good first issue` are self-contained. Highlights:
 
-- More widgets: Reminders, Timer, Sticky Note, Stocks
+- More widgets: Reminders, Timer, Stocks
 - Left and right screen edges
 - Notification badges
 - Minimized windows in the dock
