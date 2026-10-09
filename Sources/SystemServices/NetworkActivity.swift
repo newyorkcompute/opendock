@@ -239,14 +239,15 @@ public struct NetworkInterfaceStatus: Sendable, Hashable, Identifiable {
     }
 }
 
-/// Everything the widget knows at one moment.
+/// Everything the widget knows at one moment. Equal snapshots look the same on screen,
+/// so `NetworkActivityMonitor` only publishes one that differs from the last: on an idle
+/// network the tiles aren't redrawn every second. (There is deliberately no timestamp here;
+/// one would make every reading a change.)
 public struct NetworkActivitySnapshot: Sendable, Hashable {
-    public var date: Date
     /// Every interface the kernel listed, in kernel order.
     public var interfaces: [NetworkInterfaceStatus]
 
-    public init(date: Date = Date(), interfaces: [NetworkInterfaceStatus] = []) {
-        self.date = date
+    public init(interfaces: [NetworkInterfaceStatus] = []) {
         self.interfaces = interfaces
     }
 

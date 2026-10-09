@@ -362,6 +362,28 @@ struct NetworkActivityMonitorTests {
         #expect(monitor.history.samples.count == 1)
     }
 
+    @Test func anIdleNetworkLeavesTheSnapshotUnchanged() {
+        let source = ScriptedSource(readings: [
+            [reading("en0", in: 0, out: 0)],
+            [reading("en0", in: 1_000, out: 100)],
+            [reading("en0", in: 1_000, out: 100)],
+            [reading("en0", in: 1_000, out: 100)],
+            [reading("en0", in: 1_000, out: 100)],
+        ])
+        let monitor = NetworkActivityMonitor(source: source, historyLength: 10, now: start)
+        monitor.refresh(now: start + .seconds(1))
+        #expect(monitor.snapshot.throughput(for: .automatic)?.downloadBytesPerSecond == 1_000)
+        monitor.refresh(now: start + .seconds(2))
+        #expect(monitor.snapshot.throughput(for: .automatic) == .zero, "the counters stopped moving")
+
+        // Nothing changes from here on, so the snapshot the tiles observe mustn't either.
+        let idle = monitor.snapshot
+        monitor.refresh(now: start + .seconds(3))
+        monitor.refresh(now: start + .seconds(4))
+        #expect(monitor.snapshot == idle)
+        #expect(monitor.history.samples.count == 4, "the sparkline still gets its samples")
+    }
+
     @Test func describesInterfacesOnlyWhenTheSetChanges() {
         let source = ScriptedSource(readings: [
             [reading("en0", in: 0, out: 0)],

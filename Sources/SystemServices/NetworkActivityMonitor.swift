@@ -87,7 +87,8 @@ public final class NetworkActivityMonitor {
                 throughput: rates[reading.name] ?? lastRates[reading.name])
         }
 
-        let newSnapshot = NetworkActivitySnapshot(date: Date(), interfaces: interfaces)
+        // Assigning an equal snapshot would still redraw every tile that reads it.
+        let newSnapshot = NetworkActivitySnapshot(interfaces: interfaces)
         if newSnapshot != snapshot { snapshot = newSnapshot }
         if !rates.isEmpty { history.append(rates) }
     }
