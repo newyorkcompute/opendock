@@ -48,9 +48,6 @@ struct AlarmTileView: View {
                 "Alarm \(TimerStyle.timeOfDay(settings.time, on: now)), "
                     + AlarmText.caption(settings, ringing: ringing, next: next, now: now))
         }
-        .onAppear(perform: arm)
-        .onChange(of: instance.settings) { arm() }
-        .onDisappear { sessions.removeAlarm(id) }
     }
 
     private func bell(ringing: Bool, enabled: Bool) -> some View {
@@ -63,19 +60,6 @@ struct AlarmTileView: View {
             .foregroundStyle(style)
             .symbolEffect(.pulse, options: .repeating, isActive: ringing)
             .accessibilityHidden(true)
-    }
-
-    /// Set or clear the alarm from the settings. The closure turns a one-off alarm off in
-    /// its settings once it has rung and been stopped.
-    private func arm() {
-        let settings = self.settings
-        let updater = self.updater
-        let instance = self.instance
-        sessions.armAlarm(
-            id, schedule: settings.isEnabled ? settings.schedule : nil, label: settings.label, sound: settings.sound
-        ) {
-            updater.set(AlarmSettings.enabled.name, to: "false", in: instance)
-        }
     }
 }
 

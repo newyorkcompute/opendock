@@ -276,6 +276,10 @@ Guidelines:
 - If the widget needs a permission, ask for it on its own only while
   `\.widgetsMayRequestAccess` is true. It's false while the welcome window is open on a
   fresh install.
+- Tiles come and go with the view hierarchy, so don't start or stop anything that has to
+  outlive them (an alarm, a scheduled notification) in `onAppear` and `onDisappear`.
+  Implement `placementsChanged(_:)` instead: it's called with every instance of the widget in
+  the active profile whenever the layout changes, whether or not their tiles are on screen.
 - Save settings through `\.widgetUpdateSettings`, never through your own files. In a
   settings view, `updater.boolBinding(key, in: $instance)`, `stringBinding`, `intBinding`
   and `choiceBinding` give you bindings that read through the schema and persist each

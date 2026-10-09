@@ -8,11 +8,8 @@ struct CountdownTileView: View {
 
     @Environment(\.dockIconSize) private var iconSize
     @Environment(\.dockEdge) private var edge
-    @Environment(\.widgetUpdateSettings) private var updater
-    @State private var sessions = TimerSessions.shared
 
     private var settings: CountdownSettings { CountdownSettings(instance: instance) }
-    private var id: UUID { updater.id }
 
     var body: some View {
         let settings = self.settings
@@ -38,13 +35,6 @@ struct CountdownTileView: View {
             .accessibilityElement(children: .combine)
             .accessibilityLabel(accessibilityLabel(remaining, target: target))
         }
-        .onAppear(perform: arm)
-        .onChange(of: instance.settings) { arm() }
-        .onDisappear { sessions.removeCountdown(id) }
-    }
-
-    private func arm() {
-        sessions.armCountdown(id, target: settings.notify ? settings.target : nil, label: settings.label)
     }
 
     /// Tinted while counting; grey when unset or over.

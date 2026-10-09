@@ -7,10 +7,14 @@ import SystemServices
 /// Timers live in memory only: quitting OpenDock stops them. Settings (durations, the alarm
 /// time) are the widget's and persist in `dock.json`.
 ///
-/// Tiles register what they need (`updateFocusPlan`, `armAlarm`, `armCountdown`) and unregister
-/// in `onDisappear`, so an alarm or countdown only fires while its tile is in the dock. One
-/// task sleeps until the next thing that has to happen; the views do their own ticking for
-/// display with `TimelineView`.
+/// Alarms and countdowns are set from the layout, not from the tiles: each widget's
+/// `placementsChanged` hands over every enabled instance in the active profile
+/// (`syncAlarms`, `syncCountdowns`), so an alarm rings whether or not its tile is drawn,
+/// and stops being set when its item is removed or the profile switches away. Focus timers
+/// and stopwatches are started from their tiles and kept across profile switches; they're
+/// forgotten when their item is gone from every profile (`pruneFocusTimers`,
+/// `pruneStopwatches`). One task sleeps until the next thing that has to happen; the views
+/// do their own ticking for display with `WidgetTicking`.
 @Observable
 final class TimerSessions {
     static let shared = TimerSessions()
@@ -21,35 +25,49 @@ final class TimerSessions {
         var notify = true
     }
 
+    /// Everything an enabled alarm tile asks for, from its settings.
+    struct AlarmRequest {
+        var id: UUID
+        var schedule: AlarmSchedule
+        var label: String
+        var sound: Bool
+        /// Turns a one-off alarm off in its settings once it has rung and been stopped.
+        var disable: () -> Void
+    }
+
+    /// A countdown that wants a notification when `target` arrives.
+    struct CountdownRequest {
+        var id: UUID
+        var target: Date
+        var label: String
+    }
+
     /// How long an alarm rings before giving up, if nobody stops it.
     static let ringDuration: TimeInterval = 90
 
     private(set) var focusTimers: [UUID: FocusTimer] = [:]
     private(set) var stopwatches: [UUID: Stopwatch] = [:]
+    /// Which alarms are set, when each goes off next, and which are ringing.
+    private(set) var alarmBook = AlarmBook(ringDuration: TimerSessions.ringDuration)
+
     /// When each set alarm goes off next.
-    private(set) var armedAlarms: [UUID: Date] = [:]
+    var armedAlarms: [UUID: Date] { alarmBook.armed }
     /// Alarms ringing right now, and since when.
-    private(set) var ringingAlarms: [UUID: Date] = [:]
+    var ringingAlarms: [UUID: Date] { alarmBook.ringing }
 
     @ObservationIgnored private var focusOptions: [UUID: FocusOptions] = [:]
-    @ObservationIgnored private var alarms: [UUID: AlarmArming] = [:]
-    @ObservationIgnored private var countdowns: [UUID: CountdownArming] = [:]
+    @ObservationIgnored private var alarms: [UUID: AlarmDetails] = [:]
+    @ObservationIgnored private var countdowns: [UUID: CountdownRequest] = [:]
     @ObservationIgnored private var sleeper: Task<Void, Never>?
 
     /// The current time; tests could swap it.
     @ObservationIgnored var now: () -> Date = Date.init
 
-    private struct AlarmArming {
-        var schedule: AlarmSchedule
+    /// What an alarm needs besides its schedule, which the book keeps.
+    private struct AlarmDetails {
         var label: String
         var sound: Bool
-        /// Turns a one-off alarm off in its settings once it has rung.
         var disable: () -> Void
-    }
-
-    private struct CountdownArming {
-        var target: Date
-        var label: String
     }
 
     init() {}
@@ -95,10 +113,14 @@ final class TimerSessions {
         reschedule()
     }
 
-    /// Forget a tile's timer, when its item leaves the dock.
-    func removeFocus(_ id: UUID) {
-        focusTimers[id] = nil
-        focusOptions[id] = nil
+    /// Forget the timers of items that are gone from every profile.
+    func pruneFocusTimers(keeping ids: Set<UUID>) {
+        let gone = Set(focusTimers.keys).union(focusOptions.keys).subtracting(ids)
+        guard !gone.isEmpty else { return }
+        for id in gone {
+            focusTimers[id] = nil
+            focusOptions[id] = nil
+        }
         reschedule()
     }
 
@@ -124,99 +146,82 @@ final class TimerSessions {
         stopwatches[id] = nil
     }
 
+    /// Forget the stopwatches of items that are gone from every profile.
+    func pruneStopwatches(keeping ids: Set<UUID>) {
+        let gone = Set(stopwatches.keys).subtracting(ids)
+        guard !gone.isEmpty else { return }
+        for id in gone { stopwatches[id] = nil }
+    }
+
     // MARK: Alarm
 
-    /// Set the alarm from its settings, or clear it (and silence it) with a nil `schedule`.
-    /// Changing the label or sound of an alarm that's ringing doesn't interrupt it.
-    func armAlarm(
-        _ id: UUID, schedule: AlarmSchedule?, label: String, sound: Bool, disable: @escaping () -> Void
-    ) {
-        guard let schedule else {
-            alarms[id] = nil
-            armedAlarms[id] = nil
-            if ringingAlarms[id] != nil { silence(id) }
-            reschedule()
-            return
+    /// Make the set alarms exactly `requests`: the enabled alarm tiles of the active profile.
+    /// Any other alarm is cleared and, if it was ringing, silenced. Changing the label or
+    /// sound of an alarm that's ringing doesn't interrupt it; see `AlarmBook.set` for what a
+    /// changed time does. The notification permission is asked for only while `mayPrompt`,
+    /// so an alarm that arrives in an imported layout waits for the welcome window to close.
+    func syncAlarms(_ requests: [AlarmRequest], mayPrompt: Bool) {
+        let now = self.now()
+        let wereRinging = alarmBook.removeAll(except: Set(requests.map(\.id)))
+        for id in wereRinging { silence(id) }
+        alarms = [:]
+        for request in requests {
+            alarms[request.id] = AlarmDetails(label: request.label, sound: request.sound, disable: request.disable)
+            alarmBook.set(request.id, schedule: request.schedule, now: now)
         }
-        let arming = AlarmArming(schedule: schedule, label: label, sound: sound, disable: disable)
-        let unchanged = alarms[id].map { $0.schedule == schedule } ?? false
-        alarms[id] = arming
-        // A changed time or repeat replaces a pending snooze; the same one keeps it.
-        if !unchanged || armedAlarms[id] == nil, ringingAlarms[id] == nil {
-            armedAlarms[id] = schedule.nextFiring(after: now())
+        if mayPrompt, !requests.isEmpty {
+            WidgetNotifier.shared.requestAuthorizationIfNeeded()
         }
-        WidgetNotifier.shared.requestAuthorizationIfNeeded()
         reschedule()
     }
 
-    /// Clear the alarm and silence it, when its tile leaves the dock.
-    func removeAlarm(_ id: UUID) {
-        alarms[id] = nil
-        armedAlarms[id] = nil
-        if ringingAlarms[id] != nil { silence(id) }
-        reschedule()
-    }
-
-    func isRinging(_ id: UUID) -> Bool { ringingAlarms[id] != nil }
+    func isRinging(_ id: UUID) -> Bool { alarmBook.isRinging(id) }
 
     /// Stop the ringing. A one-off alarm turns itself off; a repeating one sets itself for
     /// the next day it rings.
     func stopAlarm(_ id: UUID) {
-        guard ringingAlarms[id] != nil else { return }
+        guard let outcome = alarmBook.stop(id, now: now()) else { return }
         silence(id)
-        if let arming = alarms[id] {
-            if arming.schedule.repeats == .once {
-                arming.disable()
-            } else {
-                armedAlarms[id] = arming.schedule.nextFiring(after: now())
-            }
-        }
+        finish(id, outcome)
         reschedule()
     }
 
     /// Stop the ringing and ring again in `minutes`.
     func snoozeAlarm(_ id: UUID, minutes: Int) {
-        guard ringingAlarms[id] != nil else { return }
+        guard alarmBook.snooze(id, minutes: minutes, now: now()) != nil else { return }
         silence(id)
-        armedAlarms[id] = now().addingTimeInterval(TimeInterval(max(1, minutes) * 60))
         reschedule()
     }
 
-    private func silence(_ id: UUID) {
-        ringingAlarms[id] = nil
-        WidgetNotifier.shared.withdraw(identifier: "alarm-\(id.uuidString)")
-        if ringingAlarms.isEmpty { WidgetNotifier.shared.stopRinging() }
+    private func finish(_ id: UUID, _ outcome: AlarmBook.StopOutcome) {
+        if case .finished = outcome { alarms[id]?.disable() }
     }
 
-    private func fireAlarm(_ id: UUID, at now: Date) {
-        armedAlarms[id] = nil
-        ringingAlarms[id] = now
-        guard let arming = alarms[id] else { return }
-        let time = arming.schedule.time.date(on: now, calendar: .current) ?? now
+    private func silence(_ id: UUID) {
+        WidgetNotifier.shared.withdraw(identifier: "alarm-\(id.uuidString)")
+        if alarmBook.ringing.isEmpty { WidgetNotifier.shared.stopRinging() }
+    }
+
+    private func ring(_ id: UUID, at now: Date) {
+        guard let details = alarms[id], let schedule = alarmBook.schedule(for: id) else { return }
+        let time = schedule.time.date(on: now, calendar: .current) ?? now
         WidgetNotifier.shared.post(
-            title: arming.label.isEmpty ? "Alarm" : arming.label,
+            title: details.label.isEmpty ? "Alarm" : details.label,
             body: time.formatted(date: .omitted, time: .shortened),
             identifier: "alarm-\(id.uuidString)",
-            sound: arming.sound)
-        if arming.sound { WidgetNotifier.shared.startRinging() }
+            sound: details.sound)
+        if details.sound { WidgetNotifier.shared.startRinging() }
     }
 
     // MARK: Countdown
 
-    /// Notify when `target` arrives, or clear with a nil `target`. A target already in the
-    /// past doesn't notify, so relaunching after the moment is quiet.
-    func armCountdown(_ id: UUID, target: Date?, label: String) {
-        guard let target, target > now() else {
-            countdowns[id] = nil
-            reschedule()
-            return
-        }
-        countdowns[id] = CountdownArming(target: target, label: label)
-        reschedule()
-    }
-
-    func removeCountdown(_ id: UUID) {
-        countdowns[id] = nil
+    /// Make the set countdowns exactly `requests`: the countdown tiles of the active profile
+    /// that have a date and want a notification. One whose target is already past doesn't
+    /// notify, so relaunching after the moment is quiet.
+    func syncCountdowns(_ requests: [CountdownRequest]) {
+        let now = self.now()
+        countdowns = Dictionary(
+            requests.filter { $0.target > now }.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         reschedule()
     }
 
@@ -228,8 +233,7 @@ final class TimerSessions {
         for timer in focusTimers.values {
             if case let .running(endsAt) = timer.state { deadlines.append(endsAt) }
         }
-        deadlines.append(contentsOf: armedAlarms.values)
-        deadlines.append(contentsOf: ringingAlarms.values.map { $0.addingTimeInterval(Self.ringDuration) })
+        if let alarm = alarmBook.nextDeadline { deadlines.append(alarm) }
         deadlines.append(contentsOf: countdowns.values.map(\.target))
         return deadlines.min()
     }
@@ -258,11 +262,14 @@ final class TimerSessions {
                 if options.notify { notifyFocusPhaseEnded(id, ended: ended, timer: timer) }
             }
         }
-        for (id, date) in armedAlarms where date <= now {
-            fireAlarm(id, at: now)
-        }
-        for (id, since) in ringingAlarms where now.timeIntervalSince(since) >= Self.ringDuration {
-            stopAlarm(id)
+        for event in alarmBook.advance(to: now) {
+            switch event {
+            case let .rang(id):
+                ring(id, at: now)
+            case let .timedOut(id, outcome):
+                silence(id)
+                finish(id, outcome)
+            }
         }
         for (id, countdown) in countdowns where countdown.target <= now {
             countdowns[id] = nil
