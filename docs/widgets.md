@@ -132,6 +132,20 @@ How much of the year, month, week, or day has passed.
 | `showDay` | `"true"` or `"false"` | `"true"` | Show how much of the day has passed. |
 | `style` | One of `"bars"` or `"rings"` | `"bars"` | Draw each period as a horizontal bar with its percentage beside it, or as a ring with the percentage under it. |
 
+## Network
+
+Type ID: `com.newyorkcompute.opendock.widget.network`
+
+Download and upload speeds.
+
+| Key | Value | Default | What it does |
+| --- | --- | --- | --- |
+| `showDownload` | `"true"` or `"false"` | `"true"` | Show the download speed. |
+| `showUpload` | `"true"` or `"false"` | `"true"` | Show the upload speed. |
+| `showHistory` | `"true"` or `"false"` | `"true"` | Draw a sparkline of the last minute beside the speeds. |
+| `unit` | One of `"bytes"` or `"bits"` | `"bytes"` | Measure in bytes per second (KB/s, MB/s), as Finder counts, or in bits per second (Kb/s, Mb/s), as internet plans are sold. |
+| `interface` | Any text | `""` | The one interface to measure, by its BSD name such as "en0". Empty means every connected Wi-Fi, Ethernet and cellular link, leaving out loopback, VPN tunnels and the system's own interfaces. |
+
 <!-- END GENERATED -->
 
 ## Declaring settings in your own widget

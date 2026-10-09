@@ -266,4 +266,5 @@ public enum BuiltInWidgetID {
     public static let weather = "com.newyorkcompute.opendock.widget.weather"
     public static let nowPlaying = "com.newyorkcompute.opendock.widget.nowplaying"
     public static let timeProgress = "com.newyorkcompute.opendock.widget.timeprogress"
+    public static let network = "com.newyorkcompute.opendock.widget.network"
 }

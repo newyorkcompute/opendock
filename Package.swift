@@ -108,6 +108,12 @@ let package = Package(
             path: "Sources/Widgets/TimeProgressWidget",
             swiftSettings: uiSettings
         ),
+        .target(
+            name: "NetworkWidget",
+            dependencies: ["DockWidgetKit", "SystemServices"],
+            path: "Sources/Widgets/NetworkWidget",
+            swiftSettings: uiSettings
+        ),
 
         // MARK: Helpers
 
@@ -126,7 +132,7 @@ let package = Package(
             name: "BuiltInWidgets",
             dependencies: [
                 "DockWidgetKit", "ClockWidget", "BatteryWidget", "CalendarWidget", "SystemActivityWidget",
-                "WeatherWidget", "NowPlayingWidget", "TimeProgressWidget",
+                "WeatherWidget", "NowPlayingWidget", "TimeProgressWidget", "NetworkWidget",
             ],
             path: "Sources/Widgets/BuiltInWidgets",
             swiftSettings: uiSettings
