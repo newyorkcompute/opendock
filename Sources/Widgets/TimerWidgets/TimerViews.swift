@@ -2,28 +2,7 @@ import DockCore
 import DockWidgetKit
 import SwiftUI
 
-// Pieces the four time widgets share: a tile button, a ticking container, and a binding for
-// integer settings.
-
-/// Redraws its content every `interval` seconds while `active` and the dock is on screen,
-/// on ticks aligned to whole intervals so a clock's digits change on the second. Otherwise
-/// it redraws about once an hour and catches up as soon as it's needed again.
-struct TimerTicking<Content: View>: View {
-    let interval: TimeInterval
-    let active: Bool
-    @ViewBuilder let content: (Date) -> Content
-
-    @Environment(\.dockIsVisible) private var isVisible
-
-    var body: some View {
-        let period = active && isVisible ? interval : 3600
-        let start = Date(
-            timeIntervalSinceReferenceDate: (Date.now.timeIntervalSinceReferenceDate / period).rounded(.down) * period)
-        TimelineView(.periodic(from: start, by: period)) { context in
-            content(context.date)
-        }
-    }
-}
+// Pieces the four time widgets share: a tile button and some styling.
 
 /// A symbol button for a tile, sized from the icon size. `compact` tightens the hit area for
 /// a tile that is only an icon wide (on a side edge).

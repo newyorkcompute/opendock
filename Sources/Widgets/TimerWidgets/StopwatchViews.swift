@@ -16,7 +16,7 @@ struct StopwatchTileView: View {
 
     var body: some View {
         let stopwatch = sessions.stopwatch(for: id)
-        TimerTicking(interval: 1, active: stopwatch.isRunning) { now in
+        WidgetTicking(interval: 1, active: stopwatch.isRunning) { now in
             WidgetTile {
                 WidgetStack(spacing: iconSize * (edge.isVertical ? 0.08 : 0.16)) {
                     VStack(alignment: edge.isVertical ? .center : .leading, spacing: 0) {
@@ -75,7 +75,7 @@ struct StopwatchPopoutView: View {
 
     var body: some View {
         let stopwatch = sessions.stopwatch(for: id)
-        TimerTicking(interval: 0.1, active: stopwatch.isRunning) { now in
+        WidgetTicking(interval: 0.1, active: stopwatch.isRunning) { now in
             VStack(spacing: 12) {
                 VStack(spacing: 2) {
                     Text(TimerFormatting.stopwatch(stopwatch.elapsed(at: now), tenths: true))

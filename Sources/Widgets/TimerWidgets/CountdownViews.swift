@@ -17,7 +17,7 @@ struct CountdownTileView: View {
     var body: some View {
         let settings = self.settings
         let target = settings.target
-        TimerTicking(interval: 1, active: target != nil) { now in
+        WidgetTicking(interval: 1, active: target != nil) { now in
             let remaining = target.map { CountdownTarget.remaining(until: $0, from: now) }
             WidgetTile {
                 WidgetStack(spacing: iconSize * (edge.isVertical ? 0.06 : 0.14)) {
@@ -92,7 +92,7 @@ struct CountdownPopoutView: View {
             Text(settings.label.isEmpty ? "Countdown" : settings.label).font(.headline)
 
             if let target = settings.target {
-                TimerTicking(interval: 1, active: true) { now in
+                WidgetTicking(interval: 1, active: true) { now in
                     let remaining = CountdownTarget.remaining(until: target, from: now)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(TimerFormatting.longCountdown(remaining))

@@ -259,7 +259,9 @@ Guidelines:
   from `\.dockIconSize` too: it includes the tile's magnification, so the tile is laid
   out again, with sharp text, as it grows under the pointer. For a circular gauge, use
   `WidgetRing` rather than drawing your own.
-- Pause polling when `\.dockIsVisible` is false.
+- Pause polling when `\.dockIsVisible` is false. For a tile that redraws on a schedule,
+  wrap it in `WidgetTicking(interval:) { now in … }`, which already slows to an hourly
+  catch-up while the dock is hidden.
 - If the widget needs a permission, ask for it on its own only while
   `\.widgetsMayRequestAccess` is true. It's false while the welcome window is open on a
   fresh install.

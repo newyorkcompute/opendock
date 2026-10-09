@@ -6,24 +6,17 @@ import SwiftUI
 struct ClockTileView: View {
     let instance: WidgetInstance
 
-    @Environment(\.dockIsVisible) private var isVisible
     @Environment(\.dockEdge) private var edge
     @Environment(\.locale) private var locale
 
     var body: some View {
         let settings = ClockSettings(instance: instance)
-        // Only tick every second when seconds are shown *and* the dock is on screen.
-        let interval: TimeInterval = settings.showSeconds && isVisible ? 1 : 60
-        let start = Date(
-            timeIntervalSinceReferenceDate: (Date.now.timeIntervalSinceReferenceDate / interval).rounded(.down)
-                * interval)
-
-        TimelineView(.periodic(from: start, by: interval)) { context in
+        WidgetTicking(interval: settings.showSeconds ? 1 : 60) { now in
             WidgetTile {
                 // Centered in the narrow tile of a side edge.
                 VStack(alignment: edge.isVertical ? .center : .leading, spacing: 0) {
-                    WidgetPrimaryText(timeString(context.date, settings: settings))
-                    if let caption = caption(context.date, settings: settings) {
+                    WidgetPrimaryText(timeString(now, settings: settings))
+                    if let caption = caption(now, settings: settings) {
                         WidgetSecondaryText(caption)
                     }
                 }

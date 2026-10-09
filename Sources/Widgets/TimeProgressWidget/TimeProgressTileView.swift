@@ -8,24 +8,14 @@ struct TimeProgressTileView: View {
     let instance: WidgetInstance
 
     @Environment(\.dockIconSize) private var iconSize
-    @Environment(\.dockIsVisible) private var isVisible
     @Environment(\.dockEdge) private var edge
     @Environment(\.calendar) private var calendar
 
     var body: some View {
         let settings = TimeProgressSettings(instance: instance)
-        if isVisible {
-            // The day moves about 0.07% a minute, so a tick a minute is plenty. Off screen, the
-            // tile keeps whatever it last drew and catches up when the dock comes back.
-            let minute: TimeInterval = 60
-            let start = Date(
-                timeIntervalSinceReferenceDate: (Date.now.timeIntervalSinceReferenceDate / minute).rounded(.down)
-                    * minute)
-            TimelineView(.periodic(from: start, by: minute)) { context in
-                tile(at: context.date, settings: settings)
-            }
-        } else {
-            tile(at: .now, settings: settings)
+        // The day moves about 0.07% a minute, so a tick a minute is plenty.
+        WidgetTicking(interval: 60) { now in
+            tile(at: now, settings: settings)
         }
     }
 

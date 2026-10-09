@@ -19,7 +19,7 @@ struct AlarmTileView: View {
         let settings = self.settings
         let ringing = sessions.isRinging(id)
         let next = sessions.armedAlarms[id]
-        TimerTicking(interval: 60, active: settings.isEnabled) { now in
+        WidgetTicking(interval: 60, active: settings.isEnabled) { now in
             WidgetTile {
                 WidgetStack(spacing: iconSize * (edge.isVertical ? 0.06 : 0.14)) {
                     bell(ringing: ringing, enabled: settings.isEnabled)
