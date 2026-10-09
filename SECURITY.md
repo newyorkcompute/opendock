@@ -25,6 +25,6 @@ OpenDock is in early development. Security fixes go into `main` and the latest r
 
 ## Scope
 
-OpenDock isn't sandboxed. It launches apps and opens files, reads your calendars when you
+OpenDock isn't sandboxed. It launches apps and opens files, reads your calendars and reminders when you
 grant access, and imports layout files in JSON. Problems in any of these areas are in scope,
 for example a crafted layout file that runs code or opens something you didn't ask for.

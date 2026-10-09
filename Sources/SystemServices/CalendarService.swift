@@ -164,17 +164,10 @@ public final class CalendarService {
             startDate: start,
             endDate: event.endDate ?? start,
             isAllDay: event.isAllDay,
-            calendarColorHex: hex(for: event.calendar?.cgColor),
+            calendarColorHex: EventKitColors.hex(for: event.calendar?.cgColor),
             location: location?.isEmpty == false ? location : nil,
             conferenceURL: conferenceURL(url: event.url, location: location, notes: event.notes)
         )
-    }
-
-    private static func hex(for color: CGColor?) -> String {
-        guard let color, let srgb = NSColor(cgColor: color)?.usingColorSpace(.sRGB) else { return "#0A84FF" }
-        func byte(_ value: CGFloat) -> Int { Int((min(max(value, 0), 1) * 255).rounded()) }
-        return String(
-            format: "#%02X%02X%02X", byte(srgb.redComponent), byte(srgb.greenComponent), byte(srgb.blueComponent))
     }
 
     private static let conferenceHosts = [

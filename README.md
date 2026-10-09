@@ -76,7 +76,8 @@ Dock. You can keep both, or have OpenDock hide Apple's while it runs. Inspired b
 - Keyboard control: a global shortcut shows the dock and selects an item; arrow keys move
   along it, Return opens, Space browses a folder or opens a widget, Delete removes, Escape
   puts the keyboard back. The selection is announced to VoiceOver
-- Widgets: Clock, Battery, Calendar, System Activity, Weather, Now Playing, Time Progress, and Network
+- Widgets: Clock, Battery, Calendar, System Activity, Weather, Now Playing, Time Progress, Network, and
+  Reminders
 - Settings window with General, Profiles, Dock Items, Widgets, and About tabs
 - Export and import your layout as JSON
 - Launch at login
@@ -103,11 +104,12 @@ popover with more detail. Each widget has its own options in Settings > Dock Ite
 | Now Playing | Artwork, title and artist of whatever is playing in any app, with previous, play/pause and next buttons; hidden while nothing plays | The album, a position bar, bigger controls, and an Open button for the player | Buttons, stay visible when idle |
 | Time Progress | How much of the year, month, week, and day has passed, as bars or rings with a percentage | All four periods with a precise percentage, the day of the period, and what's left | Which periods to show; bars or rings |
 | Network | Download and upload speeds with a one-minute sparkline | A bigger chart, each connected interface with its speeds and addresses, and a shortcut to Network Settings | Which speeds to show, history, bytes or bits, interface |
+| Reminders | How many reminders are waiting, and the list's name | Your reminders grouped into overdue, today, upcoming, and no date, each with a circle to complete it, and a shortcut to Reminders | Which list, all or only due today, list name |
 
 The Calendar widget asks for calendar access when it first appears (on a fresh install,
-once the welcome window is closed). Without access it
-shows "Tap to allow", and its popover has a button to allow access or open Privacy
-Settings. The Now Playing widget reads the system's Now Playing (the same data as Control
+once the welcome window is closed), and the Reminders widget asks for reminders access the
+same way. Without access they show "Tap to allow", and their popovers have a button to allow
+access or open Privacy Settings. The Now Playing widget reads the system's Now Playing (the same data as Control
 Center) through a small helper run by `/usr/bin/perl`; if that isn't available it asks
 Music and Spotify directly, and macOS asks you once to allow that. The keys each widget stores in
 `dock.json` are listed in [docs/widgets.md](docs/widgets.md). To build your own widget,

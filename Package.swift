@@ -114,6 +114,12 @@ let package = Package(
             path: "Sources/Widgets/NetworkWidget",
             swiftSettings: uiSettings
         ),
+        .target(
+            name: "RemindersWidget",
+            dependencies: ["DockWidgetKit", "SystemServices"],
+            path: "Sources/Widgets/RemindersWidget",
+            swiftSettings: uiSettings
+        ),
 
         // MARK: Helpers
 
@@ -132,7 +138,7 @@ let package = Package(
             name: "BuiltInWidgets",
             dependencies: [
                 "DockWidgetKit", "ClockWidget", "BatteryWidget", "CalendarWidget", "SystemActivityWidget",
-                "WeatherWidget", "NowPlayingWidget", "TimeProgressWidget", "NetworkWidget",
+                "WeatherWidget", "NowPlayingWidget", "TimeProgressWidget", "NetworkWidget", "RemindersWidget",
             ],
             path: "Sources/Widgets/BuiltInWidgets",
             swiftSettings: uiSettings

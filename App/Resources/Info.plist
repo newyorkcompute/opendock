@@ -46,7 +46,9 @@
 	<key>NSCalendarsUsageDescription</key>
 	<string>OpenDock shows your upcoming events in the Calendar widget.</string>
 	<key>NSRemindersFullAccessUsageDescription</key>
-	<string>OpenDock can show your reminders in the dock.</string>
+	<string>OpenDock shows your reminders in the Reminders widget, and can mark them completed.</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>OpenDock shows your reminders in the Reminders widget, and can mark them completed.</string>
 	<!-- Asked only when a Weather widget set to Current Location is in the dock. -->
 	<key>NSLocationUsageDescription</key>
 	<string>OpenDock shows the weather for your location in the Weather widget.</string>
