@@ -82,32 +82,6 @@ public extension WidgetSettingsUpdater {
             }
         )
     }
-
-    /// For an `.integer` key, in a `Stepper`.
-    func intBinding(_ key: WidgetSettingKey, in instance: Binding<WidgetInstance>) -> Binding<Int> {
-        Binding(
-            get: { key.intValue(in: instance.wrappedValue.settings) },
-            set: { newValue in
-                instance.wrappedValue.settings[key.name] = String(newValue)
-                handler(instance.wrappedValue)
-            }
-        )
-    }
-
-    /// For a `.choice` key whose allowed values are `Choice`'s raw values, in a `Picker`
-    /// whose tags are `Choice` cases. A stored value that isn't one of them (including an
-    /// empty "not set" default) reads as `fallback`.
-    func choiceBinding<Choice: RawRepresentable>(
-        _ key: WidgetSettingKey, in instance: Binding<WidgetInstance>, default fallback: Choice
-    ) -> Binding<Choice> where Choice.RawValue == String {
-        Binding(
-            get: { Choice(rawValue: key.value(in: instance.wrappedValue.settings)) ?? fallback },
-            set: { newValue in
-                instance.wrappedValue.settings[key.name] = newValue.rawValue
-                handler(instance.wrappedValue)
-            }
-        )
-    }
 }
 
 /// Standard sizing helpers so all widgets agree on proportions.
