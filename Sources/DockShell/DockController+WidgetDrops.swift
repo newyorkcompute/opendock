@@ -17,6 +17,7 @@ extension DockController {
 
     func dragMovedOverWidget(_ id: DockItem.ID) {
         shellState.dropIndex = nil
+        shellState.rowPlacement = nil
         if shellState.dropTargetItemID != id { shellState.dropTargetItemID = id }
     }
 

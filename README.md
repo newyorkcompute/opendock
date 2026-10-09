@@ -67,7 +67,9 @@ Dock. You can keep both, or have OpenDock hide Apple's while it runs. Inspired b
 - Optionally hides Apple's Dock while it runs, and puts your Dock settings back when it quits
 - Drag items in the dock to reorder them, and drop apps or folders from Finder to add them.
   Drag an item well away from the dock and hold it there a moment to remove it, with a
-  puff of smoke, like the Dock
+  puff of smoke, like the Dock. Running and recent apps can be dragged in among the pinned
+  items to keep them there; a recent app dragged away is forgotten, and a running one
+  springs back
 - Right-click an app to see its windows and bring one to the front, and optionally click
   the active app's icon to minimize its windows (see [Window management](#window-management))
 - Profiles: keep several layouts (say, Work and Home) and switch between them from the menu

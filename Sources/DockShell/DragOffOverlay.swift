@@ -24,7 +24,7 @@ final class DragOffOverlayState {
     }
 }
 
-/// Covers the dock's screen while a pinned item is dragged off the dock (see
+/// Covers the dock's screen while one of the row's items is dragged off the dock (see
 /// `DockController+DragOff.swift`).
 ///
 /// It's a drag destination for the whole screen, so the dock hears where the drag is, and
