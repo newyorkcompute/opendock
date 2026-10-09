@@ -14,7 +14,8 @@ struct AlarmScheduleTests {
     }
 
     private func date(_ year: Int, _ month: Int, _ day: Int, _ hour: Int = 0, _ minute: Int = 0) -> Date {
-        calendar.date(from: DateComponents(year: year, month: month, day: day, hour: hour, minute: minute)) ?? .distantPast
+        calendar.date(from: DateComponents(year: year, month: month, day: day, hour: hour, minute: minute))
+            ?? .distantPast
     }
 
     @Test func parsesTwentyFourHourTimes() {

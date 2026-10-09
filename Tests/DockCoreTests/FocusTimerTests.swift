@@ -6,7 +6,8 @@ import Testing
 @Suite("Focus timer")
 struct FocusTimerTests {
     private let t0 = Date(timeIntervalSinceReferenceDate: 1_000_000)
-    private let plan = FocusTimer.Plan(focus: 25 * 60, shortBreak: 5 * 60, longBreak: 15 * 60, sessionsBeforeLongBreak: 4)
+    private let plan = FocusTimer.Plan(
+        focus: 25 * 60, shortBreak: 5 * 60, longBreak: 15 * 60, sessionsBeforeLongBreak: 4)
 
     @Test func startsIdleWithTheFullFocusSession() {
         let timer = FocusTimer(plan: plan)

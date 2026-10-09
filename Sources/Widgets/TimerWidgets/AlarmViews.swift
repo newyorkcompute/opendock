@@ -172,7 +172,8 @@ struct AlarmPopoutView: View {
         Binding(
             get: { settings.time.date(on: .now, calendar: .current) ?? .now },
             set: {
-                updater.set(AlarmSettings.time.name, to: AlarmTime(of: $0, calendar: .current).storageValue, in: instance)
+                updater.set(
+                    AlarmSettings.time.name, to: AlarmTime(of: $0, calendar: .current).storageValue, in: instance)
             }
         )
     }

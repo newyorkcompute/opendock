@@ -38,7 +38,8 @@ struct TimerFormattingTests {
         #expect(TimerFormatting.longCountdown(.init(days: 12, hours: 4, minutes: 3, seconds: 2)) == "12 days 4 hours")
         #expect(TimerFormatting.longCountdown(.init(days: 1, hours: 0, minutes: 3, seconds: 2)) == "1 day")
         #expect(TimerFormatting.longCountdown(.init(days: 0, hours: 1, minutes: 1, seconds: 2)) == "1 hour 1 minute")
-        #expect(TimerFormatting.longCountdown(.init(days: 0, hours: 0, minutes: 5, seconds: 9)) == "5 minutes 9 seconds")
+        #expect(
+            TimerFormatting.longCountdown(.init(days: 0, hours: 0, minutes: 5, seconds: 9)) == "5 minutes 9 seconds")
         #expect(TimerFormatting.longCountdown(.init(days: 0, hours: 0, minutes: 0, seconds: 1)) == "1 second")
         #expect(TimerFormatting.longCountdown(.init(days: 0, hours: 0, minutes: 0, seconds: 0)) == "Now")
         #expect(TimerFormatting.longCountdown(.past) == "Now")

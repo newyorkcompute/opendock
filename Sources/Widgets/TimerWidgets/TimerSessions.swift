@@ -250,7 +250,7 @@ final class TimerSessions {
     }
 
     private func fireDue() {
-        let now = now()
+        let now = self.now()
         for (id, var timer) in focusTimers where timer.isRunning {
             let options = focusOptions[id] ?? FocusOptions()
             if let ended = timer.tick(at: now, autoStart: options.autoStart) {

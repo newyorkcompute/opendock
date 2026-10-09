@@ -98,9 +98,11 @@ struct CountdownPopoutView: View {
                         Text(TimerFormatting.longCountdown(remaining))
                             .font(.title2.weight(.semibold))
                             .monospacedDigit()
-                        Text(remaining.isPast ? "Was \(CountdownText.dateLine(target))" : CountdownText.dateLine(target))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        Text(
+                            remaining.isPast ? "Was \(CountdownText.dateLine(target))" : CountdownText.dateLine(target)
+                        )
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     }
                 }
             } else {
