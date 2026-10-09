@@ -16,12 +16,14 @@ struct WidgetSchemaTests {
             "com.newyorkcompute.opendock.widget.systemactivity",
             "com.newyorkcompute.opendock.widget.weather",
             "com.newyorkcompute.opendock.widget.nowplaying",
+            "com.newyorkcompute.opendock.widget.timeprogress",
         ]
         #expect(BuiltInWidgets.all.map { $0.typeID } == pinned)
         #expect(
             [
                 BuiltInWidgetID.clock, BuiltInWidgetID.battery, BuiltInWidgetID.calendar,
                 BuiltInWidgetID.systemActivity, BuiltInWidgetID.weather, BuiltInWidgetID.nowPlaying,
+                BuiltInWidgetID.timeProgress,
             ] == pinned)
     }
 

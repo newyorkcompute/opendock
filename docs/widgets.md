@@ -118,6 +118,20 @@ What's playing, with play/pause and skip.
 | `showControls` | `"true"` or `"false"` | `"true"` | Show previous, play/pause and next buttons on the tile. |
 | `showWhenIdle` | `"true"` or `"false"` | `"false"` | Keep the tile in the dock while nothing is playing. When off, it takes no space at all. |
 
+## Time Progress
+
+Type ID: `com.newyorkcompute.opendock.widget.timeprogress`
+
+How much of the year, month, week, or day has passed.
+
+| Key | Value | Default | What it does |
+| --- | --- | --- | --- |
+| `showYear` | `"true"` or `"false"` | `"true"` | Show how much of the year has passed. |
+| `showMonth` | `"true"` or `"false"` | `"true"` | Show how much of the month has passed. |
+| `showWeek` | `"true"` or `"false"` | `"false"` | Show how much of the week has passed. The week starts on the day your region's calendar says it does. |
+| `showDay` | `"true"` or `"false"` | `"true"` | Show how much of the day has passed. |
+| `style` | One of `"bars"` or `"rings"` | `"bars"` | Draw each period as a horizontal bar with its percentage beside it, or as a ring with the percentage under it. |
+
 <!-- END GENERATED -->
 
 ## Declaring settings in your own widget
