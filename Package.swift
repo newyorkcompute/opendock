@@ -206,10 +206,11 @@ let package = Package(
             resources: [.copy("Fixtures")],
             swiftSettings: baseSettings
         ),
-        /// The built-in widgets' settings schemas, and that `docs/widgets.md` matches them.
+        /// The built-in widgets' settings schemas, that `docs/widgets.md` matches them, and
+        /// the presentation helpers of widgets listed here (`@testable import`).
         .testTarget(
             name: "WidgetTests",
-            dependencies: ["DockCore", "DockWidgetKit", "BuiltInWidgets"],
+            dependencies: ["DockCore", "DockWidgetKit", "BuiltInWidgets", "BatteryWidget", "CalendarWidget"],
             swiftSettings: baseSettings
         ),
     ]
