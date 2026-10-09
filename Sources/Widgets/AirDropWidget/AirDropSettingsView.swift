@@ -14,9 +14,8 @@ struct AirDropSettingsView: View {
     var body: some View {
         Form {
             Toggle("Show name", isOn: updater.boolBinding(AirDropSettings.showLabel, in: $instance))
-            Text("Drop files, folders, or links on the tile to AirDrop them. Click it to open AirDrop in Finder.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            WidgetCaption(
+                "Drop files, folders, or links on the tile to AirDrop them. Click it to open AirDrop in Finder.")
         }
     }
 }
