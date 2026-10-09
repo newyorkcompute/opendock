@@ -1,0 +1,74 @@
+{
+  "explains": [],
+  "count": 5,
+  "quotes": [
+    {
+      "exchange": "NMS",
+      "shortname": "Apple Inc.",
+      "quoteType": "EQUITY",
+      "symbol": "AAPL",
+      "index": "quotes",
+      "score": 2093500.0,
+      "typeDisp": "Equity",
+      "longname": "Apple Inc.",
+      "exchDisp": "NASDAQ",
+      "sector": "Technology",
+      "industry": "Consumer Electronics",
+      "isYahooFinance": true
+    },
+    {
+      "exchange": "FRA",
+      "shortname": "APPLE INC.",
+      "quoteType": "EQUITY",
+      "symbol": "APC.F",
+      "index": "quotes",
+      "score": 20223.0,
+      "typeDisp": "Equity",
+      "longname": "Apple Inc.",
+      "exchDisp": "Frankfurt",
+      "isYahooFinance": true
+    },
+    {
+      "exchange": "OPR",
+      "shortname": "AAPL Jan 2026 150.000 call",
+      "quoteType": "OPTION",
+      "symbol": "AAPL260116C00150000",
+      "index": "quotes",
+      "score": 20001.0,
+      "typeDisp": "Option",
+      "exchDisp": "OPR",
+      "isYahooFinance": true
+    },
+    {
+      "index": "quotes",
+      "score": 1000.0,
+      "quoteType": "ECNQUOTE",
+      "isYahooFinance": false
+    },
+    {
+      "exchange": "NYQ",
+      "quoteType": "ETF",
+      "symbol": "AAPB",
+      "index": "quotes",
+      "score": 300.0,
+      "typeDisp": "ETF",
+      "exchDisp": "NASDAQ",
+      "isYahooFinance": true
+    }
+  ],
+  "news": [],
+  "nav": [],
+  "lists": [],
+  "researchReports": [],
+  "screenerFieldResults": [],
+  "totalTime": 24,
+  "timeTakenForQuotes": 420,
+  "timeTakenForNews": 0,
+  "timeTakenForAlgowatchlist": 400,
+  "timeTakenForPredefinedScreener": 400,
+  "timeTakenForCrunchbase": 0,
+  "timeTakenForNav": 400,
+  "timeTakenForResearchReports": 0,
+  "timeTakenForScreenerField": 0,
+  "timeTakenForCulturalAssets": 0
+}

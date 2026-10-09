@@ -7,6 +7,7 @@ import NetworkWidget
 import NowPlayingWidget
 import RemindersWidget
 import StickyNoteWidget
+import StocksWidget
 import SystemActivityWidget
 import TimeProgressWidget
 import TimerWidgets
@@ -32,6 +33,7 @@ public enum BuiltInWidgets {
         StopwatchWidget.self,
         AlarmWidget.self,
         StickyNoteWidget.self,
+        StocksWidget.self,
     ]
 
     /// Settings schemas by type ID, for `DockStorage`.
