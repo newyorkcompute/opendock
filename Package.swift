@@ -151,8 +151,24 @@ let package = Package(
             path: "Sources/Widgets/AirDropWidget",
             swiftSettings: uiSettings
         ),
+        /// The host for widgets written in JavaScript (see `docs/scripted-widgets.md`).
+        .target(
+            name: "ScriptedWidgets",
+            dependencies: ["DockWidgetKit", "ScriptedWidgetRuntime", "SystemServices"],
+            path: "Sources/Widgets/ScriptedWidgets",
+            swiftSettings: uiSettings
+        ),
 
         // MARK: Helpers
+
+        /// Scripted widgets' package format, tile description, limits, and the JavaScriptCore
+        /// engine that runs them. No UI and no main-actor default, so the engine's actor and
+        /// the models can be used from anywhere and tested from the CLI.
+        .target(
+            name: "ScriptedWidgetRuntime",
+            dependencies: ["DockCore"],
+            swiftSettings: baseSettings
+        ),
 
         /// Reads the system-wide Now Playing state through MediaRemote. Built as a dynamic
         /// library that `SystemServices` runs inside Apple-signed `/usr/bin/perl`, because
@@ -171,6 +187,7 @@ let package = Package(
                 "DockWidgetKit", "ClockWidget", "BatteryWidget", "CalendarWidget", "SystemActivityWidget",
                 "WeatherWidget", "NowPlayingWidget", "TimeProgressWidget", "NetworkWidget", "RemindersWidget",
                 "TimerWidgets", "StickyNoteWidget", "StocksWidget", "ShortcutsWidget", "AirDropWidget",
+                "ScriptedWidgets",
             ],
             path: "Sources/Widgets/BuiltInWidgets",
             swiftSettings: uiSettings
@@ -211,6 +228,13 @@ let package = Package(
         .testTarget(
             name: "WidgetTests",
             dependencies: ["DockCore", "DockWidgetKit", "BuiltInWidgets", "BatteryWidget", "CalendarWidget"],
+            swiftSettings: baseSettings
+        ),
+        /// Manifest and tile decoding, limits, package loading, and (where JavaScriptCore
+        /// exists) the engine against `Examples/Widgets/hello`.
+        .testTarget(
+            name: "ScriptedWidgetTests",
+            dependencies: ["DockCore", "ScriptedWidgetRuntime"],
             swiftSettings: baseSettings
         ),
     ]

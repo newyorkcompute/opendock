@@ -276,4 +276,6 @@ public enum BuiltInWidgetID {
     public static let stocks = "com.newyorkcompute.opendock.widget.stocks"
     public static let shortcuts = "com.newyorkcompute.opendock.widget.shortcuts"
     public static let airDrop = "com.newyorkcompute.opendock.widget.airdrop"
+    /// The host for widgets written in JavaScript; which one is in the `package` setting.
+    public static let scripted = "com.newyorkcompute.opendock.widget.scripted"
 }

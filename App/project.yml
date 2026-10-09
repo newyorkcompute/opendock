@@ -120,6 +120,7 @@ schemes:
         - package: OpenDock/DockCoreTests
         - package: OpenDock/SystemServicesTests
         - package: OpenDock/WidgetTests
+        - package: OpenDock/ScriptedWidgetTests
     profile:
       config: Release
     analyze:
