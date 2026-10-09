@@ -1,4 +1,5 @@
 import AppKit
+import DockWidgetKit
 import SwiftUI
 import SystemServices
 

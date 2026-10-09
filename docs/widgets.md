@@ -146,6 +146,18 @@ Download and upload speeds.
 | `unit` | One of `"bytes"` or `"bits"` | `"bytes"` | Measure in bytes per second (KB/s, MB/s), as Finder counts, or in bits per second (Kb/s, Mb/s), as internet plans are sold. |
 | `interface` | Any text | `""` | The one interface to measure, by its BSD name such as "en0". Empty means every connected Wi-Fi, Ethernet and cellular link, leaving out loopback, VPN tunnels and the system's own interfaces. |
 
+## Reminders
+
+Type ID: `com.newyorkcompute.opendock.widget.reminders`
+
+How many reminders are waiting, and the list to tick them off.
+
+| Key | Value | Default | What it does |
+| --- | --- | --- | --- |
+| `listID` | Any text | `""` | The identifier of the list to show, as chosen in Settings. Empty, or a list that doesn't exist on this Mac, means every list. |
+| `scope` | One of `"all"` or `"today"` | `"all"` | Which reminders the tile counts and the popover lists: every incomplete reminder, or only those due today or overdue. |
+| `showListName` | `"true"` or `"false"` | `"true"` | Show the list's name under the count. When off, the tile is just the icon and the count. |
+
 <!-- END GENERATED -->
 
 ## Declaring settings in your own widget

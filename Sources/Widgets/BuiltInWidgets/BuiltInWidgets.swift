@@ -5,6 +5,7 @@ import DockCore
 import DockWidgetKit
 import NetworkWidget
 import NowPlayingWidget
+import RemindersWidget
 import SystemActivityWidget
 import TimeProgressWidget
 import WeatherWidget
@@ -23,6 +24,7 @@ public enum BuiltInWidgets {
         NowPlayingWidget.self,
         TimeProgressWidget.self,
         NetworkWidget.self,
+        RemindersWidget.self,
     ]
 
     /// Settings schemas by type ID, for `DockStorage`.

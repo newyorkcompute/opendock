@@ -136,9 +136,9 @@ struct WelcomeView: View {
             WelcomeCard {
                 WelcomeRow(
                     systemImage: "calendar",
-                    title: "Calendars",
+                    title: "Calendars and Reminders",
                     text:
-                        "The Calendar widget asks to read your events so it can show what’s next. On a new install, it waits until you close this window."
+                        "The Calendar widget asks to read your events so it can show what’s next, and the Reminders widget asks for your reminders. On a new install, they wait until you close this window."
                 )
                 WelcomeRow(
                     systemImage: "folder",
