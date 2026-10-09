@@ -17,6 +17,25 @@ public struct WidgetSettingKey: Hashable, Sendable, Identifiable {
         case number(ClosedRange<Double>)
         /// An IANA time zone identifier such as `"Europe/Oslo"`, or `""` for the system zone.
         case timeZone
+
+        /// Whether `value` is one of the strings this type describes, before a key's default
+        /// is taken into account.
+        public func accepts(_ value: String) -> Bool {
+            switch self {
+            case .bool:
+                return value == "true" || value == "false"
+            case .text:
+                return true
+            case let .choice(allowed):
+                return allowed.contains(value)
+            case let .integer(range):
+                return Int(value).map(range.contains) ?? false
+            case let .number(range):
+                return Double(value).map { $0.isFinite && range.contains($0) } ?? false
+            case .timeZone:
+                return value.isEmpty || TimeZone(identifier: value) != nil
+            }
+        }
     }
 
     public var id: String { name }
@@ -36,23 +55,9 @@ public struct WidgetSettingKey: Hashable, Sendable, Identifiable {
         self.summary = summary
     }
 
-    /// Whether `value` is something this key can hold.
+    /// Whether `value` is something this key can hold: anything its type accepts, or its default.
     public func isValid(_ value: String) -> Bool {
-        if value == defaultValue { return true }
-        switch type {
-        case .bool:
-            return value == "true" || value == "false"
-        case .text:
-            return true
-        case let .choice(allowed):
-            return allowed.contains(value)
-        case let .integer(range):
-            return Int(value).map(range.contains) ?? false
-        case let .number(range):
-            return Double(value).map { $0.isFinite && range.contains($0) } ?? false
-        case .timeZone:
-            return value.isEmpty || TimeZone(identifier: value) != nil
-        }
+        value == defaultValue || type.accepts(value)
     }
 
     /// The stored value when it's valid, otherwise the default.
