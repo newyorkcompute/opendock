@@ -242,7 +242,7 @@ struct StocksPopoutView: View {
                 }
                 .disabled(!canRefresh)
 
-                if StockStyle.stocksAppURL != nil {
+                if SystemApp.stocks.isInstalled {
                     Button("Open Stocks") {
                         StockStyle.openInStocks(shownSymbol)
                     }

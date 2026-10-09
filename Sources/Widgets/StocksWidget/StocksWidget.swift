@@ -95,12 +95,6 @@ enum StockStyle {
         }
     }
 
-    /// Apple's Stocks app, which ships with macOS 10.14 and later.
-    static var stocksAppURL: URL? {
-        let url = URL(fileURLWithPath: "/System/Applications/Stocks.app")
-        return FileManager.default.fileExists(atPath: url.path) ? url : nil
-    }
-
     /// Opens `symbol` in the Stocks app, or just the app when it doesn't take the URL.
     static func openInStocks(_ symbol: String?) {
         if let encoded = symbol?.addingPercentEncoding(withAllowedCharacters: .alphanumerics),
@@ -108,8 +102,6 @@ enum StockStyle {
         {
             return
         }
-        if let app = stocksAppURL {
-            NSWorkspace.shared.openApplication(at: app, configuration: NSWorkspace.OpenConfiguration())
-        }
+        SystemApp.stocks.open()
     }
 }
