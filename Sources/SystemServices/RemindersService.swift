@@ -100,7 +100,8 @@ public final class RemindersService {
         let generation = fetchGeneration
         let predicate = store.predicateForIncompleteReminders(
             withDueDateStarting: nil, ending: nil, calendars: nil)
-        _ = store.fetchReminders(matching: predicate) { [weak self] fetched in
+        // EventKit calls back on its own queue, so the mapping stays off the main actor.
+        _ = store.fetchReminders(matching: predicate) { @Sendable [weak self] fetched in
             let items = (fetched ?? []).map(Self.item(for:))
             Task { @MainActor [weak self] in
                 guard let self, generation == self.fetchGeneration else { return }
