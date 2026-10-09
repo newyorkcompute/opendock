@@ -5,15 +5,17 @@ import Foundation
 import Testing
 
 /// `docs/widgets.md` is generated from the built-in widgets' settings schemas. This fails
-/// when the two drift apart; `make widget-docs` rewrites the generated section.
+/// when the two drift apart; `make widget-docs` rewrites the generated section. It also
+/// checks that the README's hand-written Widgets table has a row for every widget.
 @MainActor
 @Suite("Widget docs")
 struct WidgetDocsTests {
-    private static let docsURL = URL(fileURLWithPath: #filePath)
+    private static let repoURL = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent() // WidgetTests
         .deletingLastPathComponent() // Tests
         .deletingLastPathComponent() // repo root
-        .appendingPathComponent("docs/widgets.md")
+    private static let docsURL = repoURL.appendingPathComponent("docs/widgets.md")
+    private static let readmeURL = repoURL.appendingPathComponent("README.md")
 
     private static let updateEnvironmentKey = "OPENDOCK_UPDATE_WIDGET_DOCS"
 
@@ -47,6 +49,17 @@ struct WidgetDocsTests {
         let document = try String(contentsOf: Self.docsURL, encoding: .utf8)
         for widget in BuiltInWidgets.all {
             #expect(document.contains("`\(widget.typeID)`"), "\(widget.displayName) is missing from docs/widgets.md")
+        }
+    }
+
+    /// The README's Widgets table is written by hand, one row per widget, starting with its
+    /// display name. Everything else in the README that lists widgets points at that table.
+    @Test func everyBuiltInWidgetHasAReadmeRow() throws {
+        let readme = try String(contentsOf: Self.readmeURL, encoding: .utf8)
+        for widget in BuiltInWidgets.all {
+            #expect(
+                readme.contains("\n| \(widget.displayName) |"),
+                "\(widget.displayName) has no row in the README's Widgets table")
         }
     }
 

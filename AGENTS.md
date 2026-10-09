@@ -15,7 +15,7 @@ Don't commit a generated project or add an Xcode project of your own.
 | `Sources/DockCore` | Models, profiles, geometry, and persistence (`DockStorage`, `DockStore`). No UI. |
 | `Sources/SystemServices` | Wrappers over macOS APIs: running apps, launching, icons, power, EventKit, hot keys, hiding Apple's Dock. |
 | `Sources/DockWidgetKit` | The `DockWidget` protocol, `WidgetRegistry`, shared tile views, environment values. |
-| `Sources/Widgets/*` | One target per built-in widget (`ClockWidget`, `TimerWidgets`, and so on; `docs/widgets.md` lists them all), plus `BuiltInWidgets`, the list of them. |
+| `Sources/Widgets/*` | One target per built-in widget (`ClockWidget`, `TimerWidgets`, and so on), plus `BuiltInWidgets`, the list of them. `docs/widgets.md` and the README's Widgets table cover every widget; tests check both. |
 | `Sources/DockShell` | The dock panel: `DockPanel`, `DockController` (frame math, auto-hide, magnification), views, drag and drop. |
 | `App/OpenDock` | The `@main` menu bar app, the AppKit-hosted Settings window, and menus. |
 | `App/Resources` | `Info.plist`, entitlements, app icon. |
