@@ -205,7 +205,7 @@ generates a git-ignored project; see
 | `DockCore` | Models (`DockItem`, `DockProfile`, `DockSettings`) and JSON persistence (`DockStore`). No UI, fully unit-tested. |
 | `DockWidgetKit` | The widget contract (`DockWidget`), the `WidgetRegistry`, shared tile views, and environment values. |
 | `SystemServices` | Thin wrappers over macOS APIs: running apps, power sources, EventKit, icons, launching, hiding Apple's Dock. |
-| `Widgets/*` | One target per built-in widget (`ClockWidget`, `BatteryWidget`, `CalendarWidget`, `SystemActivityWidget`, `WeatherWidget`). |
+| `Widgets/*` | One target per built-in widget (see [Widgets](#widgets) for the list), plus `BuiltInWidgets`, which registers them. |
 | `DockShell` | The dock panel: window, positioning, auto-hide, item views, drag and drop. |
 | `OpenDock` (`App/`) | The menu bar app: wires everything together, plus the menu, Settings window, and launch at login. |
 
