@@ -55,55 +55,34 @@ public final class CalendarService {
     /// Process-wide instance shared by all calendar tiles.
     public static let shared = CalendarService()
 
-    /// Current EventKit authorization for events.
-    public private(set) var authorizationStatus: EKAuthorizationStatus
+    /// The store, its authorization, and the refresh throttle.
+    public let access = EventKitAccess(entityType: .event)
     /// Today's events: all-day first, then by start time.
     public private(set) var todayEvents: [EventSummary] = []
-    /// Time of the last refresh, so views depending on "now" are invalidated.
-    public private(set) var lastRefresh = Date()
-
-    @ObservationIgnored private let store = EKEventStore()
-    @ObservationIgnored private var changeObserver: (any NSObjectProtocol)?
-    @ObservationIgnored private var hasPrompted = false
-    @ObservationIgnored private var lastRefreshTime: ContinuousClock.Instant?
 
     public init() {
-        authorizationStatus = EKEventStore.authorizationStatus(for: .event)
         refresh(force: true)
-        changeObserver = NotificationCenter.default.addObserver(
-            forName: .EKEventStoreChanged, object: store, queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.refresh(force: true) }
-        }
-    }
-
-    isolated deinit {
-        if let changeObserver { NotificationCenter.default.removeObserver(changeObserver) }
+        access.onChange = { [weak self] in self?.refresh(force: true) }
     }
 
     // MARK: Authorization
 
+    /// Current EventKit authorization for events.
+    public var authorizationStatus: EKAuthorizationStatus { access.authorizationStatus }
     /// True when full read access to events has been granted.
-    public var hasAccess: Bool { authorizationStatus == .fullAccess }
+    public var hasAccess: Bool { access.hasAccess }
     /// True when the user (or a profile) has explicitly refused access.
-    public var isDenied: Bool { authorizationStatus == .denied || authorizationStatus == .restricted }
+    public var isDenied: Bool { access.isDenied }
     /// True when the system hasn't asked the user yet.
-    public var isUndetermined: Bool { authorizationStatus == .notDetermined }
+    public var isUndetermined: Bool { access.isUndetermined }
+    /// Time of the last refresh, so views depending on "now" are invalidated.
+    public var lastRefresh: Date { access.lastRefresh }
 
     /// Asks the system for full calendar access and refreshes on completion.
-    public func requestAccess() async {
-        hasPrompted = true
-        _ = try? await store.requestFullAccessToEvents()
-        authorizationStatus = EKEventStore.authorizationStatus(for: .event)
-        refresh(force: true)
-    }
+    public func requestAccess() async { await access.requestAccess() }
 
     /// Requests access at most once per launch, and only if the user hasn't decided yet.
-    public func requestAccessIfNeeded() async {
-        authorizationStatus = EKEventStore.authorizationStatus(for: .event)
-        guard authorizationStatus == .notDetermined, !hasPrompted else { return }
-        await requestAccess()
-    }
+    public func requestAccessIfNeeded() async { await access.requestAccessIfNeeded() }
 
     // MARK: Events
 
@@ -118,12 +97,7 @@ public final class CalendarService {
     /// Re-reads today's events. Unless `force` is set, calls within 5 seconds of the last one are ignored,
     /// so several tiles can drive refreshes without duplicating work.
     public func refresh(force: Bool = false) {
-        let clock = ContinuousClock()
-        if !force, let last = lastRefreshTime, clock.now - last < .seconds(5) { return }
-        lastRefreshTime = clock.now
-
-        authorizationStatus = EKEventStore.authorizationStatus(for: .event)
-        lastRefresh = Date()
+        guard access.beginRefresh(force: force) else { return }
         guard hasAccess else {
             if !todayEvents.isEmpty { todayEvents = [] }
             return
@@ -133,8 +107,8 @@ public final class CalendarService {
         let start = calendar.startOfDay(for: lastRefresh)
         guard let end = calendar.date(byAdding: .day, value: 1, to: start) else { return }
 
-        let predicate = store.predicateForEvents(withStart: start, end: end, calendars: nil)
-        let events = store.events(matching: predicate)
+        let predicate = access.store.predicateForEvents(withStart: start, end: end, calendars: nil)
+        let events = access.store.events(matching: predicate)
             .filter { $0.status != .canceled }
             .map(Self.summary(for:))
             .sorted {
