@@ -19,8 +19,11 @@ struct TimeProgressSettingsView: View {
             Toggle("Day", isOn: updater.boolBinding(TimeProgressSettings.showDay, in: $instance))
             WidgetCaption("The tile shows the day when every period is turned off.")
 
-            Picker("Style", selection: updater.choiceBinding(TimeProgressSettings.style, in: $instance, default: .bars))
-            {
+            Picker(
+                "Style",
+                selection: updater.choiceBinding(
+                    TimeProgressSettings.style, in: $instance, default: TimeProgressSettings.Style.bars)
+            ) {
                 Text("Bars").tag(TimeProgressSettings.Style.bars)
                 Text("Rings").tag(TimeProgressSettings.Style.rings)
             }

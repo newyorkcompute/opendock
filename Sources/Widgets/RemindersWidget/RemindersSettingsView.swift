@@ -35,7 +35,10 @@ struct RemindersSettingsView: View {
                 }
             }
 
-            Picker("Show", selection: updater.choiceBinding(RemindersSettings.scope, in: $instance, default: .all)) {
+            Picker(
+                "Show",
+                selection: updater.choiceBinding(RemindersSettings.scope, in: $instance, default: ReminderScope.all)
+            ) {
                 Text("All reminders").tag(ReminderScope.all)
                 Text("Due today and overdue").tag(ReminderScope.today)
             }

@@ -35,7 +35,9 @@ struct WeatherSettingsView: View {
             }
 
             Picker(
-                "Caption", selection: updater.choiceBinding(WeatherSettings.caption, in: $instance, default: .location)
+                "Caption",
+                selection: updater.choiceBinding(
+                    WeatherSettings.caption, in: $instance, default: WeatherSettings.Caption.location)
             ) {
                 Text("Location name").tag(WeatherSettings.Caption.location)
                 Text("Conditions").tag(WeatherSettings.Caption.condition)
