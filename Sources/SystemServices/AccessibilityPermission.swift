@@ -78,9 +78,6 @@ public final class SystemAccessibilityPermissionBackend: AccessibilityPermission
     }
 
     public func openSystemSettings() {
-        guard
-            let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
-        else { return }
-        NSWorkspace.shared.open(url)
+        SystemSettingsPane.accessibility.open()
     }
 }

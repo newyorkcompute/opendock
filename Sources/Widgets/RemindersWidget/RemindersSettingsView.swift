@@ -57,13 +57,7 @@ struct RemindersSettingsView: View {
             }
         } else if service.isDenied {
             LabeledContent("Reminders access") {
-                Button("Open Privacy Settings") {
-                    if let url = URL(
-                        string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Reminders")
-                    {
-                        NSWorkspace.shared.open(url)
-                    }
-                }
+                Button("Open Privacy Settings") { SystemSettingsPane.reminders.open() }
             }
             Text("Reminders access is off, so the tile can't show your lists.")
                 .font(.caption)

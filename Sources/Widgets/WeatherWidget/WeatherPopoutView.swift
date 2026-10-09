@@ -233,8 +233,6 @@ struct WeatherPopoutView: View {
     }
 
     static func openLocationPrivacySettings() {
-        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_LocationServices") {
-            NSWorkspace.shared.open(url)
-        }
+        SystemSettingsPane.locationServices.open()
     }
 }
