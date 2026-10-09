@@ -6,6 +6,7 @@ import DockWidgetKit
 import NetworkWidget
 import NowPlayingWidget
 import RemindersWidget
+import ShortcutsWidget
 import StickyNoteWidget
 import StocksWidget
 import SystemActivityWidget
@@ -34,6 +35,7 @@ public enum BuiltInWidgets {
         AlarmWidget.self,
         StickyNoteWidget.self,
         StocksWidget.self,
+        ShortcutsWidget.self,
     ]
 
     /// Settings schemas by type ID, for `DockStorage`.
