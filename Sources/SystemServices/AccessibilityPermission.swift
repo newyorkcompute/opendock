@@ -16,7 +16,8 @@ public protocol AccessibilityPermissionBackend: AnyObject {
 }
 
 /// Whether macOS lets OpenDock use Accessibility, for every feature that needs it: the
-/// windows in an app's menu, click-to-minimize, and badges read from Apple's Dock.
+/// windows in an app's menu, click-to-minimize, minimized windows in the dock, and badges
+/// read from Apple's Dock.
 ///
 /// One instance is shared by all of them, so they agree on the answer, the user is asked
 /// once, and Settings shows the permission in one place. It is only ever requested when the

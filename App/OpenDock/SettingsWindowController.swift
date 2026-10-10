@@ -17,6 +17,7 @@ final class SettingsWindowController: NSWindowController {
         registry: WidgetRegistry,
         launchAtLogin: LaunchAtLogin,
         accessibility: AccessibilityPermission,
+        screenRecording: ScreenRecordingPermission,
         profiles: ProfileSwitcher,
         focus: FocusModeMonitor,
         hotKeys: GlobalHotKeys,
@@ -30,6 +31,7 @@ final class SettingsWindowController: NSWindowController {
                 .environment(registry)
                 .environment(launchAtLogin)
                 .environment(accessibility)
+                .environment(screenRecording)
                 .environment(profiles)
                 .environment(focus)
                 .environment(hotKeys)

@@ -6,6 +6,7 @@ import Foundation
 /// one place.
 public enum SystemSettingsPane: String, CaseIterable, Sendable {
     case accessibility = "com.apple.preference.security?Privacy_Accessibility"
+    case screenRecording = "com.apple.preference.security?Privacy_ScreenCapture"
     case automation = "com.apple.preference.security?Privacy_Automation"
     case fullDiskAccess = "com.apple.preference.security?Privacy_AllFiles"
     case calendars = "com.apple.preference.security?Privacy_Calendars"

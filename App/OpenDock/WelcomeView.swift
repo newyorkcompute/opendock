@@ -150,7 +150,7 @@ struct WelcomeView: View {
                     systemImage: "macwindow.on.rectangle",
                     title: "Accessibility",
                     text:
-                        "App badges, the window list, and click-to-minimize use Accessibility access. OpenDock asks when you turn one on or choose Allow Access in Settings."
+                        "App badges, the window list, minimized windows, and click-to-minimize use Accessibility access. OpenDock asks when you turn one on or choose Allow Access in Settings, never at launch."
                 )
             }
             Text("You can open this guide again from the OpenDock menu in the menu bar.")

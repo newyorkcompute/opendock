@@ -126,6 +126,10 @@ extension DockController {
             showAppMenu(for: target.app, id: target.id)
             return true
         }
+        if let window = minimizedWindow(at: point) {
+            showMinimizedWindowMenu(for: window)
+            return true
+        }
         if isTrash(at: point) {
             showTrashMenu()
             return true

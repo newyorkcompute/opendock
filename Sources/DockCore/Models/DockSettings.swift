@@ -61,6 +61,9 @@ public struct DockSettings: Hashable, Codable, Sendable {
     public var showRecentApps: Bool
     /// How many recent apps to show at most.
     public var recentAppsCount: Int
+    /// Show each minimized window as its own item after the running and recent apps,
+    /// before the Trash. Needs Accessibility access; nothing is looked up until it's granted.
+    public var showMinimizedWindows: Bool
     /// Show the dock over a full-screen app while the pointer is held at the screen edge,
     /// like Apple's Dock. Off, the dock never appears on full-screen Spaces.
     public var revealInFullScreen: Bool
@@ -90,6 +93,7 @@ public struct DockSettings: Hashable, Codable, Sendable {
         showBadges: Bool = true,
         showRecentApps: Bool = false,
         recentAppsCount: Int = 3,
+        showMinimizedWindows: Bool = true,
         revealInFullScreen: Bool = true,
         focusRules: FocusProfileRules = .default,
         keyboardNavigationHotKey: HotKey? = nil
@@ -113,6 +117,7 @@ public struct DockSettings: Hashable, Codable, Sendable {
         self.showBadges = showBadges
         self.showRecentApps = showRecentApps
         self.recentAppsCount = recentAppsCount.clamped(to: Self.recentAppsCountRange)
+        self.showMinimizedWindows = showMinimizedWindows
         self.revealInFullScreen = revealInFullScreen
         self.focusRules = focusRules
         self.keyboardNavigationHotKey = keyboardNavigationHotKey
@@ -182,6 +187,8 @@ extension DockSettings {
         showRecentApps = (try? c.decodeIfPresent(Bool.self, forKey: .showRecentApps)) ?? d.showRecentApps
         recentAppsCount = ((try? c.decodeIfPresent(Int.self, forKey: .recentAppsCount)) ?? d.recentAppsCount)
             .clamped(to: Self.recentAppsCountRange)
+        showMinimizedWindows =
+            (try? c.decodeIfPresent(Bool.self, forKey: .showMinimizedWindows)) ?? d.showMinimizedWindows
         revealInFullScreen = (try? c.decodeIfPresent(Bool.self, forKey: .revealInFullScreen)) ?? d.revealInFullScreen
         focusRules = (try? c.decodeIfPresent(FocusProfileRules.self, forKey: .focusRules)) ?? d.focusRules
         keyboardNavigationHotKey =

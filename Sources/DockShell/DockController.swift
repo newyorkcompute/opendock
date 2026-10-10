@@ -12,7 +12,7 @@ import os
 /// ```swift
 /// let controller = DockController(
 ///     store: store, registry: registry, running: running, windows: windows, badges: badges,
-///     actions: actions)
+///     minimizedWindows: minimizedWindows, actions: actions)
 /// controller.start()
 /// ```
 @MainActor
@@ -23,6 +23,8 @@ public final class DockController {
     /// Windows for app menus and click-to-minimize.
     public let windows: AppWindowManager
     public let badges: DockBadgeMonitor
+    /// Minimized windows shown before the Trash. Started and stopped with the setting.
+    public let minimizedWindows: MinimizedWindowMonitor
     public let shellState = DockShellState()
     public var actions: DockActions
 
@@ -84,6 +86,9 @@ public final class DockController {
     var keyboardMonitors: [Any] = []
     var keyboardObservers: [any NSObjectProtocol] = []
     var popoverRequestSerial = 0
+    /// Notices the app becoming active, so a permission granted in System Settings starts
+    /// the minimized windows without a timer. Installed for the life of the panel.
+    var activationObserver: (any NSObjectProtocol)?
 
     private let log = Logger(subsystem: "com.newyorkcompute.opendock", category: "DockController")
 
@@ -93,6 +98,7 @@ public final class DockController {
         running: RunningAppsMonitor,
         windows: AppWindowManager,
         badges: DockBadgeMonitor,
+        minimizedWindows: MinimizedWindowMonitor,
         actions: DockActions = .noop
     ) {
         self.store = store
@@ -100,6 +106,7 @@ public final class DockController {
         self.running = running
         self.windows = windows
         self.badges = badges
+        self.minimizedWindows = minimizedWindows
         self.actions = actions
     }
 
@@ -116,6 +123,8 @@ public final class DockController {
             .environment(badges)
             .environment(trash)
             .environment(shellState)
+            .environment(minimizedWindows.accessibility)
+            .environment(minimizedWindows.screenRecording)
         let hosting = DockHostingView(rootView: root)
         hosting.sizingOptions = []
         hosting.translatesAutoresizingMaskIntoConstraints = true
@@ -144,6 +153,7 @@ public final class DockController {
 
         installContextClickMonitor()
         installScrollMonitor()
+        observeActivationForMinimizedWindows()
         launchMonitor.onLaunchEnded = { [weak self] app in self?.launchEnded(app) }
     }
 
@@ -176,6 +186,9 @@ public final class DockController {
         menuObservers.forEach(NotificationCenter.default.removeObserver)
         menuObservers = []
         removeContextClickMonitor()
+        if let activationObserver { NotificationCenter.default.removeObserver(activationObserver) }
+        activationObserver = nil
+        minimizedWindows.stop()
         dismissDragOffOverlay()
         panel?.orderOut(nil)
         panel = nil

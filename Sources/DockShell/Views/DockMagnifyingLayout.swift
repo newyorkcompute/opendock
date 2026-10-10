@@ -3,11 +3,13 @@ import SwiftUI
 import SystemServices
 
 /// An item in the dock row: one of the pinned items, a running app shown after them, a
-/// recently used app shown after those, or the Trash at the very end.
+/// recently used app shown after those, a minimized window after those, or the Trash at
+/// the very end.
 nonisolated enum DockRowItemID: Hashable, Sendable {
     case pinned(DockItem.ID)
     case running(RunningDockApp.ID)
     case recent(RecentDockApp.ID)
+    case minimized(MinimizedDockWindow.ID)
     case trash
 
     var pinnedID: DockItem.ID? {
@@ -15,14 +17,14 @@ nonisolated enum DockRowItemID: Hashable, Sendable {
         return nil
     }
 
-    /// What dragging this item does (see `DockRowDrag`); nil for the Trash, which can't be
-    /// dragged.
+    /// What dragging this item does (see `DockRowDrag`); nil for a minimized window and the
+    /// Trash, which can't be dragged.
     var dragItem: DockRowDrag.Item? {
         switch self {
         case .pinned: .pinned
         case .running: .running
         case .recent: .recent
-        case .trash: nil
+        case .minimized, .trash: nil
         }
     }
 }

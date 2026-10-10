@@ -177,7 +177,7 @@ extension DockController {
         case let .pinned(pinnedID): store.profile.item(id: pinnedID)?.appItem
         case let .running(runningID): runningSection.first { $0.id == runningID }?.app
         case let .recent(recentID): recentSection.first { $0.id == recentID }?.app
-        case .trash: nil
+        case .minimized, .trash: nil
         }
     }
 

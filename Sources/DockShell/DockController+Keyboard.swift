@@ -103,6 +103,7 @@ extension DockController {
         return
             (store.items.filter { !$0.isSpacer && !$0.isDivider }.map { DockRowItemID.pinned($0.id) }
             + runningSection.map { .running($0.id) } + recentSection.map { .recent($0.id) }
+            + minimizedWindows.windows.map { .minimized($0.id) }
             + (store.showsTrash ? [.trash] : []))
             .filter { !hidden.contains($0) }
     }
@@ -110,7 +111,7 @@ extension DockController {
     /// The app `id` stands for, when it's one of the apps after the pinned items.
     private func sectionApp(for id: DockRowItemID) -> AppItem? {
         switch id {
-        case .pinned, .trash: return nil
+        case .pinned, .minimized, .trash: return nil
         case let .running(appID): return runningSection.first { $0.id == appID }?.app
         case let .recent(appID): return recentSection.first { $0.id == appID }?.app
         }
@@ -161,6 +162,10 @@ extension DockController {
             guard let app = sectionApp(for: id) else { return }
             endKeyboardNavigation()
             open(app)
+        case let .minimized(windowID):
+            guard let window = minimizedWindows.windows.first(where: { $0.id == windowID }) else { return }
+            endKeyboardNavigation()
+            restoreMinimizedWindow(window)
         case .trash:
             endKeyboardNavigation()
             openTrash()
@@ -184,6 +189,9 @@ extension DockController {
         case .running, .recent:
             guard let app = sectionApp(for: id) else { return }
             showAppMenu(for: app, id: id, at: menuLocation(for: id))
+        case let .minimized(windowID):
+            guard let window = minimizedWindows.windows.first(where: { $0.id == windowID }) else { return }
+            showMinimizedWindowMenu(for: window, at: menuLocation(for: id))
         case .trash:
             showTrashMenu(at: menuLocation(for: id))
         }
@@ -237,6 +245,8 @@ extension DockController {
             }
         case .running, .recent:
             return sectionApp(for: id)?.displayName
+        case let .minimized(windowID):
+            return minimizedWindows.windows.first { $0.id == windowID }?.label
         case .trash:
             return "Trash"
         }

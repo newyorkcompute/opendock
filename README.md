@@ -72,6 +72,9 @@ Dock. You can keep both, or have OpenDock hide Apple's while it runs. Inspired b
   springs back
 - Right-click an app to see its windows and bring one to the front, and optionally click
   the active app's icon to minimize its windows (see [Window management](#window-management))
+- Minimized windows sit at the end of the dock, before the Trash, each with its title.
+  Clicking one restores it. A thumbnail appears when Screen Recording is already allowed;
+  otherwise the item is the app's icon with a small window glyph
 - Profiles: keep several layouts (say, Work and Home) and switch between them from the menu
   bar, with your own global shortcuts, or by swiping sideways on the dock (⌘-scroll works
   with a mouse). A Focus mode can switch profiles too (see [Focus modes](#focus-modes))
@@ -162,13 +165,26 @@ front. With "Click the active app's icon to minimize its windows" on (Settings >
 Behavior), clicking the icon of the app you're using minimizes its windows, and clicking it
 again restores them.
 
-Both need Accessibility access (as do app badges), because macOS only lets apps see and
-arrange other apps' windows through the Accessibility API. OpenDock doesn't ask at launch.
-It asks when you turn on click-to-minimize or badges, or choose "Allow Access to Windows…"
-in an app's menu, and Settings > General > Accessibility shows whether it's allowed; you
-can allow it in System Settings > Privacy & Security > Accessibility at any time. OpenDock
-only reads window titles and whether a window is minimized; it doesn't read what's in your
-windows. Without access, the dock works as before.
+Both need Accessibility access (as do app badges and minimized windows in the dock), because
+macOS only lets apps see and arrange other apps' windows through the Accessibility API.
+OpenDock doesn't ask at launch. It asks when you turn on click-to-minimize, badges, or
+minimized windows, or choose "Allow Access to Windows…" in an app's menu, and Settings >
+General > Accessibility shows whether it's allowed; you can allow it in System Settings >
+Privacy & Security > Accessibility at any time. OpenDock only reads window titles and
+whether a window is minimized; it doesn't read what's in your windows. Without access, the
+dock works as before.
+
+With "Show minimized windows" on (Settings > Dock Items, and on by default), each minimized
+window is its own item at the end of the dock, after running and recent apps and before the
+Trash. The label is the window's title. Clicking it restores the window and brings the app
+forward; right-clicking offers Restore and Close. The list updates as windows are minimized,
+restored, or closed, and OpenDock doesn't look for them until Accessibility access is
+allowed.
+
+A thumbnail of the window is shown when Screen Recording is already allowed. OpenDock never
+asks for Screen Recording on its own; Settings > Dock Items explains it and offers the
+prompt. Without that permission, the item is the app's icon with a small window glyph.
+Nothing is recorded or saved. Allowing Screen Recording may need a restart of OpenDock.
 
 ## Focus modes
 
