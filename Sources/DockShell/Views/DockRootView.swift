@@ -313,8 +313,19 @@ struct DockItemLabel: View {
 }
 
 private struct DockLabelBackground: View {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.colorSchemeContrast) private var colorSchemeContrast
+
+    private var increaseContrast: Bool { colorSchemeContrast == .increased }
+
     var body: some View {
-        if #available(macOS 26.0, *) {
+        if reduceTransparency || increaseContrast {
+            Capsule().fill(Color(nsColor: .windowBackgroundColor))
+                .overlay(
+                    Capsule().strokeBorder(
+                        .primary.opacity(increaseContrast ? 1 : 0.35), lineWidth: increaseContrast ? 1 : 0.5)
+                )
+        } else if #available(macOS 26.0, *) {
             Capsule().fill(.clear).glassEffect(.regular, in: Capsule())
         } else {
             Capsule().fill(.regularMaterial)
@@ -329,19 +340,38 @@ struct DockMaterialBackground: View {
     let material: DockSettings.Material
     let cornerRadius: CGFloat
 
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.colorSchemeContrast) private var colorSchemeContrast
+
+    private var increaseContrast: Bool { colorSchemeContrast == .increased }
+
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-        switch material {
-        case .glass:
-            if #available(macOS 26.0, *) {
-                shape.fill(.clear).glassEffect(.regular, in: shape)
-            } else {
-                frosted(shape)
+        background(shape)
+            .overlay {
+                if increaseContrast {
+                    shape.strokeBorder(.primary, lineWidth: 1)
+                }
             }
-        case .frosted:
-            frosted(shape)
-        case .solid:
-            shape.fill(Color(nsColor: .windowBackgroundColor).opacity(0.96))
+    }
+
+    @ViewBuilder
+    private func background(_ shape: RoundedRectangle) -> some View {
+        if reduceTransparency {
+            shape.fill(Color(nsColor: .windowBackgroundColor))
+        } else {
+            switch material {
+            case .glass:
+                if #available(macOS 26.0, *) {
+                    shape.fill(.clear).glassEffect(.regular, in: shape)
+                } else {
+                    frosted(shape)
+                }
+            case .frosted:
+                frosted(shape)
+            case .solid:
+                shape.fill(Color(nsColor: .windowBackgroundColor).opacity(0.96))
+            }
         }
     }
 

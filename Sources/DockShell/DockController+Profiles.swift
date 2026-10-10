@@ -30,7 +30,7 @@ extension DockController {
         shellState.hoveredItemID = nil
         // The new row may be shorter; let the old one finish leaving before the window fits it.
         holdFrameSize(for: .milliseconds(450))
-        withAnimation(.dockProfileSwap) {
+        animateIfMotionAllowed(.dockProfileSwap) {
             store.selectProfile(id)
         }
         showProfileBanner(profiles[newIndex].name)

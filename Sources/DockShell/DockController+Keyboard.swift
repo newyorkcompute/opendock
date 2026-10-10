@@ -61,7 +61,7 @@ extension DockController {
         guard shellState.isVisible else { return }
         releaseKeyboard()
         shellState.hoveredItemID = nil
-        withAnimation(.dockDemagnify) { shellState.magnification = 0 }
+        animateIfMotionAllowed(.dockDemagnify) { shellState.magnification = 0 }
     }
 
     /// The pointer came to rest on `id`: the selection follows it, quietly.
@@ -93,7 +93,7 @@ extension DockController {
     func presentKeyboardSelection() {
         shellState.hoveredItemID = keyboard.selectedID
         guard keyboard.selectedID != nil, shellState.magnification != 1 else { return }
-        withAnimation(.dockMagnify) { shellState.magnification = 1 }
+        animateIfMotionAllowed(.dockMagnify) { shellState.magnification = 1 }
     }
 
     /// The items the keyboard can select, in row order: everything that gets a label, less

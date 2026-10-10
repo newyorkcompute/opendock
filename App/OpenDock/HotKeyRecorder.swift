@@ -19,6 +19,8 @@ struct HotKeyRecorder: View {
                         .monospacedDigit()
                         .frame(minWidth: 110)
                 }
+                .accessibilityLabel("Shortcut")
+                .accessibilityValue(shortcutValue)
                 if hotKey != nil, !recorder.isRecording {
                     Button {
                         hotKey = nil
@@ -28,6 +30,7 @@ struct HotKeyRecorder: View {
                     }
                     .buttonStyle(.borderless)
                     .help("Clear Shortcut")
+                    .accessibilityLabel("Clear Shortcut")
                 }
             }
             if let note {
@@ -42,6 +45,12 @@ struct HotKeyRecorder: View {
     private var title: String {
         if recorder.isRecording { return "Type Shortcut…" }
         return hotKey.map(HotKeyFormatter.string(for:)) ?? "Record Shortcut"
+    }
+
+    /// Words, not the glyphs the button shows. "None" until a shortcut is recorded.
+    private var shortcutValue: String {
+        if recorder.isRecording { return "Type shortcut" }
+        return hotKey.map(HotKeyFormatter.spokenString(for:)) ?? "None"
     }
 
     private var note: String? {
@@ -95,10 +104,15 @@ final class HotKeyRecording {
         hint = nil
         isRecording = true
         monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown]) { [weak self] event in
+            let device = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            // VoiceOver chords are Control-Option, sometimes with Shift. Leave those
+            // alone unless Command is held, which is a shortcut being recorded.
+            if device.contains(.control), device.contains(.option), !device.contains(.command) {
+                return event
+            }
             let keyCode = event.keyCode
-            let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask).rawValue
             MainActor.assumeIsolated {
-                self?.keyPressed(keyCode, flags: NSEvent.ModifierFlags(rawValue: flags))
+                self?.keyPressed(keyCode, flags: device)
             }
             return nil
         }

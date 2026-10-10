@@ -10,6 +10,36 @@ public enum HotKeyFormatter {
         hotKey.modifierSymbols + keyName(hotKey.keyCode)
     }
 
+    /// "Control Option Command Right Arrow", for VoiceOver. The menu string uses glyphs
+    /// ("⌃⌥⌘→") which VoiceOver reads poorly.
+    public static func spokenString(for hotKey: HotKey) -> String {
+        (spokenModifiers(hotKey.modifiers) + [spokenKeyName(hotKey.keyCode)]).joined(separator: " ")
+    }
+
+    public static func spokenModifiers(_ modifiers: HotKey.Modifiers) -> [String] {
+        var names: [String] = []
+        if modifiers.contains(.control) { names.append("Control") }
+        if modifiers.contains(.option) { names.append("Option") }
+        if modifiers.contains(.shift) { names.append("Shift") }
+        if modifiers.contains(.command) { names.append("Command") }
+        return names
+    }
+
+    /// A key's spoken name. Arrows and editing keys are words; letters stay the character
+    /// `keyName` gets from the keyboard layout.
+    public static func spokenKeyName(_ keyCode: UInt16) -> String {
+        if let name = spokenSpecialKeys[Int(keyCode)] { return name }
+        return keyName(keyCode)
+    }
+
+    private static let spokenSpecialKeys: [Int: String] = [
+        kVK_Return: "Return", kVK_ANSI_KeypadEnter: "Enter", kVK_Tab: "Tab", kVK_Space: "Space",
+        kVK_Delete: "Delete", kVK_ForwardDelete: "Forward Delete", kVK_Escape: "Escape",
+        kVK_Home: "Home", kVK_End: "End", kVK_PageUp: "Page Up", kVK_PageDown: "Page Down",
+        kVK_LeftArrow: "Left Arrow", kVK_RightArrow: "Right Arrow", kVK_DownArrow: "Down Arrow",
+        kVK_UpArrow: "Up Arrow",
+    ]
+
     public static func keyName(_ keyCode: UInt16) -> String {
         if let name = specialKeys[Int(keyCode)] { return name }
         return translated(keyCode) ?? "Key \(keyCode)"

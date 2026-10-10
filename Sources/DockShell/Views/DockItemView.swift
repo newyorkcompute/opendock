@@ -174,12 +174,15 @@ struct AppItemView: View {
         .onTapGesture {
             controller.appClicked(app)
         }
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel(app.displayName)
+        .accessibilityValue(DockItemAccessibility.appValue(exists: exists, isRunning: isRunning, badge: badge))
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction(.default) { controller.appClicked(app) }
         // Right-clicks open the menu through the controller (see `installContextClickMonitor`).
         .accessibilityAction(.showMenu) {
             controller.showAppMenu(for: app, id: rowID)
         }
-        .accessibilityValue(badge ?? "")
     }
 
     @ViewBuilder
@@ -254,7 +257,11 @@ struct FolderItemView: View {
             // Switching profiles can take the folder away with its popover still open.
             if showingContents { shellState.endInteraction() }
         }
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel(folder.displayName)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint("Opens in Finder")
+        .accessibilityAction(.default) { AppLauncher.open(folder) }
         .accessibilityAction(named: "Browse") { browse() }
         .contextMenu {
             Text(folder.displayName)
@@ -352,6 +359,9 @@ struct SpacerItemView: View {
                 maxHeight: vertical ? .infinity : iconSize
             )
             .contentShape(Rectangle())
+            .accessibilityElement()
+            .accessibilityLabel("Spacer")
+            .accessibilityHint("Empty space")
             .contextMenu {
                 Text("Spacer")
                 Divider()
@@ -440,7 +450,7 @@ struct WidgetItemView: View {
             // Switching profiles can take the tile away with its popover still open.
             if showingPopout { shellState.endInteraction() }
         }
-        .accessibilityLabel(registry.displayName(for: instance))
+        .widgetTileAccessibility(hasPopout: hasPopout) { showingPopout = true }
         .contextMenu {
             Text(registry.displayName(for: instance))
             Divider()
@@ -501,5 +511,23 @@ nonisolated struct WidgetMagnifier: Layout {
     private static func length(_ proposed: CGFloat?, or resting: CGFloat) -> CGFloat {
         guard let proposed, proposed.isFinite else { return resting }
         return proposed
+    }
+}
+
+extension View {
+    /// Keeps the tile's own label and value, and adds an Open action when the widget has
+    /// a popover. The shell used to set the widget's display name here, which could cover
+    /// the sentence the tile speaks.
+    @ViewBuilder
+    func widgetTileAccessibility(hasPopout: Bool, open: @escaping () -> Void) -> some View {
+        let combined = accessibilityElement(children: .combine)
+        if hasPopout {
+            combined
+                .accessibilityAddTraits(.isButton)
+                .accessibilityHint("Shows more")
+                .accessibilityAction(.default, open)
+        } else {
+            combined
+        }
     }
 }

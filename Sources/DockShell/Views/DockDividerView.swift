@@ -32,5 +32,6 @@ struct DividerItemView: View {
             .accessibilityElement()
             .accessibilityLabel("Divider")
             .accessibilityAddTraits(.isButton)
+            .accessibilityAction(.default) { controller.showDividerMenu(for: item.id) }
     }
 }
