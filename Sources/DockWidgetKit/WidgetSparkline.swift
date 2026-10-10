@@ -35,8 +35,8 @@ public struct WidgetSparklineSeries: View {
                             colors: [color.opacity(0.3), color.opacity(0.02)], startPoint: .top, endPoint: .bottom))
                 SparklineGeometry.line(through: points)
                     .stroke(
-                    color,
-                    style: StrokeStyle(lineWidth: max(1, proxy.size.height * lineWidthFraction), lineJoin: .round))
+                        color,
+                        style: StrokeStyle(lineWidth: max(1, proxy.size.height * lineWidthFraction), lineJoin: .round))
             }
         }
         .accessibilityHidden(true)
