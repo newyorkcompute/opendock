@@ -8,7 +8,8 @@ struct WidgetMetricsTests {
         #expect(WidgetMetrics.secondaryFontSize(for: 32) == 11)
         #expect(WidgetMetrics.secondaryFontSize(for: 48) == 11)
         #expect(WidgetMetrics.secondaryFontSize(for: 55) == 11)
-        #expect(WidgetMetrics.secondaryFontSize(for: 96) == 19.2)
+        // 96 * 0.2 is not exactly 19.2 in Double.
+        #expect(WidgetMetrics.secondaryFontSize(for: 96) == 96 * 0.2)
         #expect(WidgetMetrics.primaryFontSize(for: 32) == 12)
     }
 
