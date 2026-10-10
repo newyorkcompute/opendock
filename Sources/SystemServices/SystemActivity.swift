@@ -186,6 +186,15 @@ public enum ActivityLevel: Sendable, Hashable, Comparable {
     case low
     case elevated
     case high
+
+    /// Spoken beside the percentage, so the green / yellow / red gauge isn't the only cue.
+    public var accessibilityDescription: String {
+        switch self {
+        case .low: "low"
+        case .elevated: "elevated"
+        case .high: "high"
+        }
+    }
 }
 
 /// Shared arithmetic and thresholds, kept free of UI so they can be tested.

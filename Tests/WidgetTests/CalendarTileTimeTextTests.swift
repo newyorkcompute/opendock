@@ -13,7 +13,7 @@ struct CalendarTileTimeTextTests {
         let start = now.addingTimeInterval(seconds)
         return EventSummary(
             id: "event", title: "Standup", startDate: start, endDate: start.addingTimeInterval(duration),
-            isAllDay: false, calendarColorHex: "#FF0000", location: nil, conferenceURL: nil)
+            isAllDay: false, calendarColorHex: "#FF0000", calendarTitle: "Work", location: nil, conferenceURL: nil)
     }
 
     @Test func anEventInProgressIsNow() {

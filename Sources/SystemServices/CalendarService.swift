@@ -13,6 +13,8 @@ public struct EventSummary: Sendable, Hashable, Identifiable {
     public let isAllDay: Bool
     /// The owning calendar's color as `#RRGGBB` (sRGB).
     public let calendarColorHex: String
+    /// The owning calendar's name. The color alone can't tell calendars apart.
+    public let calendarTitle: String
     public let location: String?
     /// A Zoom / Google Meet / Teams / Webex link found in the event's URL, location or notes.
     public let conferenceURL: URL?
@@ -24,6 +26,7 @@ public struct EventSummary: Sendable, Hashable, Identifiable {
         endDate: Date,
         isAllDay: Bool,
         calendarColorHex: String,
+        calendarTitle: String,
         location: String?,
         conferenceURL: URL?
     ) {
@@ -33,6 +36,7 @@ public struct EventSummary: Sendable, Hashable, Identifiable {
         self.endDate = endDate
         self.isAllDay = isAllDay
         self.calendarColorHex = calendarColorHex
+        self.calendarTitle = calendarTitle
         self.location = location
         self.conferenceURL = conferenceURL
     }
@@ -139,6 +143,7 @@ public final class CalendarService {
             endDate: event.endDate ?? start,
             isAllDay: event.isAllDay,
             calendarColorHex: EventKitColors.hex(for: event.calendar?.cgColor),
+            calendarTitle: event.calendar?.title ?? "",
             location: location?.isEmpty == false ? location : nil,
             conferenceURL: conferenceURL(url: event.url, location: location, notes: event.notes)
         )

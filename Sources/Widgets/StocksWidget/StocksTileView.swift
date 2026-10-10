@@ -11,6 +11,7 @@ struct StocksTileView: View {
     @Environment(\.dockIconSize) private var iconSize
     @Environment(\.dockEdge) private var edge
     @Environment(\.dockIsVisible) private var isVisible
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var service = StocksService.shared
 
     /// How long the cycle style shows each symbol.
@@ -29,17 +30,32 @@ struct StocksTileView: View {
 
     var body: some View {
         let symbols = settings.symbols
-        WidgetTile(minWidth: edge.isVertical ? nil : minWidth(for: symbols)) {
-            content(symbols)
+        labeledTile(symbols)
+            .task(id: RefreshKey(symbols: symbols, interval: settings.refreshInterval, isVisible: isVisible)) {
+                // Polling stops with the dock hidden; the loop picks up where it left off on reveal.
+                guard isVisible, !symbols.isEmpty else { return }
+                await service.autoRefresh(symbols, every: settings.refreshInterval)
+            }
+    }
+
+    /// The cycle style redraws on its period so the spoken symbol matches the one on screen.
+    @ViewBuilder
+    private func labeledTile(_ symbols: [String]) -> some View {
+        if settings.style == .cycle, symbols.count > 1, isVisible {
+            TimelineView(.periodic(from: .now, by: Self.cyclePeriod)) { context in
+                tile(symbols, at: context.date)
+            }
+        } else {
+            tile(symbols, at: .now)
         }
-        .task(id: RefreshKey(symbols: symbols, interval: settings.refreshInterval, isVisible: isVisible)) {
-            // Polling stops with the dock hidden; the loop picks up where it left off on reveal.
-            guard isVisible, !symbols.isEmpty else { return }
-            await service.autoRefresh(symbols, every: settings.refreshInterval)
+    }
+
+    private func tile(_ symbols: [String], at date: Date) -> some View {
+        WidgetTile(minWidth: edge.isVertical ? nil : minWidth(for: symbols)) {
+            content(symbols, at: date)
         }
         .help(helpText(for: symbols))
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(accessibilityLabel(for: symbols))
+        .widgetAccessibility(accessibilityReading(for: symbols, at: date))
     }
 
     /// Wide enough for a price like "$1,234.56" so the tile doesn't jitter as digits change.
@@ -55,7 +71,7 @@ struct StocksTileView: View {
     // MARK: Content
 
     @ViewBuilder
-    private func content(_ symbols: [String]) -> some View {
+    private func content(_ symbols: [String], at date: Date) -> some View {
         if symbols.isEmpty {
             placeholder
         } else {
@@ -63,19 +79,13 @@ struct StocksTileView: View {
             case .single:
                 quote(for: symbols[0])
             case .cycle:
-                if symbols.count > 1, isVisible {
-                    TimelineView(.periodic(from: .now, by: Self.cyclePeriod)) { context in
-                        let index = Self.cycleIndex(at: context.date, count: symbols.count)
-                        ZStack {
-                            quote(for: symbols[index])
-                                .id(index)
-                                .transition(.opacity)
-                        }
-                        .animation(.easeInOut(duration: 0.3), value: index)
-                    }
-                } else {
-                    quote(for: symbols[0])
+                let index = symbols.count > 1 ? Self.cycleIndex(at: date, count: symbols.count) : 0
+                ZStack {
+                    quote(for: symbols[index])
+                        .id(index)
+                        .transition(reduceMotion ? .identity : .opacity)
                 }
+                .animation(reduceMotion ? nil : .easeInOut(duration: 0.3), value: index)
             case .list:
                 list(symbols)
             }
@@ -227,13 +237,14 @@ struct StocksTileView: View {
         return lines.joined(separator: "\n")
     }
 
-    private func accessibilityLabel(for symbols: [String]) -> String {
-        guard !symbols.isEmpty else { return "Stocks: no symbols" }
-        let shown =
+    private func accessibilityReading(for symbols: [String], at date: Date) -> WidgetAccessibilityReading {
+        guard !symbols.isEmpty else { return WidgetAccessibility.reading("Stocks", value: ["No symbols"]) }
+        let shown: [String] =
             switch settings.style {
-            case .single, .cycle: [symbols[0]]
+            case .single: [symbols[0]]
+            case .cycle: [symbols[Self.cycleIndex(at: date, count: symbols.count)]]
             case .list: Array(symbols.prefix(Self.listRows))
             }
-        return "Stocks: " + shown.map(summary(for:)).joined(separator: ", ")
+        return WidgetAccessibility.reading("Stocks", value: shown.map(summary(for:)))
     }
 }
