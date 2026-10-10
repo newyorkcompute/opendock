@@ -22,6 +22,8 @@ public struct ScriptedWidgetLimits: Equatable, Sendable {
     public var maxRedirects: Int = 5
     /// Largest per-widget storage file, in bytes.
     public var maxStorageBytes: Int = 262_144
+    /// Largest package, archive or folder, in bytes. Stops a mistaken drop, not an attacker.
+    public var maxPackageBytes: Int = 20_971_520
     /// Seconds between renders a script may ask for; requests outside are clamped.
     public var refreshRange: ClosedRange<TimeInterval> = 1 ... 3600
     /// Largest `main.js`, in bytes.

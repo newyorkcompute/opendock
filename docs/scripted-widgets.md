@@ -20,10 +20,15 @@ mkdir -p ~/Library/Application\ Support/OpenDock/Widgets
 cp -R Examples/Widgets/hello ~/Library/Application\ Support/OpenDock/Widgets/
 ```
 
-Use `open-meteo` or `tally` in place of `hello` for the other two. In OpenDock, open
-Settings > Widgets, add a **Scripted Widget** to the dock, select the new tile under Dock
-Items, and pick the widget under Widget. Edit `main.js` and save: the tile reloads on its
-own. "Show Widgets Folder" in the same settings opens the folder in Finder.
+Use `open-meteo` or `tally` in place of `hello` for the other two. Or, in Settings > Widgets,
+choose **Add Scripted Widget…**, pick the folder (or a `.zip` of it), and confirm. The sheet
+lists what the widget is allowed to do. OpenDock copies it to
+`Widgets/<id>` from the manifest. **Remove** deletes that folder and its saved data.
+**Reveal in Finder** shows the selected widget, or the Widgets folder. **Reload** rescans.
+
+You can still copy a folder in by hand. Add a **Scripted Widget** to the dock, select the
+new tile under Dock Items, and pick the widget under Widget. Edit `main.js` and save: the
+tile reloads on its own.
 
 ## The package
 
@@ -35,10 +40,14 @@ own. "Show Widgets Folder" in the same settings opens the folder in Finder.
     └── README.md         ← optional
 ```
 
-The folder is the unit of install and removal: copy it in, delete it to remove it. If two
-folders declare the same `id`, the first one in name order wins and the other is listed under
-Problems in the widget's settings. `main.js` may be up to 1 MB. Paths in the manifest are
-relative to the folder and may not contain `..` or start with `/`.
+The folder is the unit of install and removal. **Add Scripted Widget…** copies a folder, or a
+`.zip` of one folder or of its contents, to `Widgets/<id>`. A zip is refused if a path is
+absolute, contains `..`, or uses a backslash, and the whole package may be 20 MB. Replacing a
+widget keeps `Widgets/<id>.storage.json`, the file `opendock.storage` uses. **Remove** deletes
+the folder and that file. If two folders declare the same `id`, the first one in name order
+wins and the other is listed under Problems. `main.js` may be up to 1 MB. Paths in the
+manifest are relative to the folder and may not contain `..` or start with `/`. A symlink
+that points outside the folder fails to load.
 
 ## The manifest
 
@@ -360,7 +369,8 @@ Shipped in this version (`apiVersion` 1):
 - `opendock.fetch` to the hosts in `permissions.network`.
 - `opendock.storage` and `opendock.settings.get` / `set`.
 - `opendock.apiVersion` and `opendock.log`.
-- Reload on save, Reload and Show Widgets Folder in Settings, errors in the tile and Settings.
+- Reload on save, Add Scripted Widget (folder or `.zip`), Remove, Reveal in Finder, Reload,
+  and an error log in Settings. Errors also show in the tile.
 
 Planned, as additions within version 1 (a script can feature-test with
 `typeof opendock.fetch === "function"`, which is `"undefined"` until the manifest lists a
@@ -368,7 +378,7 @@ host):
 
 - `onClick`, with `opendock.openURL()` and `opendock.runShortcut()` allowed from it.
 - `image` elements from files in the package.
-- Installing from a folder or a `.zip` in Settings, a per-widget on/off switch, and a gallery.
+- A per-widget on/off switch, and a gallery.
 
 A change that would break existing scripts will come as `apiVersion` 2, with version 1 still
 supported.
@@ -376,5 +386,5 @@ supported.
 ## Changelog
 
 - **1** (this version): `render`, then `update`, `opendock.fetch`, `opendock.storage`, and
-  `opendock.settings`. Fetch, storage, and settings writes are additions: a script that only
-  defines `render` still runs.
+  `opendock.settings`, then installing from a folder or a `.zip`. Fetch, storage, settings
+  writes, and the installer are additions: a script that only defines `render` still runs.
