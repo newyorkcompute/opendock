@@ -314,7 +314,9 @@ struct DockItemLabel: View {
 
 private struct DockLabelBackground: View {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-    @Environment(\.accessibilityIncreaseContrast) private var increaseContrast
+    @Environment(\.colorSchemeContrast) private var colorSchemeContrast
+
+    private var increaseContrast: Bool { colorSchemeContrast == .increased }
 
     var body: some View {
         if reduceTransparency || increaseContrast {
@@ -339,7 +341,9 @@ struct DockMaterialBackground: View {
     let cornerRadius: CGFloat
 
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-    @Environment(\.accessibilityIncreaseContrast) private var increaseContrast
+    @Environment(\.colorSchemeContrast) private var colorSchemeContrast
+
+    private var increaseContrast: Bool { colorSchemeContrast == .increased }
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
