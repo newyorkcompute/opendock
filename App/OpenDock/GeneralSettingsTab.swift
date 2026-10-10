@@ -232,9 +232,11 @@ struct GeneralSettingsTab: View {
                 }
             }
 
-            if !accessibility.isGranted, store.settings.clickToMinimize || store.settings.showBadges {
+            if !accessibility.isGranted,
+                store.settings.clickToMinimize || store.settings.showBadges || store.settings.showMinimizedWindows
+            {
                 Label(
-                    "Badges and click-to-minimize stay off until OpenDock is allowed.",
+                    "Badges, minimized windows, and click-to-minimize stay off until OpenDock is allowed.",
                     systemImage: "exclamationmark.triangle.fill"
                 )
                 .symbolRenderingMode(.multicolor)
@@ -243,7 +245,7 @@ struct GeneralSettingsTab: View {
             Text("Accessibility")
         } footer: {
             Text(
-                "OpenDock uses Accessibility access to list an app’s windows in its menu and bring one to the front, to minimize and restore them with a click, and to read badges from Apple’s Dock. It doesn’t read what’s in your windows."
+                "OpenDock uses Accessibility access to list an app’s windows in its menu and bring one to the front, to minimize and restore them, to show minimized windows in the dock, and to read badges from Apple’s Dock. It doesn’t read what’s in your windows. Thumbnails of minimized windows are separate: they need Screen Recording, offered in Dock Items."
             )
             .settingsFootnote()
         }

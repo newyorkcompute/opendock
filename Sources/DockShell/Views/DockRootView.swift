@@ -10,6 +10,8 @@ struct DockRootView: View {
 
     @Environment(DockStore.self) private var store
     @Environment(DockShellState.self) private var shellState
+    @Environment(AccessibilityPermission.self) private var accessibility
+    @Environment(ScreenRecordingPermission.self) private var screenRecording
 
     var body: some View {
         DockSurfaceView(controller: controller)
@@ -45,6 +47,15 @@ struct DockRootView: View {
             .onChange(of: store.settings.showRecentApps, initial: true) { _, enabled in
                 controller.recentAppsSettingChanged(enabled)
             }
+            .onChange(of: store.settings.showMinimizedWindows, initial: true) { _, enabled in
+                controller.minimizedWindows.setEnabled(enabled)
+            }
+            .onChange(of: accessibility.isGranted) {
+                controller.minimizedWindows.setEnabled(store.settings.showMinimizedWindows)
+            }
+            .onChange(of: screenRecording.isGranted) {
+                controller.minimizedWindows.refreshThumbnails()
+            }
             .onChange(of: store.showsTrash, initial: true) { _, shown in
                 controller.trashShownChanged(shown)
             }
@@ -73,12 +84,16 @@ struct DockSurfaceView: View {
         let metrics = DockRowMetrics(settings: store.settings)
         let extras = controller.runningSection
         let recents = controller.recentSection
+        let minimized = controller.minimizedWindows.windows
         let showsTrash = store.showsTrash
         let rowIDs =
             store.items.map { DockRowItemID.pinned($0.id) } + extras.map { DockRowItemID.running($0.id) }
-            + recents.map { DockRowItemID.recent($0.id) } + (showsTrash ? [DockRowItemID.trash] : [])
-        // The Trash has a divider before it unless the row already ends with one.
-        let trashDivider = showsTrash && !(extras.isEmpty && recents.isEmpty && store.items.last?.isDivider == true)
+            + recents.map { DockRowItemID.recent($0.id) } + minimized.map { DockRowItemID.minimized($0.id) }
+            + (showsTrash ? [DockRowItemID.trash] : [])
+        // The Trash has a divider before it unless the row already ends with one. Minimized
+        // windows count: they sit between the apps and the Trash, with their own divider.
+        let trailingEmpty = extras.isEmpty && recents.isEmpty && minimized.isEmpty
+        let trashDivider = showsTrash && !(trailingEmpty && store.items.last?.isDivider == true)
         DockMagnifyingLayout(
             metrics: metrics,
             pointer: shellState.pointer,
@@ -138,6 +153,18 @@ struct DockSurfaceView: View {
                 }
             }
 
+            if !minimized.isEmpty {
+                DockDivider()
+                    .dockLayoutRole(.item(nil, growth: 0, hoverable: false))
+                    .transition(.dockRunningApp(edge: metrics.edge))
+                ForEach(minimized) { window in
+                    MinimizedWindowItemView(window: window, controller: controller)
+                        .keyboardSelection(shellState.keyboardSelection == .minimized(window.id))
+                        .dockLayoutRole(.item(.minimized(window.id), growth: 1, hoverable: true))
+                        .transition(.dockRunningApp(edge: metrics.edge))
+                }
+            }
+
             if trashDivider {
                 DockDivider()
                     .dockLayoutRole(.item(nil, growth: 0, hoverable: false))
@@ -152,7 +179,7 @@ struct DockSurfaceView: View {
 
             DockItemLabel(
                 title: shellState.profileBanner
-                    ?? label(for: shellState.hoveredItemID, extras: extras, recents: recents),
+                    ?? label(for: shellState.hoveredItemID, extras: extras, recents: recents, minimized: minimized),
                 truncates: metrics.edge.isVertical
             )
             .dockLayoutRole(.label)
@@ -162,7 +189,7 @@ struct DockSurfaceView: View {
         .animation(
             .dockRunningApps,
             value: extras.map { DockRowItemID.running($0.id) } + recents.map { DockRowItemID.recent($0.id) }
-                + (showsTrash ? [DockRowItemID.trash] : [])
+                + minimized.map { DockRowItemID.minimized($0.id) } + (showsTrash ? [DockRowItemID.trash] : [])
         )
         .onChange(of: rowIDs) {
             controller.keyboardRowChanged()
@@ -192,7 +219,9 @@ struct DockSurfaceView: View {
             reduceMotion: reduceMotion)
     }
 
-    private func label(for id: DockRowItemID?, extras: [RunningDockApp], recents: [RecentDockApp]) -> String? {
+    private func label(
+        for id: DockRowItemID?, extras: [RunningDockApp], recents: [RecentDockApp], minimized: [MinimizedDockWindow]
+    ) -> String? {
         switch id {
         case nil:
             return nil
@@ -207,6 +236,8 @@ struct DockSurfaceView: View {
             return extras.first { $0.id == id }?.app.displayName
         case let .recent(id):
             return recents.first { $0.id == id }?.app.displayName
+        case let .minimized(id):
+            return minimized.first { $0.id == id }?.label
         case .trash:
             return "Trash"
         }

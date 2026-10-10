@@ -65,7 +65,7 @@ extension DockController {
         case .recent:
             menu.addItem(actionMenuItem("Keep in Dock") { [store] in store.addApp(at: app.url) })
             menu.addItem(actionMenuItem("Remove from Recents") { [store] in store.removeRecentApp(app) })
-        case .trash:
+        case .minimized, .trash:
             break
         }
         return menu
@@ -119,7 +119,7 @@ extension DockController {
         case let .recent(id):
             guard let recent = recentSection.first(where: { $0.id == id }) else { return nil }
             return (recent.app, hit)
-        case .trash:
+        case .minimized, .trash:
             return nil
         }
     }

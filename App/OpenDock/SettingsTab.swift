@@ -37,7 +37,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         return switch self {
         case .general: CGSize(width: width, height: 640)
         case .profiles: CGSize(width: width, height: 640)
-        case .dockItems: CGSize(width: width, height: 560)
+        case .dockItems: CGSize(width: width, height: 640)
         case .widgets: CGSize(width: width, height: 380)
         case .about: CGSize(width: width, height: 360)
         }

@@ -8,6 +8,8 @@ struct DockItemsTab: View {
     @Environment(DockStore.self) private var store
     @Environment(WidgetRegistry.self) private var registry
     @Environment(ProfileSwitcher.self) private var profiles
+    @Environment(AccessibilityPermission.self) private var accessibility
+    @Environment(ScreenRecordingPermission.self) private var screenRecording
 
     @State private var selection: DockItem.ID?
 
@@ -63,7 +65,11 @@ struct DockItemsTab: View {
                     set: { store.setShowsTrash($0) }
                 )
             )
-            .help("Keep the Trash at the end of the dock, after the running and recent apps, like Apple's Dock.")
+            .help(
+                "Keep the Trash at the end of the dock, after running apps, recent apps, and minimized windows, like Apple's Dock."
+            )
+
+            minimizedWindowsSettings
 
             if let selectedItem {
                 // Widget settings views seed @State from their instance; a fresh identity per
@@ -77,6 +83,49 @@ struct DockItemsTab: View {
         }
         .padding(20)
         .onChange(of: store.activeProfileID) { selection = nil }
+    }
+
+    /// Applies to every profile: it's a dock setting, edited here because this is where the
+    /// row's sections are chosen.
+    @ViewBuilder
+    private var minimizedWindowsSettings: some View {
+        Toggle(
+            "Show minimized windows",
+            isOn: Binding(
+                get: { store.settings.showMinimizedWindows },
+                set: { enabled in
+                    store.updateSettings { $0.showMinimizedWindows = enabled }
+                    if enabled { accessibility.request() }
+                }
+            )
+        )
+        .help(
+            "Show each minimized window after the running and recent apps, before the Trash. Clicking one restores it. Applies to every profile."
+        )
+
+        if store.settings.showMinimizedWindows {
+            if !accessibility.isGranted {
+                LabeledContent("Accessibility access") {
+                    Button("Allow…") { accessibility.request() }
+                }
+                Text(
+                    "Minimized windows are read through Accessibility. OpenDock doesn’t look for them until access is allowed, and it doesn’t ask at launch."
+                )
+                .settingsFootnote()
+            }
+
+            LabeledContent("Window thumbnails") {
+                if screenRecording.isGranted {
+                    Text("Allowed").foregroundStyle(.secondary)
+                } else {
+                    Button("Allow Screen Recording…") { screenRecording.request() }
+                }
+            }
+            Text(
+                "A thumbnail needs Screen Recording permission, which OpenDock never asks for on its own. Without it, a minimized window shows its app icon with a small window glyph. Allowing it may need a restart of OpenDock. Nothing is recorded or saved."
+            )
+            .settingsFootnote()
+        }
     }
 
     // MARK: - Footer

@@ -28,8 +28,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let store = DockStore.load(from: .default(widgetSchemas: BuiltInWidgets.settingsSchemas))
     let registry = WidgetRegistry()
     let running = RunningAppsMonitor()
-    /// Shared by the window list, click-to-minimize, and badges, so they agree on it.
+    /// Shared by the window list, click-to-minimize, minimized windows, and badges, so
+    /// they agree on it.
     let accessibility = AccessibilityPermission()
+    /// Thumbnails of minimized windows. Never requested except from Settings.
+    let screenRecording = ScreenRecordingPermission()
+    let minimizedWindows: MinimizedWindowMonitor
     let windows: AppWindowManager
     let badges: DockBadgeMonitor
     let launchAtLogin = LaunchAtLogin()
@@ -52,6 +56,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         registry: registry,
         launchAtLogin: launchAtLogin,
         accessibility: accessibility,
+        screenRecording: screenRecording,
         profiles: profiles,
         focus: focus,
         hotKeys: hotKeys,
@@ -65,6 +70,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     override init() {
         windows = AppWindowManager(permission: accessibility)
         badges = DockBadgeMonitor(source: AccessibilityDockBadgeSource(), permission: accessibility)
+        minimizedWindows = MinimizedWindowMonitor(accessibility: accessibility, screenRecording: screenRecording)
         super.init()
         registry.register(BuiltInWidgets.all)
     }
@@ -76,6 +82,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             running: running,
             windows: windows,
             badges: badges,
+            minimizedWindows: minimizedWindows,
             actions: DockActions(
                 openSettings: { [weak self] in self?.showSettings() },
                 quit: { NSApp.terminate(nil) }

@@ -9,6 +9,7 @@ struct SystemSettingsPaneTests {
     @Test func urlsAreTheKnownWorkingOnes() {
         let expected: [SystemSettingsPane: String] = [
             .accessibility: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility",
+            .screenRecording: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture",
             .automation: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation",
             .fullDiskAccess: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles",
             .calendars: "x-apple.systempreferences:com.apple.preference.security?Privacy_Calendars",

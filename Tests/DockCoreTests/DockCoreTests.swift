@@ -189,6 +189,19 @@ struct DockDocumentCodecTests {
         #expect(decoded.recentAppsCount == 5)
     }
 
+    @Test func showMinimizedWindowsIsOnUnlessTurnedOff() throws {
+        let decoder = JSONDecoder()
+        #expect(try decoder.decode(DockSettings.self, from: Data("{}".utf8)).showMinimizedWindows)
+        #expect(
+            try decoder.decode(DockSettings.self, from: Data(#"{"showMinimizedWindows": "no"}"#.utf8))
+                .showMinimizedWindows)
+
+        var settings = DockSettings.default
+        settings.showMinimizedWindows = false
+        let decoded = try decoder.decode(DockSettings.self, from: JSONEncoder().encode(settings))
+        #expect(!decoded.showMinimizedWindows)
+    }
+
     @Test func recentAppsRoundTripAndDefaultToNone() throws {
         let profile = DockProfile(name: "X")
         let mail = AppItem(url: URL(fileURLWithPath: "/Applications/Mail.app"), bundleIdentifier: "com.apple.mail")
