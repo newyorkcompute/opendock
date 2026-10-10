@@ -7,21 +7,23 @@ draws that description with the same views the built-in widgets use. You write J
 the dock takes care of drawing, icon sizes, magnification, side edges, timers, settings, and
 keeping a broken script from taking anything else down.
 
-This is the format and the API for `apiVersion` 1. It's an early preview: scripts can't
-fetch from the network, react to clicks, or save state yet; see [Status](#status).
+This is the format and the API for `apiVersion` 1. Scripts can fetch from hosts they declare
+and save state across launches. They still can't react to clicks; see [Status](#status).
 
 ## Try it
 
-`Examples/Widgets/hello` in this repository is a complete widget. To run it:
+`Examples/Widgets/hello` is a complete widget that only draws. `open-meteo` fetches a public
+forecast, and `tally` keeps a counter in storage. To run one of them:
 
 ```sh
 mkdir -p ~/Library/Application\ Support/OpenDock/Widgets
 cp -R Examples/Widgets/hello ~/Library/Application\ Support/OpenDock/Widgets/
 ```
 
-In OpenDock, open Settings > Widgets, add a **Scripted Widget** to the dock, select the new
-tile under Dock Items, and pick **Hello** under Widget. Edit `main.js` and save: the tile
-reloads on its own. "Show Widgets Folder" in the same settings opens the folder in Finder.
+Use `open-meteo` or `tally` in place of `hello` for the other two. In OpenDock, open
+Settings > Widgets, add a **Scripted Widget** to the dock, select the new tile under Dock
+Items, and pick the widget under Widget. Edit `main.js` and save: the tile reloads on its
+own. "Show Widgets Folder" in the same settings opens the folder in Finder.
 
 ## The package
 
@@ -108,7 +110,7 @@ what a widget does before it runs. The names OpenDock understands:
 
 | Permission | Form | Grants |
 | --- | --- | --- |
-| `network` | a list of hosts, such as `["api.github.com", "*.open-meteo.com"]` | `opendock.fetch()` to those hosts only (not yet available; see [Status](#status)). |
+| `network` | a list of hosts, such as `["api.github.com", "*.open-meteo.com"]` | `opendock.fetch()` to those hosts only. A pattern is an exact host, or one leading `*.` label (`*.open-meteo.com` matches `api.open-meteo.com` and `a.b.open-meteo.com`, not `open-meteo.com`). `*.com` is rejected. Matching is case-insensitive. |
 | `openURL` | `true` | `opendock.openURL()` (not yet available). |
 | `shortcuts` | `true`, or a list of shortcut names | `opendock.runShortcut()` (not yet available). |
 
@@ -120,8 +122,9 @@ a Swift widget.
 ## The script
 
 `main.js` is a classic script (no modules, no `require`), evaluated once when the widget
-loads. It has to define a global function `render`. OpenDock calls `render` whenever the tile
-needs drawing and draws what it returns. The sample:
+loads. It has to define a global function `render`. It may also define `update`. OpenDock
+calls `update` (when it exists) and then `render` whenever the tile needs new data, and draws
+what `render` returns. The sample:
 
 ```js
 let renders = 0;
@@ -144,7 +147,9 @@ function render({ settings, now, size }) {
 ```
 
 Variables at the top level keep their values between calls, for as long as the tile is in the
-dock and the script hasn't been reloaded. There is no way to save state across launches yet.
+dock and the script hasn't been reloaded. To keep state across launches, use
+`opendock.storage` or `opendock.settings.set` (below). Two tiles of the same package do not
+share top-level variables; they do share storage.
 
 ### `render(context)`
 
@@ -152,15 +157,33 @@ dock and the script hasn't been reloaded. There is no way to save state across l
 
 | Field | Type | Meaning |
 | --- | --- | --- |
-| `settings` | object | Every key from the manifest's `settings`, already validated (an invalid stored value reads as the default) and typed: `bool` keys are booleans, `integer` and `number` keys are numbers, the rest are strings. |
+| `settings` | object | Every key from the manifest's `settings`, already validated (an invalid stored value reads as the default) and typed: `bool` keys are booleans, `integer` and `number` keys are numbers, the rest are strings. This is the snapshot at the start of the call. |
 | `now` | number | Milliseconds since the epoch, so `new Date(now)` works. |
 | `size` | `"regular"` or `"compact"` | `compact` when the dock is on the left or right edge, where a tile is one icon wide and content stacks. Most scripts can ignore it. |
 | `locale` | string | The user's locale identifier, for `Intl.NumberFormat` and friends. |
+| `data` | any | The value the last `update()` returned, or `null` when the script has no `update` or hasn't completed one. |
 
 `render` must be synchronous and return a plain object (OpenDock runs it through
 `JSON.stringify`, so no functions or cycles). It may throw: the error, with its line number,
 shows in the tile and in Settings. Returning something that isn't a tile is an error too, with
 the field that's wrong ("elements[2].fraction has the wrong type").
+
+### `update(context)`
+
+Optional. When the script defines it, OpenDock calls it before each scheduled `render`,
+including the first time the tile is shown and whenever a setting changes. It may be `async`
+and `await opendock.fetch`. Whatever it returns (or resolves to) is cached and passed to
+`render` as `context.data`. On the way into `update`, `context.data` is the previous result,
+or `null` the first time.
+
+Moving the dock to a side edge, which only changes `context.size`, renders again from that
+cache and does not call `update`. Nothing runs while the dock is hidden. The interval still
+comes from `render`'s `refresh`, not from `update`.
+
+`update` has 10 seconds of wall-clock time, fetches included, and 2 seconds of JavaScript
+between awaits. Past either, the tile shows "Timed out" and the loop stops until something
+changes (a setting, a reload, or the dock coming back). A thrown error does the same, and
+settings the call tried to write are discarded.
 
 ### The tile
 
@@ -209,12 +232,13 @@ the list, means the default. A required field that's missing or of the wrong typ
 
 ### Refreshing
 
-There is no `setTimeout` or `setInterval`. To be drawn again, return `refresh` seconds.
-OpenDock clamps it to between 1 and 3600 seconds, and treats a missing value, zero, a
-negative number, or a non-number as "no refresh". Beyond the schedule, `render` runs
-immediately when a setting changes, when the package reloads, and when the dock comes back on
-screen; nothing runs while the dock is hidden. After an error, the loop stops until one of
-those happens, so a bug can't spin at 1 Hz.
+There is no `setTimeout` or `setInterval`. To be drawn again, return `refresh` seconds from
+`render`. OpenDock clamps it to between 1 and 3600 seconds, and treats a missing value, zero,
+a negative number, or a non-number as "no refresh". A script with `update` is updated, then
+rendered, on that same schedule. Beyond the schedule, both run immediately when a setting
+changes, when the package reloads, and when the dock comes back on screen; nothing runs while
+the dock is hidden. After an error, the loop stops until one of those happens, so a bug can't
+spin at 1 Hz.
 
 ### The `opendock` object
 
@@ -224,23 +248,95 @@ Everything the host offers is on one frozen global, `opendock`:
 | --- | --- |
 | `opendock.apiVersion` | `1`. |
 | `opendock.log(...args)` | Writes a line to the system log (subsystem `com.newyorkcompute.opendock`, category `Scripted`), prefixed with the widget's id. `log stream --predicate 'subsystem == "com.newyorkcompute.opendock"' --level debug` shows it. |
+| `opendock.fetch(url, options)` | Installed only when `permissions.network` lists at least one host. See below. |
+| `opendock.storage.get(key)` / `set(key, value)` | A JSON object stored beside the package. See below. |
+| `opendock.settings.get(key)` / `set(key, value)` | The manifest's settings, readable and writable. See below. |
 
-Nothing else exists: no `fetch`, `XMLHttpRequest`, `require`, `import`, `localStorage`, or
-`console` (use `opendock.log`). What JavaScriptCore itself provides (ES2023, `Intl`, `JSON`,
-`Math`, `Date`) all works.
+There is no `XMLHttpRequest`, `require`, `import`, `localStorage`, or `console` (use
+`opendock.log`). `fetch` on `opendock` is the only network call, and only when the manifest
+asks for it. What JavaScriptCore itself provides (ES2023, `Intl`, `JSON`, `Math`, `Date`) all
+works.
+
+### `opendock.fetch(url, options)`
+
+```js
+const response = await opendock.fetch(url, { method, headers, body });
+const payload = await response.json();
+```
+
+Call it from `update` and `await` it. `render` stays synchronous, so it reads `context.data`
+instead of fetching.
+
+`options` is optional. `method` is `"GET"` (the default) or `"POST"`. A string `body` is sent
+as text (`text/plain;charset=UTF-8` unless you set `Content-Type`); any other `body` is
+`JSON.stringify`'d and sent as `application/json`. GET with a body is an error.
+
+The promise resolves to `{ status, ok, headers, text(), json() }`. `ok` is true for status
+200–299. `text()` and `json()` return promises. The body has to be UTF-8 text.
+
+Rules, all applied before a request leaves the machine, and again for every redirect:
+
+- HTTPS only. A username or password in the URL is refused.
+- The host has to match `permissions.network`. Anything else throws, the tile shows
+  "Can't contact \<host\>", and nothing is connected.
+- Redirects are not followed by the transport. OpenDock follows 301, 302, and 303 as GET
+  without the body, and 307 and 308 with the same method and body, and only when the next URL
+  is still on the list. An off-list or non-HTTPS redirect is the same error and is not
+  requested. More than 5 redirects fails.
+- One request or response may be 1 MB. Four fetches may be in flight. Each fetch has 10
+  seconds, which fits inside `update`'s 10 second budget.
+- `Host`, `Content-Length`, `Transfer-Encoding`, and `Connection` are dropped. A missing
+  `User-Agent` is sent as `OpenDock`.
+- No cookies and no cache.
+
+### `opendock.storage`
+
+```js
+const count = opendock.storage.get("count"); // null when missing
+opendock.storage.set("count", count + 1);
+opendock.storage.set("count");               // deletes the key
+```
+
+Values are JSON: objects, arrays, strings, numbers, booleans, and `null`. `undefined`, or a
+call with no value, deletes the key. A missing key and a stored `null` both read back as
+`null`.
+
+The file is `Widgets/<id>.storage.json`, next to the package folder rather than inside it, so
+replacing the folder keeps the state. Every tile of that package id shares the file. The whole
+file may be 256 KB; a `set` that would pass that throws and does not write. Keys are 1 to 128
+characters. A file that isn't a JSON object, or that's already over the cap, fails the load
+and the tile shows "Can't load".
+
+### `opendock.settings`
+
+```js
+opendock.settings.get("name");
+opendock.settings.set("reset", false);
+```
+
+`get` returns the same typed value as `context.settings`, including writes made earlier in
+this call. `set` checks the value against the manifest and does not coerce: a bool setting
+wants a boolean, an integer or number wants a number, and the rest want a string. An unknown
+key, a wrong type, or a value outside `min`/`max` or `choices` throws, and the tile shows
+"Script error". A value that's already what's stored is ignored, so setting it again doesn't
+restart the tile. A real change is written to `dock.json` and the tile updates. Writes from a
+call that then throws are thrown away.
 
 ## Limits and isolation
 
 Each tile has its own JavaScript context on a background actor, so two tiles of the same widget
-keep separate state and a slow script never blocks the dock. The script can't reach the file
-system, the network, or any other process. Every call into the script has a time limit; a
-script that runs past it is stopped and the tile shows "Timed out". Over any other limit is an
-error, not a truncation, so the author notices.
+keep separate module state and a slow script never blocks the dock. The script can't reach the
+file system, other processes, or any host it didn't declare. Every call into the script has a
+time limit; a script that runs past it is stopped and the tile shows "Timed out". Over any
+other limit is an error, not a truncation, so the author notices.
 
 | Limit | Value |
 | --- | --- |
-| Loading `main.js` | 2 seconds |
-| One `render` call | 250 milliseconds |
+| Loading `main.js` | 2 seconds of CPU |
+| One `render` call | 250 milliseconds of CPU |
+| One `update` call | 10 seconds of wall-clock time, and 2 seconds of CPU between awaits |
+| One `fetch` | 10 seconds, 1 MB request or response, 4 in flight, 5 redirects |
+| Storage file | 256 KB |
 | `refresh` | 1 to 3600 seconds |
 | `main.js` | 1 MB |
 | The tile | 64 elements, nesting 4 deep, 64 KB as JSON, 200 characters per text, 256 samples per sparkline, `minWidth` 0 to 8 |
@@ -260,21 +356,25 @@ Shipped in this version (`apiVersion` 1):
 
 - The package and manifest formats, settings, and permission names.
 - `render` with the elements above, `refresh`, `minWidth`, and `accessibilityLabel`.
+- `update`, with its result passed to `render` as `context.data`.
+- `opendock.fetch` to the hosts in `permissions.network`.
+- `opendock.storage` and `opendock.settings.get` / `set`.
 - `opendock.apiVersion` and `opendock.log`.
 - Reload on save, Reload and Show Widgets Folder in Settings, errors in the tile and Settings.
 
 Planned, as additions within version 1 (a script can feature-test with
-`typeof opendock.fetch === "function"`):
+`typeof opendock.fetch === "function"`, which is `"undefined"` until the manifest lists a
+host):
 
-- `opendock.fetch()` to the hosts in `permissions.network`.
 - `onClick`, with `opendock.openURL()` and `opendock.runShortcut()` allowed from it.
-- Saving state across launches (`opendock.settings.set()` or a per-widget store).
 - `image` elements from files in the package.
-- Installing from a `.zip`, a per-widget on/off switch, and a gallery.
+- Installing from a folder or a `.zip` in Settings, a per-widget on/off switch, and a gallery.
 
 A change that would break existing scripts will come as `apiVersion` 2, with version 1 still
 supported.
 
 ## Changelog
 
-- **1** (this version): first release.
+- **1** (this version): `render`, then `update`, `opendock.fetch`, `opendock.storage`, and
+  `opendock.settings`. Fetch, storage, and settings writes are additions: a script that only
+  defines `render` still runs.

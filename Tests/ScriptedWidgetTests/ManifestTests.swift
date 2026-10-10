@@ -141,6 +141,9 @@ struct ManifestTests {
         #expect(failure(manifest(extra: ", \"main\": \"/etc/passwd\"")) == .invalidMainPath("/etc/passwd"))
         #expect(failure(manifest(permissions: #"{"clipboard": true}"#)) == .unknownPermission("clipboard"))
         #expect(failure(manifest(permissions: #"{"network": true}"#)) == .invalidPermission("network"))
+        #expect(
+            failure(manifest(permissions: #"{"network": ["https://api.github.com", "*.com"]}"#))
+                == .invalidHostPattern("https://api.github.com"))
     }
 
     @Test func refusesBadSettings() {

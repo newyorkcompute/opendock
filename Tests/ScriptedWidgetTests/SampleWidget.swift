@@ -30,9 +30,12 @@ enum SampleWidget {
     }
 
     /// A minimal valid manifest with `id`.
-    static func manifest(id: String = "com.example.test", settings: String = "[]") -> String {
+    static func manifest(
+        id: String = "com.example.test", settings: String = "[]", permissions: String = "{}"
+    ) -> String {
         """
-        {"apiVersion": 1, "id": "\(id)", "name": "Test", "version": "1.0", "summary": "A test.", "settings": \(settings)}
+        {"apiVersion": 1, "id": "\(id)", "name": "Test", "version": "1.0", "summary": "A test.", \
+        "settings": \(settings), "permissions": \(permissions)}
         """
     }
 }
