@@ -213,7 +213,8 @@
             defer { activeUpdate = nil }
             do {
                 let json: String = try await withTaskCancellationHandler {
-                    try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, any Error>) in
+                    try await withCheckedThrowingContinuation {
+                        (continuation: CheckedContinuation<String, any Error>) in
                         gate.arm(continuation)
                         let ok: @convention(block) (String) -> Void = { json in gate.succeed(json) }
                         let fail: @convention(block) (String) -> Void = { payload in
