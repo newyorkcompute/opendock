@@ -105,13 +105,13 @@ public final class SystemMinimizedWindowService: MinimizedWindowSource {
         workspaceTokens = [
             center.addObserver(forName: NSWorkspace.didLaunchApplicationNotification, object: nil, queue: .main) {
                 [weak self] note in
-                guard let pid = Self.processIdentifier(in: note) else { return }
-                MainActor.assumeIsolated { self?.applicationLaunched(pid) }
+                guard let process = WorkspaceProcess(note) else { return }
+                MainActor.assumeIsolated { self?.applicationLaunched(process.pid) }
             },
             center.addObserver(forName: NSWorkspace.didTerminateApplicationNotification, object: nil, queue: .main) {
                 [weak self] note in
-                guard let pid = Self.processIdentifier(in: note) else { return }
-                MainActor.assumeIsolated { self?.applicationEnded(pid) }
+                guard let process = WorkspaceProcess(note) else { return }
+                MainActor.assumeIsolated { self?.applicationEnded(process.pid) }
             },
         ]
     }
@@ -287,15 +287,22 @@ public final class SystemMinimizedWindowService: MinimizedWindowSource {
         return true
     }
 
-    private static func processIdentifier(in note: Notification) -> pid_t? {
-        (note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication)?.processIdentifier
-    }
-
     private func set(_ attribute: String, to value: Bool, on element: AXUIElement) {
         let error = AXUIElementSetAttributeValue(element, attribute as CFString, value as CFTypeRef)
         if error != .success {
             log.debug("Couldn't set \(attribute, privacy: .public): AXError \(error.rawValue, privacy: .public)")
         }
+    }
+}
+
+/// The process id from a workspace notification, read where the notification is posted.
+/// `Notification` isn't `Sendable`, so only this value crosses to the main actor.
+private struct WorkspaceProcess: Sendable {
+    let pid: pid_t
+
+    init?(_ note: Notification) {
+        guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else { return nil }
+        pid = app.processIdentifier
     }
 }
 
