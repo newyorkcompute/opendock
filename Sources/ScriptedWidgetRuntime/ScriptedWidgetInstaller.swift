@@ -42,7 +42,11 @@ public enum ScriptedWidgetInstaller {
         {
             return try ScriptedWidgetPackage.load(from: destination, limits: limits)
         }
-        try fileManager.createDirectory(at: widgetsDirectory, withIntermediateDirectories: true)
+        do {
+            try fileManager.createDirectory(at: widgetsDirectory, withIntermediateDirectories: true)
+        } catch {
+            throw .installFailed("Couldn't create the Widgets folder.")
+        }
         let staging = widgetsDirectory.appendingPathComponent(".\(id).installing", isDirectory: true)
         if fileManager.fileExists(atPath: staging.path) {
             try removeDirectory(staging, from: widgetsDirectory, fileManager: fileManager)
@@ -143,12 +147,9 @@ public enum ScriptedWidgetInstaller {
             try enforcePackageSize(of: root, limits: limits, fileManager: fileManager)
             let package = try ScriptedWidgetPackage.load(from: root, limits: limits)
             return Staged(root: root, temporary: temporary, package: package)
-        } catch let error as ScriptedWidgetError {
-            try? fileManager.removeItem(at: temporary)
-            throw error
         } catch {
             try? fileManager.removeItem(at: temporary)
-            throw .installFailed("Couldn't read the widget.")
+            throw error
         }
     }
 
