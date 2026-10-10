@@ -29,6 +29,8 @@ final class DockPanel: NSPanel {
         becomesKeyOnlyIfNeeded = true
         animationBehavior = .none
         isReleasedWhenClosed = false
+        // Hidden visually; VoiceOver still uses it to name the panel.
+        title = "OpenDock"
         titleVisibility = .hidden
         titlebarAppearsTransparent = true
         isExcludedFromWindowsMenu = true

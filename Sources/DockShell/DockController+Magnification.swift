@@ -40,7 +40,7 @@ extension DockController {
 
         guard !shellState.isPointerInside else { return }
         shellState.isPointerInside = true
-        withAnimation(.dockMagnify) { shellState.magnification = 1 }
+        animateIfMotionAllowed(.dockMagnify) { shellState.magnification = 1 }
         holdUntilPointerEnters = false
         cancelScheduledHide()
         installHoverMonitor()
@@ -56,7 +56,7 @@ extension DockController {
             return
         }
         shellState.hoveredItemID = nil
-        withAnimation(.dockDemagnify) { shellState.magnification = 0 }
+        animateIfMotionAllowed(.dockDemagnify) { shellState.magnification = 0 }
         scheduleHide()
     }
 

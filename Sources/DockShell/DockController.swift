@@ -224,12 +224,27 @@ public final class DockController {
         DockPlacement.hiddenFrame(contentSize: frameSize, on: screen.placementScreen, edge: edge)
     }
 
+    /// Zero when Reduce Motion is on, so a slide still runs its completion handler
+    /// and just finishes immediately.
+    func dockMotionDuration(_ duration: TimeInterval) -> TimeInterval {
+        NSWorkspace.shared.accessibilityDisplayShouldReduceMotion ? 0 : duration
+    }
+
+    /// Runs `changes` inside `animation`, or immediately when Reduce Motion is on.
+    func animateIfMotionAllowed(_ animation: Animation, changes: () -> Void) {
+        if NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+            changes()
+        } else {
+            withAnimation(animation, changes)
+        }
+    }
+
     func applyFrame(animated: Bool) {
         guard let panel, let screen = targetScreen else { return }
         let frame = shellState.isVisible ? shownFrame(on: screen) : hiddenFrame(on: screen)
         if animated {
             NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.22
+                context.duration = self.dockMotionDuration(0.22)
                 context.timingFunction = CAMediaTimingFunction(name: .easeOut)
                 panel.animator().setFrame(frame, display: true)
             }
@@ -405,7 +420,7 @@ public final class DockController {
         shellState.isVisible = true
         NSAnimationContext.runAnimationGroup(
             { context in
-                context.duration = 0.22
+                context.duration = self.dockMotionDuration(0.22)
                 context.timingFunction = CAMediaTimingFunction(name: .easeOut)
                 panel.animator().setFrame(shownFrame(on: screen), display: true)
                 panel.animator().alphaValue = 1
@@ -438,7 +453,7 @@ public final class DockController {
         resetMagnification()
         NSAnimationContext.runAnimationGroup(
             { context in
-                context.duration = 0.2
+                context.duration = self.dockMotionDuration(0.2)
                 context.timingFunction = CAMediaTimingFunction(name: .easeIn)
                 panel.animator().setFrame(self.hiddenFrame(on: screen), display: true)
                 panel.animator().alphaValue = 0
