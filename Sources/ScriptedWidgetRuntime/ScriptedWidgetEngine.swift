@@ -213,7 +213,7 @@
             defer { activeUpdate = nil }
             do {
                 let json: String = try await withTaskCancellationHandler {
-                    try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, Error>) in
+                    try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, any Error>) in
                         gate.arm(continuation)
                         let ok: @convention(block) (String) -> Void = { json in gate.succeed(json) }
                         let fail: @convention(block) (String) -> Void = { payload in
@@ -372,14 +372,9 @@
                     context.exception = nil
                     activeUpdate?.fail(.timedOut(.update, limit: limits.updateCPUTimeout))
                 }
-            } catch let error as ScriptedWidgetError {
+            } catch let error {
                 guard generation == generationBox.get() else { return }
                 box.fail(error)
-            } catch is CancellationError {
-                return
-            } catch {
-                guard generation == generationBox.get() else { return }
-                box.fail(.fetchFailed(String(describing: error)))
             }
         }
 
@@ -635,11 +630,11 @@
     /// the call that installs it.
     private final class ResumeGate: @unchecked Sendable {
         private let lock = NSLock()
-        private var continuation: CheckedContinuation<String, Error>?
+        private var continuation: CheckedContinuation<String, any Error>?
         private var pending: Result<String, ScriptedWidgetError>?
         private var resumed = false
 
-        func arm(_ continuation: CheckedContinuation<String, Error>) {
+        func arm(_ continuation: CheckedContinuation<String, any Error>) {
             let pending: Result<String, ScriptedWidgetError>? = lock.withLock {
                 if resumed { return self.pending }
                 self.continuation = continuation
@@ -652,7 +647,7 @@
         func fail(_ error: ScriptedWidgetError) { finish(.failure(error)) }
 
         private func finish(_ result: Result<String, ScriptedWidgetError>) {
-            let continuation: CheckedContinuation<String, Error>? = lock.withLock {
+            let continuation: CheckedContinuation<String, any Error>? = lock.withLock {
                 if resumed { return nil }
                 resumed = true
                 pending = result

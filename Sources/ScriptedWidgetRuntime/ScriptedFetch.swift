@@ -280,7 +280,7 @@ final class ScriptedFetchDelegate: NSObject, URLSessionDataDelegate, @unchecked 
         completionHandler(nil)
     }
 
-    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: (any Error)?) {
         let (result, continuation): (ScriptedHTTPResponse, CheckedContinuation<ScriptedHTTPResponse, Never>?) =
             lock.withLock {
                 let continuation = self.continuation
