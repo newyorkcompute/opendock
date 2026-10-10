@@ -140,9 +140,10 @@
 
             watchdog.arm(seconds: limits.renderTimeout)
             let result = context.objectForKeyedSubscript("__opendockCall")?
-                .call(withArguments: Self.arguments(
-                    name: "render", settings: scriptSettings, now: now, compact: compact, locale: locale,
-                    dataJSON: dataJSON))
+                .call(
+                    withArguments: Self.arguments(
+                        name: "render", settings: scriptSettings, now: now, compact: compact, locale: locale,
+                        dataJSON: dataJSON))
             do {
                 try Self.check(context, watchdog: watchdog, phase: .render, limit: limits.renderTimeout)
             } catch {
@@ -182,9 +183,10 @@
             let scriptSettings = package.manifest.scriptSettings(from: settings).mapValues(\.jsonObject)
             watchdog.arm(seconds: limits.updateCPUTimeout)
             let result = context.objectForKeyedSubscript("__opendockCall")?
-                .call(withArguments: Self.arguments(
-                    name: "update", settings: scriptSettings, now: now, compact: compact, locale: locale,
-                    dataJSON: dataJSON))
+                .call(
+                    withArguments: Self.arguments(
+                        name: "update", settings: scriptSettings, now: now, compact: compact, locale: locale,
+                        dataJSON: dataJSON))
             do {
                 try Self.check(context, watchdog: watchdog, phase: .update, limit: limits.updateCPUTimeout)
             } catch {
@@ -321,24 +323,26 @@
                 let bodyText: String? = body.isNull || body.isUndefined ? nil : body.toString()
                 // The executor label stays explicit. A trailing closure here is parsed as the
                 // body of the surrounding `guard`.
-                let promise = JSValue(newPromiseIn: current, fromExecutor: { resolve, reject in
-                    guard let resolve, let reject else { return }
-                    guard inFlight.begin(max: maxInFlight) else {
-                        let error = JSValue(
-                            newErrorFromMessage: "Too many fetches at once; the most is \(maxInFlight).",
-                            in: current)
-                        error?.setObject("fetchFailed", forKeyedSubscript: "code" as NSString)
-                        reject.call(withArguments: [error as Any])
-                        return
-                    }
-                    let box = PromiseBox(resolve: resolve, reject: reject)
-                    let generation = generationBox.get()
-                    Task {
-                        await engine.completeFetch(
-                            urlString: url, method: method, headersJSON: headersJSON, body: bodyText, box: box,
-                            generation: generation)
-                    }
-                })
+                let promise = JSValue(
+                    newPromiseIn: current,
+                    fromExecutor: { resolve, reject in
+                        guard let resolve, let reject else { return }
+                        guard inFlight.begin(max: maxInFlight) else {
+                            let error = JSValue(
+                                newErrorFromMessage: "Too many fetches at once; the most is \(maxInFlight).",
+                                in: current)
+                            error?.setObject("fetchFailed", forKeyedSubscript: "code" as NSString)
+                            reject.call(withArguments: [error as Any])
+                            return
+                        }
+                        let box = PromiseBox(resolve: resolve, reject: reject)
+                        let generation = generationBox.get()
+                        Task {
+                            await engine.completeFetch(
+                                urlString: url, method: method, headersJSON: headersJSON, body: bodyText, box: box,
+                                generation: generation)
+                        }
+                    })
                 guard let promise else { return JSValue(undefinedIn: current) }
                 return promise
             }
@@ -715,7 +719,12 @@
         func get() -> Int { lock.withLock { value } }
 
         @discardableResult
-        func increment() -> Int { lock.withLock { value += 1; return value } }
+        func increment() -> Int {
+            lock.withLock {
+                value += 1
+                return value
+            }
+        }
 
         /// False when `value` is already `max`.
         func begin(max: Int) -> Bool {
