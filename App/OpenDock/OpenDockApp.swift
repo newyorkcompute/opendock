@@ -37,6 +37,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let windows: AppWindowManager
     let badges: DockBadgeMonitor
     let launchAtLogin = LaunchAtLogin()
+    let updates = SoftwareUpdater()
     let appleDock = AppleDockHider(backend: SystemAppleDockBackend())
     let focus = FocusModeMonitor(source: DoNotDisturbDatabase())
     private(set) var dock: DockController?
@@ -60,6 +61,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         profiles: profiles,
         focus: focus,
         hotKeys: hotKeys,
+        updates: updates,
         showWelcome: ShowWelcomeAction { [weak self] in self?.showWelcome() }
     )
     @ObservationIgnored private lazy var welcomeWindow = WelcomeWindowController(
@@ -76,6 +78,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        updates.start()
         let dock = DockController(
             store: store,
             registry: registry,

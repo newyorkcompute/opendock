@@ -21,6 +21,7 @@ final class SettingsWindowController: NSWindowController {
         profiles: ProfileSwitcher,
         focus: FocusModeMonitor,
         hotKeys: GlobalHotKeys,
+        updates: SoftwareUpdater,
         showWelcome: ShowWelcomeAction
     ) {
         tabController.tabStyle = .toolbar
@@ -35,6 +36,7 @@ final class SettingsWindowController: NSWindowController {
                 .environment(profiles)
                 .environment(focus)
                 .environment(hotKeys)
+                .environment(updates)
                 .environment(\.showWelcome, showWelcome)
             let hosting = NSHostingController(rootView: pane)
             hosting.sizingOptions = []

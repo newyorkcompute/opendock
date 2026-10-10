@@ -9,6 +9,7 @@ struct GeneralSettingsTab: View {
     @Environment(DockStore.self) private var store
     @Environment(LaunchAtLogin.self) private var launchAtLogin
     @Environment(AccessibilityPermission.self) private var accessibility
+    @Environment(SoftwareUpdater.self) private var updates
 
     @State private var confirmingReset = false
 
@@ -21,6 +22,7 @@ struct GeneralSettingsTab: View {
             accessibilitySection
             appleDockSection
             startupSection
+            updatesSection
             backupSection
         }
         .formStyle(.grouped)
@@ -299,6 +301,29 @@ struct GeneralSettingsTab: View {
                 Text("Launch at login is available when running OpenDock.app.")
                     .settingsFootnote()
             }
+        }
+    }
+
+    private var updatesSection: some View {
+        Section {
+            LabeledContent("Version") {
+                Text(AppVersion.shortAndBuild)
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+            }
+            Toggle(
+                "Check for updates automatically",
+                isOn: Binding(
+                    get: { updates.automaticallyChecksForUpdates },
+                    set: { updates.automaticallyChecksForUpdates = $0 }
+                )
+            )
+        } header: {
+            Text("Updates")
+        } footer: {
+            Text("About once a day. Check for Updates… in the menu bar menu looks immediately.")
+                .settingsFootnote()
         }
     }
 

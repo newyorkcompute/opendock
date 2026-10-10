@@ -40,6 +40,15 @@
 	<false/>
 	<key>NSSupportsSuddenTermination</key>
 	<false/>
+	<!-- Sparkle 2. SUPublicEDKey is stamped at build time from SPARKLE_PUBLIC_ED_KEY so the
+	     private key never enters the repo; scripts/build-app.sh removes the key when that
+	     variable is unset. Installer and Downloader XPC keys stay off: this app is not sandboxed. -->
+	<key>SUFeedURL</key>
+	<string>https://github.com/newyorkcompute/opendock/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>$(SPARKLE_PUBLIC_ED_KEY)</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
 	<!-- Permission strings for widgets. -->
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>OpenDock shows your upcoming events in the Calendar widget.</string>

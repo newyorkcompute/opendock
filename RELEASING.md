@@ -115,3 +115,82 @@ With a certificate the app is signed with the hardened runtime and a secure time
 With notary credentials too, tag builds and manual runs submit it with `xcrun notarytool`,
 staple the ticket with `xcrun stapler`, and check it with `spctl` before zipping. PR dry
 runs sign but skip notarization.
+
+## Automatic updates (Sparkle)
+
+The app embeds [Sparkle](https://sparkle-project.org) 2.10.0. **Check for Updates…** is in
+the menu bar menu, and Settings > General has the current version and an automatic-check
+toggle (about once a day). The app is menu-bar-only: while Sparkle's update window is on
+screen it briefly uses a normal activation policy so that window can appear, then goes back
+to having no Dock icon.
+
+`SUFeedURL` is `https://github.com/newyorkcompute/opendock/releases/latest/download/appcast.xml`,
+which is the `appcast.xml` asset on the latest non-prerelease. Pre-release tags still upload
+an appcast, but GitHub's `latest` URL skips pre-releases, so stable installs are not offered
+a beta. The private EdDSA key is never committed. `SUPublicEDKey` is stamped at build time.
+
+The app is not sandboxed, so Sparkle's Installer and Downloader XPC services stay off
+(`SUEnableInstallerLauncherService` and `SUEnableDownloaderService` are not set). The
+framework still ships with `Autoupdate`, `Updater.app`, and those XPC services inside it;
+`scripts/build-app.sh` copies and signs them.
+
+### Generate the key pair once
+
+On a Mac, from Sparkle 2.10.0's tools (the same zip Swift Package Manager downloads):
+
+```sh
+curl -fsSL -o Sparkle.zip \
+    https://github.com/sparkle-project/Sparkle/releases/download/2.10.0/Sparkle-for-Swift-Package-Manager.zip
+unzip Sparkle.zip
+bin/generate_keys
+```
+
+That stores the private key in your login keychain and prints `SUPublicEDKey`. Export the
+private key to a file (one base64 line), then delete the file after copying it:
+
+```sh
+bin/generate_keys -x sparkle-private-key.txt
+```
+
+Add the file's contents as the Actions secret `SPARKLE_PRIVATE_KEY`
+(**Settings > Secrets and variables > Actions > Secrets**). Do not commit the file.
+`bin/generate_keys -p` prints the public key again later.
+
+Release builds derive `SUPublicEDKey` from that secret and stamp it into Info.plist, so the
+secret alone is enough. To pin the public key instead, set the Actions **variable** (not a
+secret) `SPARKLE_PUBLIC_ED_KEY` to the exact string `generate_keys` printed. If both are set
+they must match. For a local build, put the same public key in `.env.local`:
+
+```sh
+echo 'SPARKLE_PUBLIC_ED_KEY="the string generate_keys printed"' >> .env.local
+```
+
+`make xcodeproj` bakes that value into the generated project; rerun it after changing the
+key. Until either value exists, builds omit `SUPublicEDKey` and log a warning. Update checks
+then cannot verify a feed. That is expected for local development.
+
+### What the release workflow does
+
+After the zip is built, `scripts/generate-appcast.sh` runs Sparkle's `generate_appcast` with
+`--ed-key-file` (the key is not passed on the command line). The enclosure URL is the zip on
+that git tag, and `appcast.xml` is uploaded as a release asset. Each appcast contains just
+that version, which is enough for Sparkle to offer the update. Delta updates are not
+produced, because the workflow does not have the previous zip in the same directory.
+
+If `SPARKLE_PRIVATE_KEY` is missing, the step logs a warning and exits successfully. The zip
+and checksum still publish; there is no `appcast.xml`, so Sparkle will not offer that build
+as an update.
+
+### What notarization adds
+
+Sparkle does not notarize. Notarization is the Developer ID certificate and the notary
+credentials in the tables above. When those secrets exist, the same workflow signs with the
+hardened runtime, notarizes, and staples **before** the zip that `generate_appcast` records.
+That is what makes Gatekeeper accept the app on first launch without a right-click Open.
+
+Until then, releases stay ad-hoc signed. Sparkle can still install a newer zip and clears
+the quarantine flag as it does, but an ad-hoc signature is not a Developer ID signature, so
+the first launch of a downloaded copy is still blocked the way
+[Signing and notarization](#signing-and-notarization) describes. Ship the key pair whenever
+you want update checks to verify the appcast; ship the Developer ID and notary secrets
+whenever you want Gatekeeper to accept the app those updates install.
