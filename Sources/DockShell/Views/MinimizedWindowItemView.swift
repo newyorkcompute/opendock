@@ -22,9 +22,12 @@ struct MinimizedWindowItemView: View {
         }
         .contentShape(Rectangle())
         .onTapGesture { controller.restoreMinimizedWindow(window) }
+        // One element: the thumbnail and the window glyph aren't separate items.
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel(window.label)
         .accessibilityHint("Restores the window")
         .accessibilityAddTraits(.isButton)
+        .accessibilityAction(.default) { controller.restoreMinimizedWindow(window) }
         // Right-clicks open the menu through the controller (see `installContextClickMonitor`).
         .accessibilityAction(.showMenu) { controller.showMinimizedWindowMenu(for: window) }
     }
