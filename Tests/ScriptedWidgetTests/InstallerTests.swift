@@ -72,10 +72,12 @@ struct InstallerTests {
         limits.maxPackageBytes = 16
         let root = try SampleWidget.makeTemporaryDirectory()
         let zip = root.appendingPathComponent("widget.zip")
-        try StoredZip.archive(["blob": Data(repeating: 1, count: 32)]).write(to: zip)
+        let archive = StoredZip.archive(["blob": Data(repeating: 1, count: 32)])
+        try archive.write(to: zip)
+        #expect(archive.count > limits.maxPackageBytes)
         #expect(
             throws: ScriptedWidgetError.installFailed(
-                "The archive is 32 bytes; the most a widget may be is 16.")
+                "The archive is \(archive.count) bytes; the most a widget may be is 16.")
         ) {
             try ScriptedWidgetInstaller.install(
                 from: zip, into: root.appendingPathComponent("Widgets"), limits: limits)
