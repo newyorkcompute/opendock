@@ -1,3 +1,4 @@
+import AppKit
 import DockCore
 import DockWidgetKit
 import ScriptedWidgetRuntime
@@ -11,6 +12,8 @@ struct ScriptedSettingsView: View {
     @Environment(\.widgetUpdateSettings) private var updater
     @State private var instance: WidgetInstance
     @State private var library = ScriptedWidgetLibrary.shared
+    @State private var pendingInstall: ScriptedInstallInspection?
+    @State private var confirmRemove = false
 
     init(instance: WidgetInstance) {
         _instance = State(initialValue: instance)
@@ -35,12 +38,18 @@ struct ScriptedSettingsView: View {
             }
 
             HStack {
+                Button("Add Scripted Widget…") { addWidget() }
                 Button("Reload") { library.reload() }
-                Button("Show Widgets Folder") { library.revealInFinder() }
+            }
+            HStack {
+                Button("Reveal in Finder") { library.reveal(package) }
+                if package != nil {
+                    Button("Remove") { confirmRemove = true }
+                }
             }
             if library.hasLoaded, library.packages.isEmpty {
                 WidgetCaption(
-                    "No scripted widgets are installed. Put a widget's folder, with its manifest.json and main.js, in the Widgets folder; the hello sample in OpenDock's Examples folder is a start."
+                    "No scripted widgets are installed. Add one above, or put its folder in the Widgets folder."
                 )
             }
 
@@ -61,8 +70,48 @@ struct ScriptedSettingsView: View {
             if !library.problems.isEmpty {
                 problems
             }
+            if !library.errorLog.entries.isEmpty {
+                errorLog
+            }
         }
         .task { library.loadIfNeeded() }
+        .sheet(item: $pendingInstall) { inspection in
+            InstallConfirmation(inspection: inspection) {
+                pendingInstall = nil
+            } confirm: {
+                if let id = library.install(from: inspection.source) {
+                    instance.settings[ScriptedWidgetSettings.package.name] = id
+                    updater(instance)
+                }
+                pendingInstall = nil
+            }
+        }
+        .confirmationDialog(
+            "Remove \(package?.manifest.name ?? "this widget")?",
+            isPresented: $confirmRemove,
+            titleVisibility: .visible
+        ) {
+            Button("Remove", role: .destructive) {
+                if let package { library.remove(package) }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This deletes the widget and its saved data. Tiles that used it show it isn't installed.")
+        }
+    }
+
+    /// Folder or zip. A valid package is confirmed, with its permissions, before anything is copied.
+    private func addWidget() {
+        let panel = NSOpenPanel()
+        panel.title = "Add Scripted Widget"
+        panel.message = "Choose a widget folder, or a .zip of one."
+        panel.prompt = "Add"
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        NSApp.activate()
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        pendingInstall = library.inspect(url: url)
     }
 
     /// Name, version, author, and what the widget may do.
@@ -75,6 +124,20 @@ struct ScriptedSettingsView: View {
             WidgetCaption(manifest.summary)
             ForEach(manifest.permissions.summary, id: \.self) { permission in
                 WidgetCaption(permission)
+            }
+        }
+    }
+
+    /// Install and script failures, oldest first.
+    private var errorLog: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Error log")
+                .font(.caption.weight(.semibold))
+            ForEach(library.errorLog.entries) { entry in
+                Text(entry.message)
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .textSelection(.enabled)
             }
         }
     }
@@ -131,5 +194,44 @@ struct ScriptedSettingsView: View {
                 updater(instance)
             }
         )
+    }
+}
+
+/// The sheet shown after a folder or zip validates: the widget's name and the permissions it
+/// asked for, before it is copied in.
+private struct InstallConfirmation: View {
+    var inspection: ScriptedInstallInspection
+    var cancel: () -> Void
+    var confirm: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Add \(inspection.manifest.name)?")
+                .font(.headline)
+            Text("\(inspection.manifest.name) \(inspection.manifest.version)")
+                .font(.caption)
+            Text(inspection.manifest.summary)
+                .font(.caption)
+            if inspection.manifest.permissions.summary.isEmpty {
+                Text("It doesn't ask to contact the network, open links, or run shortcuts.")
+                    .font(.caption)
+            } else {
+                ForEach(inspection.manifest.permissions.summary, id: \.self) { line in
+                    Text(line).font(.caption)
+                }
+            }
+            if inspection.replacesExisting {
+                Text("This replaces the installed copy. Saved data next to the widget is kept.")
+                    .font(.caption)
+            }
+            HStack {
+                Spacer()
+                Button("Cancel", role: .cancel, action: cancel)
+                Button("Add", action: confirm)
+                    .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(20)
+        .frame(minWidth: 360)
     }
 }

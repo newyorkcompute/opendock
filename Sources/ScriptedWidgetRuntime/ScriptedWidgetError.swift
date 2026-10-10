@@ -33,6 +33,8 @@ public enum ScriptedWidgetError: Error, Equatable, Sendable, CustomStringConvert
     case invalidSetting(key: String, detail: String)
     /// `render()` was called before `load()` succeeded.
     case notLoaded
+    /// Installing or removing a package failed: a bad archive, a path that escapes, a copy.
+    case installFailed(String)
     /// The call was cancelled because the tile went away, not because the script failed.
     case cancelled
     /// JavaScriptCore isn't available in this build.
@@ -81,6 +83,8 @@ public enum ScriptedWidgetError: Error, Equatable, Sendable, CustomStringConvert
             return key.isEmpty ? detail : "Setting \"\(key)\": \(detail)"
         case .notLoaded:
             return "The script hasn't been loaded."
+        case let .installFailed(detail):
+            return detail.hasSuffix(".") ? detail : detail + "."
         case .cancelled:
             return "The script was interrupted."
         case .javaScriptUnavailable:
@@ -98,6 +102,7 @@ public enum ScriptedWidgetError: Error, Equatable, Sendable, CustomStringConvert
         case .fetchFailed: return "Can't fetch"
         case .storageTooLarge: return "Storage full"
         case .notLoaded: return "Loading…"
+        case .installFailed: return "Can't install"
         case .cancelled: return "Loading…"
         case .javaScriptUnavailable: return "Unavailable"
         }

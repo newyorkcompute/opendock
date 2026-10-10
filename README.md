@@ -154,9 +154,10 @@ Each script runs in its own JavaScriptCore context off the main thread, with a t
 every call. It can fetch only the hosts its manifest lists, and it can store a small JSON
 file beside the package; it still has no general file access. An error shows in the tile and
 in the widget's settings, and never takes the dock down. Editing a file in the folder reloads
-the widget. `Examples/Widgets/hello` only draws, `open-meteo` fetches a forecast, and `tally`
-keeps a counter. [docs/scripted-widgets.md](docs/scripted-widgets.md) is the format and the
-API. This is an early preview: scripts can't react to clicks yet.
+the widget. Settings can add a folder or a `.zip`, show the permissions it asks for, and
+remove it again. `Examples/Widgets/hello` only draws, `open-meteo` fetches a forecast, and
+`tally` keeps a counter. [docs/scripted-widgets.md](docs/scripted-widgets.md) is the format
+and the API. This is an early preview: scripts can't react to clicks yet.
 
 ## Window management
 

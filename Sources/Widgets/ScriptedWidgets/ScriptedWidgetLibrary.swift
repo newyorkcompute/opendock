@@ -23,6 +23,9 @@ public final class ScriptedWidgetLibrary {
     public private(set) var hasLoaded = false
     /// The last error a tile running each package hit, by package id, for Settings.
     public private(set) var errors: [String: ScriptedWidgetError] = [:]
+    /// Recent install and script failures, oldest first, capped. Settings shows this as the
+    /// error log.
+    public private(set) var errorLog = ScriptedDiagnosticLog()
 
     @ObservationIgnored private var watchers: [FolderWatcher] = []
     @ObservationIgnored private var pendingReload: Task<Void, Never>?
@@ -61,7 +64,67 @@ public final class ScriptedWidgetLibrary {
         errors[packageID] = error
         if let error {
             log.error("\(packageID, privacy: .public): \(error.description, privacy: .public)")
+            note("\(packageID): \(error.description)")
         }
+    }
+
+    /// Copies a folder or zip into the Widgets directory. Returns the installed id, or nil
+    /// when it failed (the reason is in ``errorLog``).
+    @discardableResult
+    public func install(from url: URL) -> String? {
+        do {
+            let package = try ScriptedWidgetInstaller.install(from: url, into: directory)
+            reload()
+            return package.id
+        } catch let error as ScriptedWidgetError {
+            note(error.description)
+            log.error("\(error.description, privacy: .public)")
+            return nil
+        } catch {
+            note(String(describing: error))
+            return nil
+        }
+    }
+
+    /// Reads a folder or zip without copying it, for the confirmation sheet.
+    public func inspect(url: URL) -> ScriptedInstallInspection? {
+        do {
+            return try ScriptedWidgetInstaller.inspect(url, into: directory)
+        } catch let error as ScriptedWidgetError {
+            note(error.description)
+            log.error("\(error.description, privacy: .public)")
+            return nil
+        } catch {
+            note(String(describing: error))
+            return nil
+        }
+    }
+
+    /// Deletes the package folder and the storage file beside it.
+    public func remove(_ package: ScriptedWidgetPackage) {
+        do {
+            try ScriptedWidgetInstaller.remove(package.directory, id: package.id, from: directory)
+            reload()
+        } catch let error as ScriptedWidgetError {
+            note(error.description)
+            log.error("\(error.description, privacy: .public)")
+        } catch {
+            note(String(describing: error))
+        }
+    }
+
+    /// Opens this package in Finder, or the Widgets folder when there isn't one.
+    public func reveal(_ package: ScriptedWidgetPackage?) {
+        if let package {
+            AppLauncher.revealInFinder(package.directory)
+        } else {
+            revealInFinder()
+        }
+    }
+
+    /// Appends a line to the error log.
+    public func note(_ message: String) {
+        errorLog.record(message)
     }
 
     /// Opens the Widgets folder in Finder, creating it first so there's something to open.

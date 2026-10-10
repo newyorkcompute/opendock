@@ -46,10 +46,22 @@ public struct ScriptedWidgetPackage: Equatable, Sendable, Identifiable {
         return base.appendingPathComponent("OpenDock/Widgets", isDirectory: true)
     }
 
-    /// Reads the package in `directory`: the manifest, then the script it names.
+    /// Whether `url` is `root` or a file inside it, after resolving symlinks. A symlink whose
+    /// target is outside `root` is not contained.
+    public static func contains(_ url: URL, in root: URL) -> Bool {
+        let rootPath = root.resolvingSymlinksInPath().standardizedFileURL.path
+        let path = url.resolvingSymlinksInPath().standardizedFileURL.path
+        if path == rootPath { return true }
+        let prefix = rootPath.hasSuffix("/") ? rootPath : rootPath + "/"
+        return path.hasPrefix(prefix)
+    }
+
+    /// Reads the package in `directory`: the manifest, then the script it names. A symlink that
+    /// resolves outside the folder fails the load.
     public static func load(from directory: URL, limits: ScriptedWidgetLimits = .default) throws(ScriptedWidgetError)
         -> ScriptedWidgetPackage
     {
+        try rejectEscapingSymlinks(in: directory)
         let manifestURL = directory.appendingPathComponent(manifestFileName)
         let manifestData: Data
         do {
@@ -137,6 +149,21 @@ public struct ScriptedWidgetPackage: Equatable, Sendable, Identifiable {
         }
 
         public var folderName: String { directory.lastPathComponent }
+    }
+
+    /// A symlink whose target leaves the package is a failed load, not a file we read.
+    private static func rejectEscapingSymlinks(in root: URL) throws(ScriptedWidgetError) {
+        guard
+            let enumerator = FileManager.default.enumerator(
+                at: root, includingPropertiesForKeys: [.isSymbolicLinkKey], options: [.skipsHiddenFiles])
+        else { return }
+        for case let item as URL in enumerator {
+            let isLink = (try? item.resourceValues(forKeys: [.isSymbolicLinkKey]))?.isSymbolicLink == true
+            guard isLink else { continue }
+            guard contains(item, in: root) else {
+                throw .unreadableFile(item.lastPathComponent, reason: "it points outside the widget")
+            }
+        }
     }
 
     private static func modificationDate(of url: URL) -> Date? {

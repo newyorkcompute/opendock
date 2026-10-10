@@ -51,6 +51,7 @@ struct RefreshPolicyTests {
         #expect(limits.fetchTimeout <= limits.updateTimeout)
         #expect(limits.maxFetchBytes == 1_048_576)
         #expect(limits.maxStorageBytes == 262_144)
+        #expect(limits.maxPackageBytes == 20_971_520)
         #expect(limits.maxInFlightFetches == 4)
     }
 }
