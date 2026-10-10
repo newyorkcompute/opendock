@@ -39,6 +39,7 @@ public struct WidgetSparklineSeries: View {
                         style: StrokeStyle(lineWidth: max(1, proxy.size.height * lineWidthFraction), lineJoin: .round))
             }
         }
+        .accessibilityHidden(true)
     }
 }
 

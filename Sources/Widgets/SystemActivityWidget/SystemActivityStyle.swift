@@ -49,7 +49,8 @@ struct Sparkline: View {
                 }
             }
         }
-        .animation(.linear(duration: 0.3), value: samples)
+        .animationRespectingReduceMotion(.linear(duration: 0.3), value: samples)
+        .accessibilityHidden(true)
     }
 }
 
@@ -78,6 +79,7 @@ struct SegmentedBar: View {
                 .clipShape(Capsule())
             }
         }
-        .animation(.easeOut(duration: 0.4), value: segments.map(\.fraction))
+        .animationRespectingReduceMotion(.easeOut(duration: 0.4), value: segments.map(\.fraction))
+        .accessibilityHidden(true)
     }
 }

@@ -37,6 +37,7 @@ public struct WidgetRing: View {
                 .rotationEffect(.degrees(-90))
         }
         .padding(lineWidth / 2)
-        .animation(animation, value: fraction)
+        .animationRespectingReduceMotion(animation, value: fraction)
+        .accessibilityHidden(true)
     }
 }

@@ -51,7 +51,7 @@ struct StockChartView: View {
                 }
             }
         }
-        .animation(.easeInOut(duration: 0.3), value: chart?.closes)
+        .animationRespectingReduceMotion(.easeInOut(duration: 0.3), value: chart?.closes)
         .accessibilityHidden(true)
     }
 

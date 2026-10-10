@@ -193,9 +193,11 @@ private struct CoreBars: View {
                     }
                 }
                 .help("Core \(core.total == 0 ? "idle" : SystemActivityFormatting.percent(core.total))")
+                .accessibilityLabel(
+                    "Core \(core.total == 0 ? "idle" : SystemActivityFormatting.percent(core.total))")
             }
         }
-        .animation(.easeOut(duration: 0.4), value: cores)
+        .animationRespectingReduceMotion(.easeOut(duration: 0.4), value: cores)
     }
 }
 
