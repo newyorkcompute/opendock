@@ -35,8 +35,7 @@ struct SystemActivityTileView: View {
         .task(id: isVisible) {
             if isVisible { await monitor.autoRefresh() }
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(accessibilityLabel)
+        .widgetAccessibility(accessibilityReading)
     }
 
     private var snapshot: SystemActivitySnapshot { monitor.snapshot }
@@ -80,17 +79,33 @@ struct SystemActivityTileView: View {
         return "\(metric.title): \(SystemActivityFormatting.percent(progress))"
     }
 
-    private var accessibilityLabel: String {
-        let parts = metrics.map { metric -> String in
-            let value: Double? =
-                switch metric {
-                case .cpu: snapshot.cpu?.total
-                case .memory: snapshot.memory?.usedFraction
-                case .disk: snapshot.disk?.usedFraction
-                }
-            guard let value else { return "\(metric.title) unknown" }
-            return "\(metric.title) \(Int((value * 100).rounded())) percent"
+    private var accessibilityReading: WidgetAccessibilityReading {
+        WidgetAccessibility.reading("System activity", value: metrics.map(accessibilityDetail(for:)))
+    }
+
+    /// Percentage plus the same low / elevated / high word the gauge's color uses.
+    private func accessibilityDetail(for metric: SystemActivityMetric) -> String {
+        switch metric {
+        case .cpu:
+            guard let total = snapshot.cpu?.total else { return "CPU unknown" }
+            return WidgetAccessibility.phrase([
+                "CPU", WidgetAccessibility.percent(fraction: total),
+                SystemActivityMath.cpuLevel(total).accessibilityDescription,
+            ])
+        case .memory:
+            guard let memory = snapshot.memory else { return "Memory unknown" }
+            let level = SystemActivityMath.memoryLevel(
+                usedFraction: memory.usedFraction, pressure: snapshot.memoryPressure)
+            return WidgetAccessibility.phrase([
+                "Memory", WidgetAccessibility.percent(fraction: memory.usedFraction),
+                level.accessibilityDescription,
+            ])
+        case .disk:
+            guard let disk = snapshot.disk else { return "Disk unknown" }
+            return WidgetAccessibility.phrase([
+                "Disk", WidgetAccessibility.percent(fraction: disk.usedFraction),
+                SystemActivityMath.diskLevel(disk.usedFraction).accessibilityDescription,
+            ])
         }
-        return "System activity: " + parts.joined(separator: ", ")
     }
 }

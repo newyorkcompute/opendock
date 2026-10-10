@@ -28,8 +28,7 @@ struct BatteryTileView: View {
                 }
             }
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(accessibilityLabel)
+        .widgetAccessibility(accessibilityReading)
     }
 
     // MARK: Laptop
@@ -104,9 +103,20 @@ struct BatteryTileView: View {
         }
     }
 
-    private var accessibilityLabel: String {
-        guard monitor.hasBattery else { return "Battery: on power adapter" }
-        let level = monitor.percentage.map { "\($0) percent" } ?? "unknown level"
-        return "Battery \(level), \(BatteryFormatting.caption(for: monitor))"
+    private var accessibilityReading: WidgetAccessibilityReading {
+        guard monitor.hasBattery else {
+            return WidgetAccessibility.reading("Battery", value: ["On power adapter"])
+        }
+        var parts = [WidgetAccessibility.percent(monitor.percentage, unknown: "unknown level")]
+        if let level = WidgetAccessibility.chargeLevel(percent: monitor.percentage) {
+            parts.append(level)
+        }
+        parts.append(BatteryFormatting.caption(for: monitor))
+        if showAccessories {
+            for accessory in monitor.accessories.prefix(2) {
+                parts.append("\(accessory.name) \(WidgetAccessibility.percent(accessory.percentage))")
+            }
+        }
+        return WidgetAccessibility.reading("Battery", value: parts)
     }
 }

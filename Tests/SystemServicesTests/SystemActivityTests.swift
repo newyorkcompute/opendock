@@ -106,6 +106,10 @@ struct SystemActivityMemoryDiskTests {
         #expect(SystemActivityMath.memoryLevel(usedFraction: 0.9, pressure: .normal) == .elevated)
         #expect(SystemActivityMath.memoryLevel(usedFraction: 0.1, pressure: .warning) == .elevated)
         #expect(SystemActivityMath.memoryLevel(usedFraction: 0.1, pressure: .critical) == .high)
+
+        #expect(ActivityLevel.low.accessibilityDescription == "low")
+        #expect(ActivityLevel.elevated.accessibilityDescription == "elevated")
+        #expect(ActivityLevel.high.accessibilityDescription == "high")
     }
 }
 

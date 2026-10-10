@@ -87,7 +87,7 @@ private struct MonthGrid: View {
 
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 7), spacing: 2) {
                 ForEach(Array(weekdaySymbols.enumerated()), id: \.offset) { _, symbol in
-                    Text(symbol).font(.caption2.weight(.medium)).foregroundStyle(.secondary)
+                    Text(symbol).font(.caption.weight(.medium)).foregroundStyle(.secondary)
                 }
                 ForEach(Array(cells.enumerated()), id: \.offset) { _, day in
                     if let day {
@@ -99,8 +99,10 @@ private struct MonthGrid: View {
                             .background {
                                 if day == today { Circle().fill(Color.accentColor) }
                             }
+                            .accessibilityLabel(day == today ? "Today, \(day)" : "\(day)")
+                            .accessibilityAddTraits(day == today ? .isSelected : [])
                     } else {
-                        Color.clear.frame(height: 24)
+                        Color.clear.frame(height: 24).accessibilityHidden(true)
                     }
                 }
             }

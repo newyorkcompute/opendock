@@ -14,21 +14,20 @@ struct CalendarTileView: View {
     @State private var service = CalendarService.shared
 
     var body: some View {
-        Group {
-            if CalendarSettings.showNextEvent.boolValue(in: instance.settings) {
-                WidgetTicking(interval: 60) { now in
+        WidgetTicking(interval: 60) { now in
+            Group {
+                if CalendarSettings.showNextEvent.boolValue(in: instance.settings) {
                     WidgetTile {
                         WidgetStack(spacing: iconSize * (edge.isVertical ? 0.08 : 0.16)) {
                             CalendarDateIcon(date: now, size: iconSize * 0.72)
                             summary(at: now)
                         }
                     }
-                }
-            } else {
-                WidgetTicking(interval: 60) { now in
+                } else {
                     CalendarDateIcon(date: now, size: iconSize)
                 }
             }
+            .widgetAccessibility(reading(at: now))
         }
         .task(id: mayRequestAccess) {
             if mayRequestAccess { await service.requestAccessIfNeeded() }
@@ -81,6 +80,23 @@ struct CalendarTileView: View {
         if minutes < 60 { return "in \(minutes) min" }
         return event.startDate.formatted(date: .omitted, time: .shortened)
     }
+
+    private func reading(at now: Date) -> WidgetAccessibilityReading {
+        let date = now.formatted(.dateTime.weekday(.wide).month(.wide).day())
+        guard CalendarSettings.showNextEvent.boolValue(in: instance.settings) else {
+            return WidgetAccessibility.reading("Calendar", value: [date])
+        }
+        guard service.hasAccess else {
+            return WidgetAccessibility.reading("Calendar", value: [date, "Tap to allow"])
+        }
+        guard let event = service.nextEvent(at: now) else {
+            return WidgetAccessibility.reading("Calendar", value: [date, "No more events"])
+        }
+        return WidgetAccessibility.reading(
+            "Calendar",
+            value: [date, event.title, Self.timeText(for: event, now: now), event.calendarTitle]
+        )
+    }
 }
 
 /// A miniature Calendar.app icon: red weekday over a large day number.
@@ -106,7 +122,6 @@ struct CalendarDateIcon: View {
         .padding(.horizontal, 2)
         .frame(width: size, height: size)
         .background(.white, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(date.formatted(.dateTime.weekday(.wide).month(.wide).day()))
+        .accessibilityHidden(true)
     }
 }

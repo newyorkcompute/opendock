@@ -21,7 +21,32 @@ struct ClockTileView: View {
                     }
                 }
             }
+            .widgetAccessibility(reading(now, settings: settings), updatesFrequently: settings.showSeconds)
         }
+    }
+
+    /// The name is "Clock"; the value is the time plus the caption VoiceOver should hear.
+    /// Seconds tick visually, but `updatesFrequently` keeps VoiceOver from re-speaking each one.
+    private func reading(_ date: Date, settings: ClockSettings) -> WidgetAccessibilityReading {
+        var parts = [timeString(date, settings: settings)]
+        if !settings.label.isEmpty {
+            parts.append(settings.label)
+        } else if settings.showDate {
+            parts.append(
+                date.formatted(
+                    Date.FormatStyle(locale: locale, timeZone: settings.timeZone)
+                        .weekday(.wide).month(.wide).day()
+                )
+            )
+        }
+        if settings.usesCustomTimeZone, settings.label.isEmpty {
+            let name =
+                settings.timeZone.identifier.split(separator: "/").last.map {
+                    $0.replacingOccurrences(of: "_", with: " ")
+                } ?? settings.timeZone.identifier
+            parts.append(name)
+        }
+        return WidgetAccessibility.reading("Clock", value: parts)
     }
 
     private func timeString(_ date: Date, settings: ClockSettings) -> String {
