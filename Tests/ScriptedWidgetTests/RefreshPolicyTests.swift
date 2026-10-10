@@ -47,5 +47,10 @@ struct RefreshPolicyTests {
         #expect(limits.refreshRange.lowerBound >= 1)
         #expect(limits.maxTileBytes < limits.maxScriptBytes)
         #expect(limits.maxDepth >= 2)
+        #expect(limits.updateTimeout == 10)
+        #expect(limits.fetchTimeout <= limits.updateTimeout)
+        #expect(limits.maxFetchBytes == 1_048_576)
+        #expect(limits.maxStorageBytes == 262_144)
+        #expect(limits.maxInFlightFetches == 4)
     }
 }

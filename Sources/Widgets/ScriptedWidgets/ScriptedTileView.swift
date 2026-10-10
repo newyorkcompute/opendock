@@ -13,6 +13,7 @@ struct ScriptedTileView: View {
     @Environment(\.dockWidgetScale) private var scale
     @Environment(\.dockEdge) private var edge
     @Environment(\.dockIsVisible) private var isVisible
+    @Environment(\.widgetUpdateSettings) private var updater
     @State private var library = ScriptedWidgetLibrary.shared
     @State private var model = ScriptedWidgetModel()
 
@@ -39,7 +40,12 @@ struct ScriptedTileView: View {
             library.loadIfNeeded()
             await model.run(
                 package: package, settings: instance.settings, compact: edge.isVertical, visible: isVisible,
-                library: library)
+                library: library
+            ) { writes in
+                var copy = instance
+                for (key, value) in writes { copy.settings[key] = value }
+                updater(copy)
+            }
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel(package: package))
@@ -240,7 +246,7 @@ struct ScriptedBar: View {
                 Capsule().fill(color).frame(width: proxy.size.width * min(max(fraction, 0), 1))
             }
         }
-        .animation(.easeOut(duration: 0.3), value: fraction)
+        .animationRespectingReduceMotion(.easeOut(duration: 0.3), value: fraction)
     }
 }
 

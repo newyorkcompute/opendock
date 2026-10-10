@@ -1,0 +1,50 @@
+{
+  "apiVersion": 1,
+  "id": "com.example.open-meteo",
+  "name": "Open-Meteo",
+  "version": "1.0.0",
+  "summary": "The temperature outside, from the Open-Meteo forecast API.",
+  "symbol": "cloud.sun",
+  "main": "main.js",
+  "author": "OpenDock contributors",
+  "homepage": "https://github.com/newyorkcompute/opendock/tree/main/Examples/Widgets/open-meteo",
+  "settings": [
+    {
+      "key": "place",
+      "title": "Place",
+      "type": "text",
+      "default": "New York",
+      "summary": "The name shown under the temperature."
+    },
+    {
+      "key": "latitude",
+      "title": "Latitude",
+      "type": "number",
+      "min": -90,
+      "max": 90,
+      "default": 40.71,
+      "summary": "Latitude of the place, from -90 to 90."
+    },
+    {
+      "key": "longitude",
+      "title": "Longitude",
+      "type": "number",
+      "min": -180,
+      "max": 180,
+      "default": -74.01,
+      "summary": "Longitude of the place, from -180 to 180."
+    },
+    {
+      "key": "refreshMinutes",
+      "title": "Refresh every",
+      "type": "integer",
+      "min": 5,
+      "max": 180,
+      "default": 15,
+      "summary": "How often to ask Open-Meteo again, in minutes."
+    }
+  ],
+  "permissions": {
+    "network": ["api.open-meteo.com"]
+  }
+}

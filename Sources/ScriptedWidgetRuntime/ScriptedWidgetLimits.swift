@@ -8,6 +8,20 @@ public struct ScriptedWidgetLimits: Equatable, Sendable {
     public var loadTimeout: TimeInterval = 2
     /// CPU seconds one `render()` call may take.
     public var renderTimeout: TimeInterval = 0.25
+    /// Wall-clock seconds one `update()` may take, including the fetches it waits on.
+    public var updateTimeout: TimeInterval = 10
+    /// CPU seconds of JavaScript one `update()` may run between awaits.
+    public var updateCPUTimeout: TimeInterval = 2
+    /// Seconds one `opendock.fetch` may take.
+    public var fetchTimeout: TimeInterval = 10
+    /// Largest fetch request or response body, in bytes.
+    public var maxFetchBytes: Int = 1_048_576
+    /// Most fetches one widget may have in flight.
+    public var maxInFlightFetches: Int = 4
+    /// Most redirects one fetch may follow. One that leaves the allow-list is an error, not a hop.
+    public var maxRedirects: Int = 5
+    /// Largest per-widget storage file, in bytes.
+    public var maxStorageBytes: Int = 262_144
     /// Seconds between renders a script may ask for; requests outside are clamped.
     public var refreshRange: ClosedRange<TimeInterval> = 1 ... 3600
     /// Largest `main.js`, in bytes.

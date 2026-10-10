@@ -118,7 +118,7 @@ popover with more detail. Each widget has its own options in Settings > Dock Ite
 | Stocks | A symbol's price and the day's change with its price line, each symbol in turn, or a short list of changes | The whole watchlist, a chart with 1D, 5D, 1M, 6M and 1Y tabs, the market's state, and a shortcut to the Stocks app | Symbols (with search), style, percent or amount, chart, refresh interval |
 | Shortcuts | A shortcut's icon and name; click to run it without the Shortcuts app coming to the front | The shortcut's last result, the ones run lately, and every shortcut on the Mac, each a click away, with a menu to put one in the tile or edit it in Shortcuts | Which shortcut, icon, color, show name |
 | AirDrop | The AirDrop icon; drop files, folders, or links on it to send them, and the AirDrop sheet lists the devices nearby | The AirDrop window in Finder | Show the name |
-| Scripted Widget | Whatever a small JavaScript file in your Widgets folder describes: text, numbers, rings, bars, icons, and sparklines in rows and columns, redrawn on the schedule the script asks for | Nothing yet | Which widget to run, plus the settings its manifest declares |
+| Scripted Widget | Whatever a small JavaScript file in your Widgets folder describes: text, numbers, rings, bars, icons, and sparklines, redrawn on the schedule the script asks for, and able to fetch declared hosts and remember state | Nothing yet | Which widget to run, plus the settings its manifest declares |
 
 The Calendar widget asks for calendar access when it first appears (on a fresh install,
 once the welcome window is closed), and the Reminders widget asks for reminders access the
@@ -150,12 +150,13 @@ asks for.
 The Scripted Widget runs widgets written in JavaScript: a folder with a `manifest.json` and a
 `main.js` in `~/Library/Application Support/OpenDock/Widgets`. The script's `render()` returns
 a description of the tile, and OpenDock draws it with the same views as the built-in widgets.
-Each script runs in its own JavaScriptCore context off the main thread, with no file or network
-access and a time limit on every call; an error shows in the tile and in the widget's
-settings, and never takes the dock down. Editing a file in the folder reloads the widget.
-`Examples/Widgets/hello` is a complete one, and
-[docs/scripted-widgets.md](docs/scripted-widgets.md) is the format and the API. This is an
-early preview: scripts can't fetch from the network or react to clicks yet.
+Each script runs in its own JavaScriptCore context off the main thread, with a time limit on
+every call. It can fetch only the hosts its manifest lists, and it can store a small JSON
+file beside the package; it still has no general file access. An error shows in the tile and
+in the widget's settings, and never takes the dock down. Editing a file in the folder reloads
+the widget. `Examples/Widgets/hello` only draws, `open-meteo` fetches a forecast, and `tally`
+keeps a counter. [docs/scripted-widgets.md](docs/scripted-widgets.md) is the format and the
+API. This is an early preview: scripts can't react to clicks yet.
 
 ## Window management
 

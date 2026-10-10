@@ -1,0 +1,37 @@
+{
+  "apiVersion": 1,
+  "id": "com.example.tally",
+  "name": "Tally",
+  "version": "1.0.0",
+  "summary": "A counter that survives quitting OpenDock.",
+  "symbol": "plus.circle",
+  "main": "main.js",
+  "author": "OpenDock contributors",
+  "homepage": "https://github.com/newyorkcompute/opendock/tree/main/Examples/Widgets/tally",
+  "settings": [
+    {
+      "key": "label",
+      "title": "Label",
+      "type": "text",
+      "default": "Tally",
+      "summary": "The caption under the count."
+    },
+    {
+      "key": "reset",
+      "title": "Reset",
+      "type": "bool",
+      "default": false,
+      "summary": "Turn on to set the count back to zero. It turns itself off."
+    },
+    {
+      "key": "refreshSeconds",
+      "title": "Redraw every",
+      "type": "integer",
+      "min": 1,
+      "max": 3600,
+      "default": 60,
+      "summary": "How often the count goes up by one, in seconds."
+    }
+  ],
+  "permissions": {}
+}

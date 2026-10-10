@@ -21,8 +21,20 @@ public enum ScriptedWidgetError: Error, Equatable, Sendable, CustomStringConvert
     case invalidTile(String)
     /// The tile description, as JSON, is bigger than `ScriptedWidgetLimits.maxTileBytes`.
     case tileTooLarge(bytes: Int, limit: Int)
+    /// `opendock.fetch` was pointed at a host the manifest doesn't list.
+    case networkDenied(host: String)
+    /// `opendock.fetch` failed: the URL, the network, the timeout, or the size cap.
+    case fetchFailed(String)
+    /// The storage file would pass `ScriptedWidgetLimits.maxStorageBytes`.
+    case storageTooLarge(bytes: Int, limit: Int)
+    /// The storage file is missing its shape, or couldn't be written.
+    case storageUnreadable
+    /// `opendock.settings.set` was given a key or a value the manifest doesn't allow.
+    case invalidSetting(key: String, detail: String)
     /// `render()` was called before `load()` succeeded.
     case notLoaded
+    /// The call was cancelled because the tile went away, not because the script failed.
+    case cancelled
     /// JavaScriptCore isn't available in this build.
     case javaScriptUnavailable
 
@@ -30,6 +42,7 @@ public enum ScriptedWidgetError: Error, Equatable, Sendable, CustomStringConvert
     public enum Phase: String, Sendable {
         case load
         case render
+        case update
     }
 
     public var description: String {
@@ -43,7 +56,12 @@ public enum ScriptedWidgetError: Error, Equatable, Sendable, CustomStringConvert
         case let .exception(message, line):
             return line.map { "Line \($0): \(message)" } ?? message
         case let .timedOut(phase, limit):
-            let what = phase == .load ? "Loading the script" : "render()"
+            let what: String
+            switch phase {
+            case .load: what = "Loading the script"
+            case .render: what = "render()"
+            case .update: what = "update()"
+            }
             return "\(what) took longer than \(Self.seconds(limit)) and was stopped."
         case .missingRenderFunction:
             return "The script doesn't define a render() function."
@@ -51,8 +69,20 @@ public enum ScriptedWidgetError: Error, Equatable, Sendable, CustomStringConvert
             return "render() didn't return a tile: \(detail)"
         case let .tileTooLarge(bytes, limit):
             return "render() returned \(bytes) bytes of tile; the most allowed is \(limit)."
+        case let .networkDenied(host):
+            return "Can't contact \(host). Add it to permissions.network in manifest.json to allow it."
+        case let .fetchFailed(detail):
+            return detail.hasSuffix(".") ? detail : detail + "."
+        case let .storageTooLarge(bytes, limit):
+            return "Saving state would take \(bytes) bytes; the most a widget may store is \(limit)."
+        case .storageUnreadable:
+            return "The widget's saved state couldn't be read."
+        case let .invalidSetting(key, detail):
+            return key.isEmpty ? detail : "Setting \"\(key)\": \(detail)"
         case .notLoaded:
             return "The script hasn't been loaded."
+        case .cancelled:
+            return "The script was interrupted."
         case .javaScriptUnavailable:
             return "JavaScript isn't available in this build of OpenDock."
         }
@@ -61,10 +91,14 @@ public enum ScriptedWidgetError: Error, Equatable, Sendable, CustomStringConvert
     /// What the tile says under the widget's name.
     public var shortDescription: String {
         switch self {
-        case .unreadableFile, .manifest, .scriptTooLarge: return "Can't load"
-        case .exception, .missingRenderFunction, .invalidTile, .tileTooLarge: return "Script error"
+        case .unreadableFile, .manifest, .scriptTooLarge, .storageUnreadable: return "Can't load"
+        case .exception, .missingRenderFunction, .invalidTile, .tileTooLarge, .invalidSetting: return "Script error"
         case .timedOut: return "Timed out"
+        case let .networkDenied(host): return "Can't contact \(host)"
+        case .fetchFailed: return "Can't fetch"
+        case .storageTooLarge: return "Storage full"
         case .notLoaded: return "Loading…"
+        case .cancelled: return "Loading…"
         case .javaScriptUnavailable: return "Unavailable"
         }
     }

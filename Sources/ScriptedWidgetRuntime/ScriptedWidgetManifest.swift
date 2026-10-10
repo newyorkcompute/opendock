@@ -99,6 +99,9 @@ public struct ScriptedWidgetManifest: Equatable, Sendable {
                 throw .missingSummary(key: key.name)
             }
         }
+        for host in permissions.networkHosts {
+            guard ScriptedHostAllowList.isValidPattern(host) else { throw .invalidHostPattern(host) }
+        }
     }
 
     // MARK: Settings for the script
@@ -207,9 +210,9 @@ public enum ScriptedSettingValue: Equatable, Sendable {
     }
 }
 
-/// What a manifest declares its script may do beyond rendering. The host only installs the
-/// matching `opendock` functions for declared permissions. None of them are honored yet; see
-/// `docs/scripted-widgets.md` for the plan.
+/// What a manifest declares its script may do beyond rendering. The host only installs
+/// `opendock.fetch` when `network` lists at least one host. `openURL` and `shortcuts` are
+/// accepted in the manifest and shown to the user; the functions aren't installed yet.
 public struct ScriptedPermissions: Equatable, Sendable {
     /// Hosts `opendock.fetch` may contact: exact names, or one leading `*.` label. Empty means
     /// no network.
@@ -259,6 +262,7 @@ public enum ScriptedManifestError: Error, Equatable, Sendable, CustomStringConve
     case missingSummary(key: String)
     case unknownPermission(String)
     case invalidPermission(String)
+    case invalidHostPattern(String)
 
     public var description: String {
         switch self {
@@ -298,6 +302,8 @@ public enum ScriptedManifestError: Error, Equatable, Sendable, CustomStringConve
             return "permission \"\(name)\" isn't one this OpenDock knows (network, openURL, shortcuts)."
         case let .invalidPermission(name):
             return "permission \"\(name)\" has the wrong shape; see docs/scripted-widgets.md."
+        case let .invalidHostPattern(pattern):
+            return "permission \"network\" lists \"\(pattern)\", which isn't a host or a *.domain pattern."
         }
     }
 }

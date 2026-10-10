@@ -9,12 +9,17 @@
     struct EngineTests {
         private static let noon = Date(timeIntervalSince1970: 1_760_000_000)
 
-        private func engine(script: String, settings: String = "[]", limits: ScriptedWidgetLimits = .default) throws
-            -> ScriptedWidgetEngine
-        {
+        private func engine(
+            script: String, settings: String = "[]", permissions: String = "{}",
+            limits: ScriptedWidgetLimits = .default, transport: (any ScriptedHTTPTransport)? = nil
+        ) throws -> ScriptedWidgetEngine {
             let directory = try SampleWidget.makePackage(
-                manifest: SampleWidget.manifest(settings: settings), script: script)
-            return ScriptedWidgetEngine(package: try ScriptedWidgetPackage.load(from: directory), limits: limits)
+                manifest: SampleWidget.manifest(settings: settings, permissions: permissions), script: script)
+            let package = try ScriptedWidgetPackage.load(from: directory)
+            if let transport {
+                return ScriptedWidgetEngine(package: package, limits: limits, transport: transport)
+            }
+            return ScriptedWidgetEngine(package: package, limits: limits)
         }
 
         /// The `ScriptedWidgetError` that `body` throws, or nil when it doesn't throw one.
@@ -36,7 +41,7 @@
             try await engine.load()
             #expect(await engine.isLoaded)
 
-            let tile = try await engine.render(settings: [:], now: Self.noon)
+            let tile = try await engine.render(settings: [:], now: Self.noon).value
             #expect(tile.refresh == 1)
             #expect(tile.minWidth == 3)
             #expect(tile.elements.count == 2)
@@ -55,7 +60,8 @@
             #expect(tile.accessibilityLabel == "Hello, World. Rendered 1 times.")
 
             let second = try await engine.render(
-                settings: ["name": "Oslo", "showRing": "false", "refreshSeconds": "60"], now: Self.noon)
+                settings: ["name": "Oslo", "showRing": "false", "refreshSeconds": "60"], now: Self.noon
+            ).value
             #expect(second.refresh == 60)
             #expect(second.elements.count == 1)
             guard case let .column(again) = second.elements[0] else {
@@ -65,7 +71,7 @@
             #expect(again.children.first == .text(ScriptedText("Hello, Oslo")))
             #expect(again.children.last == .text(ScriptedText("Rendered 2×", style: .secondary)))
 
-            let compact = try await engine.render(settings: [:], now: Self.noon, compact: true)
+            let compact = try await engine.render(settings: [:], now: Self.noon, compact: true).value
             guard case let .column(stacked) = compact.elements[1] else {
                 Issue.record("unexpected elements \(compact.elements)")
                 return
@@ -90,7 +96,7 @@
                      {"key": "name", "type": "text", "default": "x", "summary": "N."}]
                     """)
             try await engine.load()
-            let tile = try await engine.render(settings: ["count": "42", "flag": "false"], now: Self.noon)
+            let tile = try await engine.render(settings: ["count": "42", "flag": "false"], now: Self.noon).value
             #expect(tile.elements[0] == .text(ScriptedText("boolean number string number regular string")))
             #expect(tile.elements[1] == .text(ScriptedText("false 4 x 1760000000000 1")))
         }
@@ -191,7 +197,7 @@
                     """, limits: limits)
             try await fine.load()
             #expect(await failure { _ = try await fine.render(settings: [:]) } == .timedOut(.render, limit: 0.2))
-            #expect(try await fine.render(settings: [:]).elements == [.text(ScriptedText("call 2"))])
+            #expect(try await fine.render(settings: [:]).value.elements == [.text(ScriptedText("call 2"))])
 
             let atLoad = try self.engine(script: "while (true) {}", limits: limits)
             #expect(await failure { try await atLoad.load() } == .timedOut(.load, limit: 0.2))
@@ -224,8 +230,174 @@
                     }
                     """)
             try await engine.load()
-            let tile = try await engine.render(settings: [:])
+            let tile = try await engine.render(settings: [:]).value
             #expect(tile.elements == [.text(ScriptedText("no undefined undefined undefined"))])
+        }
+
+        @Test func passesTheUpdateResultToRender() async throws {
+            let engine = try engine(
+                script: """
+                    async function update(context) {
+                      return { temperature: 12.5, previous: context.data };
+                    }
+                    function render(context) {
+                      return { elements: [{ type: "text", text: String(context.data.temperature) }] };
+                    }
+                    """)
+            try await engine.load()
+            #expect(await engine.definesUpdate)
+            let updated = try await engine.update(settings: [:])
+            #expect(updated.value.contains("12.5"))
+            #expect(updated.settingWrites.isEmpty)
+            let tile = try await engine.render(settings: [:], dataJSON: updated.value).value
+            #expect(tile.elements == [.text(ScriptedText("12.5"))])
+        }
+
+        @Test func leavesDataNullWhenThereIsNoUpdate() async throws {
+            let engine = try engine(
+                script: """
+                    function render(context) {
+                      const kind = typeof opendock.storage.get;
+                      return { elements: [{ type: "text", text: String(context.data) + " " + kind }] };
+                    }
+                    """)
+            try await engine.load()
+            #expect(await !engine.definesUpdate)
+            let tile = try await engine.render(settings: [:]).value
+            #expect(tile.elements == [.text(ScriptedText("null function"))])
+        }
+
+        @Test func fetchToADeniedHostFailsBeforeConnecting() async throws {
+            let transport = FakeTransport { _ in
+                Issue.record("fetch contacted a host that isn't allowed")
+                return ScriptedHTTPResponse(status: 200, headers: [:], body: Data("no".utf8))
+            }
+            let engine = try engine(
+                script: """
+                    async function update() {
+                      await opendock.fetch("https://evil.example/secret");
+                      return { ok: true };
+                    }
+                    function render() { return { elements: [] }; }
+                    """, permissions: #"{"network": ["api.github.com"]}"#, transport: transport)
+            try await engine.load()
+            let denied = await failure { _ = try await engine.update(settings: [:]) }
+            #expect(denied == .networkDenied(host: "evil.example"))
+            #expect(transport.calls.isEmpty)
+        }
+
+        @Test func fetchReturnsJSONAndPostsABody() async throws {
+            let transport = FakeTransport { request in
+                let body = request.body.flatMap { String(data: $0, encoding: .utf8) } ?? ""
+                let object = ["method": request.method, "body": body]
+                let data = (try? JSONSerialization.data(withJSONObject: object)) ?? Data()
+                return ScriptedHTTPResponse(status: 200, headers: ["content-type": "application/json"], body: data)
+            }
+            let engine = try engine(
+                script: """
+                    async function update() {
+                      const response = await opendock.fetch("https://api.github.com/repos/x", {
+                        method: "POST", body: { a: 1 }
+                      });
+                      return await response.json();
+                    }
+                    function render(context) {
+                      return { elements: [{ type: "text", text: context.data.method + " " + context.data.body }] };
+                    }
+                    """, permissions: #"{"network": ["api.github.com"]}"#, transport: transport)
+            try await engine.load()
+            let updated = try await engine.update(settings: [:])
+            let tile = try await engine.render(settings: [:], dataJSON: updated.value).value
+            #expect(tile.elements == [.text(ScriptedText(#"POST {"a":1}"#))])
+            #expect(transport.calls.count == 1)
+            #expect(transport.calls[0].method == "POST")
+            #expect(transport.calls[0].headers["Content-Type"] == "application/json")
+            #expect(transport.calls[0].url.host == "api.github.com")
+        }
+
+        @Test func anOffListRedirectIsTheTilesError() async throws {
+            let transport = FakeTransport { _ in
+                ScriptedHTTPResponse(
+                    status: 302, headers: ["location": "https://evil.example/away"], body: Data())
+            }
+            let engine = try engine(
+                script: """
+                    async function update() {
+                      await opendock.fetch("https://api.github.com/start");
+                      return {};
+                    }
+                    function render() { return { elements: [] }; }
+                    """, permissions: #"{"network": ["api.github.com"]}"#, transport: transport)
+            try await engine.load()
+            #expect(
+                await failure { _ = try await engine.update(settings: [:]) } == .networkDenied(host: "evil.example"))
+            #expect(transport.calls.count == 1)
+        }
+
+        @Test func storageSurvivesANewEngine() async throws {
+            let script = """
+                function render() {
+                  const n = opendock.storage.get("count");
+                  const next = (n == null ? 0 : n) + 1;
+                  opendock.storage.set("count", next);
+                  return { elements: [{ type: "text", text: String(next) }] };
+                }
+                """
+            let directory = try SampleWidget.makePackage(manifest: SampleWidget.manifest(), script: script)
+            let package = try ScriptedWidgetPackage.load(from: directory)
+            let first = ScriptedWidgetEngine(package: package)
+            try await first.load()
+            #expect(try await first.render(settings: [:]).value.elements == [.text(ScriptedText("1"))])
+            let second = ScriptedWidgetEngine(package: package)
+            try await second.load()
+            #expect(try await second.render(settings: [:]).value.elements == [.text(ScriptedText("2"))])
+        }
+
+        @Test func settingsSetPersistsAValidValueAndRejectsTheRest() async throws {
+            let engine = try engine(
+                script: """
+                    function render(context) {
+                      opendock.settings.set("name", "Oslo");
+                      return { elements: [{ type: "text", text: opendock.settings.get("name") }] };
+                    }
+                    """,
+                settings: #"[{"key": "name", "type": "text", "default": "World", "summary": "Who."}]"#)
+            try await engine.load()
+            let wrote = try await engine.render(settings: [:])
+            #expect(wrote.settingWrites == ["name": "Oslo"])
+            #expect(wrote.value.elements == [.text(ScriptedText("Oslo"))])
+            let again = try await engine.render(settings: ["name": "Oslo"])
+            #expect(again.settingWrites.isEmpty)
+
+            let refused = try self.engine(
+                script: """
+                    function render() {
+                      opendock.settings.set("count", 99);
+                      return { elements: [] };
+                    }
+                    """,
+                settings: #"[{"key": "count", "type": "integer", "min": 0, "max": 9, "default": 1, "summary": "C."}]"#)
+            try await refused.load()
+            let failed = await failure { _ = try await refused.render(settings: [:]) }
+            guard case let .exception(message, _) = failed else {
+                Issue.record("expected a settings error, got \(String(describing: failed))")
+                return
+            }
+            #expect(message.contains("count"))
+        }
+
+        @Test func updateGivesUpAfterItsBudget() async throws {
+            var limits = ScriptedWidgetLimits()
+            limits.updateTimeout = 0.4
+            let engine = try engine(
+                script: """
+                    function update() { return new Promise(function() {}); }
+                    function render() { return { elements: [] }; }
+                    """, limits: limits)
+            try await engine.load()
+            let started = Date()
+            #expect(await failure { _ = try await engine.update(settings: [:]) } == .timedOut(.update, limit: 0.4))
+            #expect(Date().timeIntervalSince(started) < 3)
         }
 
         @Test func rendersInABackgroundIsolationDomain() async throws {
