@@ -319,26 +319,27 @@
                 url, method, headersJSON, body in
                 guard let current = JSContext.current() else { return JSValue(undefinedIn: context) }
                 let bodyText: String? = body.isNull || body.isUndefined ? nil : body.toString()
-                guard
-                    let promise = JSValue(newPromiseIn: current) { resolve, reject in
-                        guard let resolve, let reject else { return }
-                        guard inFlight.begin(max: maxInFlight) else {
-                            let error = JSValue(
-                                newErrorFromMessage: "Too many fetches at once; the most is \(maxInFlight).",
-                                in: current)
-                            error?.setObject("fetchFailed", forKeyedSubscript: "code" as NSString)
-                            reject.call(withArguments: [error as Any])
-                            return
-                        }
-                        let box = PromiseBox(resolve: resolve, reject: reject)
-                        let generation = generationBox.get()
-                        Task {
-                            await engine.completeFetch(
-                                urlString: url, method: method, headersJSON: headersJSON, body: bodyText, box: box,
-                                generation: generation)
-                        }
+                // The executor label stays explicit. A trailing closure here is parsed as the
+                // body of the surrounding `guard`.
+                let promise = JSValue(newPromiseIn: current, fromExecutor: { resolve, reject in
+                    guard let resolve, let reject else { return }
+                    guard inFlight.begin(max: maxInFlight) else {
+                        let error = JSValue(
+                            newErrorFromMessage: "Too many fetches at once; the most is \(maxInFlight).",
+                            in: current)
+                        error?.setObject("fetchFailed", forKeyedSubscript: "code" as NSString)
+                        reject.call(withArguments: [error as Any])
+                        return
                     }
-                else { return JSValue(undefinedIn: current) }
+                    let box = PromiseBox(resolve: resolve, reject: reject)
+                    let generation = generationBox.get()
+                    Task {
+                        await engine.completeFetch(
+                            urlString: url, method: method, headersJSON: headersJSON, body: bodyText, box: box,
+                            generation: generation)
+                    }
+                })
+                guard let promise else { return JSValue(undefinedIn: current) }
                 return promise
             }
             context.setObject(fetch, forKeyedSubscript: "__opendockFetch" as NSString)

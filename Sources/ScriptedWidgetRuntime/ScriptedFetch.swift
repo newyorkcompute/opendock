@@ -163,8 +163,7 @@ public struct ScriptedFetchClient: Sendable {
 
     public func fetch(
         url: URL, method: String, headers: [String: String], body: Data?
-    ) async throws(ScriptedWidgetError) -> ScriptedFetchResponse
-    {
+    ) async throws(ScriptedWidgetError) -> ScriptedFetchResponse {
         var url = url
         var method = method.uppercased()
         var body = body
@@ -294,22 +293,27 @@ final class ScriptedFetchDelegate: NSObject, URLSessionDataDelegate, @unchecked 
                         return (
                             ScriptedHTTPResponse(
                                 status: 0, headers: [:], body: Data(), failure: "the request timed out."),
-                            continuation)
+                            continuation
+                        )
                     }
                     if error.domain == NSURLErrorDomain, error.code == NSURLErrorCancelled {
                         return (
                             ScriptedHTTPResponse(
                                 status: 0, headers: [:], body: Data(), failure: "the request was cancelled."),
-                            continuation)
+                            continuation
+                        )
                     }
                     return (
                         ScriptedHTTPResponse(
-                            status: 0, headers: [:], body: Data(), failure: error.localizedDescription), continuation)
+                            status: 0, headers: [:], body: Data(), failure: error.localizedDescription),
+                        continuation
+                    )
                 }
                 return (
                     ScriptedHTTPResponse(
                         status: response?.statusCode ?? 0, headers: Self.headers(of: response), body: data),
-                    continuation)
+                    continuation
+                )
             }
         continuation?.resume(returning: result)
     }
