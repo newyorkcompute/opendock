@@ -31,6 +31,9 @@ let package = Package(
     platforms: [
         .macOS(.v15),
     ],
+    dependencies: [
+        .package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.10.0"),
+    ],
     products: [
         .executable(name: "OpenDock", targets: ["OpenDock"]),
         .library(name: "DockCore", targets: ["DockCore"]),
@@ -205,7 +208,9 @@ let package = Package(
         /// The menu bar app that wires everything together.
         .executableTarget(
             name: "OpenDock",
-            dependencies: appModules.map { .target(name: $0) },
+            dependencies: appModules.map { .target(name: $0) } + [
+                .product(name: "Sparkle", package: "Sparkle"),
+            ],
             path: "App/OpenDock",
             swiftSettings: uiSettings
         ),

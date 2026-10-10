@@ -71,7 +71,13 @@ jobs:
           APP=build/OpenDock.app
           test -x "$APP/Contents/MacOS/OpenDock"
           test -f "$APP/Contents/Frameworks/libOpenDockNowPlayingHelper.dylib"
+          test -x "$APP/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate"
+          test -d "$APP/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app"
+          test -d "$APP/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc"
+          test -d "$APP/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc"
           plutil -lint "$APP/Contents/Info.plist"
+          FEED="$(plutil -extract SUFeedURL raw -o - "$APP/Contents/Info.plist")"
+          [[ "$FEED" == "https://github.com/newyorkcompute/opendock/releases/latest/download/appcast.xml" ]]
           codesign --verify --deep --strict --verbose=2 "$APP"
           scripts/verify-archs.sh "$APP/Contents/MacOS/OpenDock" arm64 x86_64
 

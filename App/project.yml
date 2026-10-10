@@ -26,6 +26,9 @@ options:
 packages:
   OpenDock:
     path: ..
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    exactVersion: 2.10.0
 
 fileGroups:
   - project.yml
@@ -63,6 +66,12 @@ targets:
     dependencies:
       - package: OpenDock
         product: OpenDockModules
+      # Sparkle.framework (Autoupdate, Updater.app, and the XPC services inside it).
+      # scripts/build-app.sh copies the same framework for SwiftPM builds.
+      - package: Sparkle
+        product: Sparkle
+        embed: true
+        codeSign: true
       # The Now Playing helper is run inside /usr/bin/perl, never linked by the app. Copy it
       # to Contents/Frameworks/libOpenDockNowPlayingHelper.dylib, where
       # MediaRemoteHelperProvider.locateLibrary and scripts/build-app.sh agree it lives.
@@ -86,6 +95,9 @@ targets:
         # scripts/build-app.sh sets from OPENDOCK_VERSION and the commit count instead.
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
+        # Expanded into Info.plist's SUPublicEDKey. scripts/xcodeproj.sh bakes this from
+        # SPARKLE_PUBLIC_ED_KEY (or .env.local). Empty until a key exists; see RELEASING.md.
+        SPARKLE_PUBLIC_ED_KEY: "${SPARKLE_PUBLIC_ED_KEY}"
 
   # The package's NowPlayingHelper target, named after its product here so Xcode's output is
   # libOpenDockNowPlayingHelper.dylib, the same file name SwiftPM produces.

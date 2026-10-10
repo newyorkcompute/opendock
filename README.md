@@ -317,7 +317,7 @@ labeled `good first issue` are self-contained. Highlights:
 - Left and right screen edges
 - Notification badges
 - Minimized windows in the dock
-- Automatic updates with Sparkle
+- Automatic updates are wired up with Sparkle; publishing the appcast needs the key in [RELEASING.md](RELEASING.md)
 - Homebrew cask
 
 ## Contributing

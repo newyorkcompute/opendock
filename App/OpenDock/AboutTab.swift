@@ -17,7 +17,7 @@ struct AboutTab: View {
             VStack(spacing: 4) {
                 Text("OpenDock")
                     .font(.title.weight(.semibold))
-                Text(versionString)
+                Text("Version \(AppVersion.shortAndBuild)")
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
             }
@@ -41,13 +41,6 @@ struct AboutTab: View {
         }
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private var versionString: String {
-        let info = Bundle.main.infoDictionary ?? [:]
-        let version = info["CFBundleShortVersionString"] as? String ?? "dev"
-        let build = info["CFBundleVersion"] as? String
-        return build.map { "Version \(version) (\($0))" } ?? "Version \(version)"
     }
 
     /// Selects `dock.json` in Finder, or its folder if it hasn't been written yet.

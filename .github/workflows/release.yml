@@ -2,13 +2,15 @@ name: Release
 
 # Pushing a `v*` tag (e.g. v0.1.0, or v0.2.0-beta.1 for a pre-release) builds the
 # universal app, zips it, attests its build provenance, and publishes a GitHub Release
-# with the zip, its SHA-256, and auto-generated notes. Pull requests that touch the
-# release tooling, and manual runs (Actions > Release > Run workflow), do the same build
-# as a dry run: the zip is uploaded as a workflow artifact, and nothing is attested or
-# released.
+# with the zip, its SHA-256, appcast.xml, and auto-generated notes. Pull requests that
+# touch the release tooling, and manual runs (Actions > Release > Run workflow), do the
+# same build as a dry run: the zip is uploaded as a workflow artifact, and nothing is
+# attested or released.
 #
 # Signing and notarization run only when their secrets exist (see RELEASING.md);
-# without them the app is ad-hoc signed.
+# without them the app is ad-hoc signed. Sparkle's appcast is signed only when
+# SPARKLE_PRIVATE_KEY exists; without it the release still publishes and the step logs
+# a warning.
 
 on:
   push:
@@ -47,6 +49,7 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       prerelease: ${{ steps.version.outputs.prerelease }}
       notarized: ${{ steps.notarize.outcome == 'success' }}
+      appcast: ${{ steps.appcast.outputs.signed }}
     env:
       HAS_SIGNING_CERT: ${{ secrets.DEVELOPER_ID_CERT_P12 != '' && secrets.DEVELOPER_ID_CERT_PASSWORD != '' }}
       HAS_NOTARY_CREDS: ${{ (secrets.APPLE_ID != '' && secrets.APPLE_TEAM_ID != '' && secrets.APPLE_APP_PASSWORD != '') || (secrets.NOTARY_API_KEY != '' && secrets.NOTARY_API_KEY_ID != '' && secrets.NOTARY_API_ISSUER_ID != '') }}
@@ -81,6 +84,13 @@ jobs:
       - name: Select Xcode
         run: ./.github/scripts/select-xcode.sh
 
+      - name: Resolve Sparkle public key
+        id: sparkle
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+          SPARKLE_PUBLIC_ED_KEY: ${{ vars.SPARKLE_PUBLIC_ED_KEY }}
+        run: scripts/resolve-sparkle-public-key.sh
+
       - name: Import Developer ID certificate
         id: signing
         if: env.HAS_SIGNING_CERT == 'true'
@@ -93,6 +103,7 @@ jobs:
         env:
           OPENDOCK_VERSION: ${{ steps.version.outputs.bundle_version }}
           OPENDOCK_SIGN_IDENTITY: ${{ steps.signing.outputs.identity || '-' }}
+          SPARKLE_PUBLIC_ED_KEY: ${{ steps.sparkle.outputs.public_key }}
         run: scripts/build-app.sh
 
       - name: Verify app
@@ -132,6 +143,14 @@ jobs:
           OPENDOCK_RELEASE_VERSION: ${{ steps.version.outputs.version }}
         run: scripts/package-app.sh
 
+      - name: Generate Sparkle appcast
+        id: appcast
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+          OPENDOCK_RELEASE_VERSION: ${{ steps.version.outputs.version }}
+          RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+        run: scripts/generate-appcast.sh
+
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
@@ -146,6 +165,7 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
           SIGNED: ${{ steps.signing.outcome == 'success' }}
           NOTARIZED: ${{ steps.notarize.outcome == 'success' }}
+          APPCAST: ${{ steps.appcast.outputs.signed }}
         run: |
           {
             echo "### OpenDock $VERSION"
@@ -156,6 +176,7 @@ jobs:
             echo "| CFBundleVersion | $(plutil -extract CFBundleVersion raw -o - build/OpenDock.app/Contents/Info.plist) |"
             echo "| Developer ID signed | $SIGNED |"
             echo "| Notarized | $NOTARIZED |"
+            echo "| Sparkle appcast | $APPCAST |"
             echo "| SHA-256 | \`$(cut -d' ' -f1 build/dist/*.sha256)\` |"
             echo
             if [[ "$GITHUB_REF_TYPE" == tag ]]; then
@@ -199,6 +220,7 @@ jobs:
           VERSION: ${{ needs.build.outputs.version }}
           PRERELEASE: ${{ needs.build.outputs.prerelease }}
           NOTARIZED: ${{ needs.build.outputs.notarized }}
+          APPCAST: ${{ needs.build.outputs.appcast }}
         run: |
           ZIP="OpenDock-$VERSION.zip"
           SHA="$(cut -d' ' -f1 "dist/$ZIP.sha256")"
@@ -206,6 +228,10 @@ jobs:
             echo "Download \`$ZIP\`, unzip it, and move \`OpenDock.app\` to \`/Applications\`."
             echo "Requires macOS 15 or later; universal (Apple silicon and Intel)."
             echo
+            if [[ -f dist/appcast.xml ]]; then
+              echo "Updates are published in \`appcast.xml\` on this release. Installed copies check it from the menu bar (**Check for Updates…**) or automatically."
+              echo
+            fi
             if [[ "$NOTARIZED" != true ]]; then
               echo "> [!IMPORTANT]"
               echo "> This build is not notarized by Apple, so macOS blocks it on first launch."
@@ -223,7 +249,9 @@ jobs:
           } > notes.md
           FLAGS=()
           if [[ "$PRERELEASE" == true ]]; then FLAGS+=(--prerelease); fi
-          gh release create "$GITHUB_REF_NAME" "dist/$ZIP" "dist/$ZIP.sha256" \
+          ASSETS=("dist/$ZIP" "dist/$ZIP.sha256")
+          if [[ -f dist/appcast.xml ]]; then ASSETS+=("dist/appcast.xml"); fi
+          gh release create "$GITHUB_REF_NAME" "${ASSETS[@]}" \
             --repo "$GITHUB_REPOSITORY" \
             --verify-tag \
             --title "OpenDock $VERSION" \

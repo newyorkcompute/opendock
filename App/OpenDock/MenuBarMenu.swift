@@ -74,6 +74,8 @@ struct MenuBarMenu: View {
 
         Button("Settings…") { app.showSettings() }
             .keyboardShortcut(",")
+        Button("Check for Updates…") { app.updates.checkForUpdates() }
+            .disabled(!app.updates.canCheckForUpdates)
         Button("About OpenDock") { app.showSettings(.about) }
         Button("Welcome Guide…") { app.showWelcome() }
 
