@@ -91,7 +91,7 @@ public struct WidgetPrimaryText: View {
             .font(.system(size: WidgetMetrics.primaryFontSize(for: iconSize), weight: .semibold, design: .rounded))
             .monospacedDigit()
             .lineLimit(1)
-            .minimumScaleFactor(0.5)
+            .minimumScaleFactor(WidgetMetrics.minimumReadableScale(for: WidgetMetrics.primaryFontSize(for: iconSize)))
     }
 }
 
@@ -104,6 +104,6 @@ public struct WidgetSecondaryText: View {
             .font(.system(size: WidgetMetrics.secondaryFontSize(for: iconSize), weight: .medium))
             .foregroundStyle(.secondary)
             .lineLimit(1)
-            .minimumScaleFactor(0.5)
+            .minimumScaleFactor(WidgetMetrics.minimumReadableScale(for: WidgetMetrics.secondaryFontSize(for: iconSize)))
     }
 }

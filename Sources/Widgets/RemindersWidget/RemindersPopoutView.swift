@@ -89,7 +89,7 @@ struct RemindersPopoutView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .animation(.default, value: items)
+                .animationRespectingReduceMotion(.default, value: items)
             }
             .frame(maxHeight: 320)
             .fixedSize(horizontal: false, vertical: true)

@@ -47,6 +47,7 @@ struct TimeProgressBar: View {
                 }
             }
         }
-        .animation(.easeOut(duration: 0.3), value: fraction)
+        .animationRespectingReduceMotion(.easeOut(duration: 0.3), value: fraction)
+        .accessibilityHidden(true)
     }
 }

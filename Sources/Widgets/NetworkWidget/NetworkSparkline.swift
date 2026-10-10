@@ -31,7 +31,8 @@ struct NetworkSparkline: View {
                     samples: uploadSamples, capacity: capacity, color: NetworkStyle.color(for: .upload))
             }
         }
-        .animation(.linear(duration: 0.3), value: download)
-        .animation(.linear(duration: 0.3), value: upload)
+        .animationRespectingReduceMotion(.linear(duration: 0.3), value: download)
+        .animationRespectingReduceMotion(.linear(duration: 0.3), value: upload)
+        .accessibilityHidden(true)
     }
 }

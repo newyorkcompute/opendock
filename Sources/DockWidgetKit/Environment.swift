@@ -132,13 +132,24 @@ public enum WidgetMetrics {
         max(5, iconSize * 0.12)
     }
 
+    /// Smallest text drawn in a tile, in points. Below this, captions at the small end of
+    /// the icon-size slider are hard to read.
+    public static let minimumTextSize = 11.0
+
     /// Primary text size for a tile at the given icon size.
     public static func primaryFontSize(for iconSize: Double) -> Double {
         max(12, iconSize * 0.34)
     }
 
-    /// Secondary/caption text size.
+    /// Secondary/caption text size. Never under `minimumTextSize`.
     public static func secondaryFontSize(for iconSize: Double) -> Double {
-        max(9, iconSize * 0.2)
+        max(minimumTextSize, iconSize * 0.2)
+    }
+
+    /// How far `fontSize` may shrink and still stay at `minimumTextSize`. A size already
+    /// at the floor does not shrink (`1`).
+    public static func minimumReadableScale(for fontSize: Double) -> Double {
+        guard fontSize > minimumTextSize else { return 1 }
+        return minimumTextSize / fontSize
     }
 }

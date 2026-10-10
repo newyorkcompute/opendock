@@ -80,8 +80,8 @@ struct ShortcutIconView: View {
                     .transition(.scale.combined(with: .opacity))
             }
         }
-        .animation(.snappy(duration: 0.25), value: showsOutcome)
-        .animation(.snappy(duration: 0.25), value: state)
+        .animationRespectingReduceMotion(.snappy(duration: 0.25), value: showsOutcome)
+        .animationRespectingReduceMotion(.snappy(duration: 0.25), value: state)
         .accessibilityHidden(true)
     }
 
