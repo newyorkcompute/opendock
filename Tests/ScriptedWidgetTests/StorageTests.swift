@@ -45,7 +45,7 @@ struct StorageTests {
         do {
             try store.set("blob", value: .string(String(repeating: "x", count: 80)))
             Issue.record("a value over the cap was stored")
-        } catch let error as ScriptedWidgetError {
+        } catch {
             guard case .storageTooLarge = error else {
                 Issue.record("expected storageTooLarge, got \(error)")
                 return
