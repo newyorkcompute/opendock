@@ -173,8 +173,10 @@ public enum ScriptedWidgetInstaller {
     private static func enforcePackageSize(
         of root: URL, limits: ScriptedWidgetLimits, fileManager: FileManager
     ) throws(ScriptedWidgetError) {
-        guard let enumerator = fileManager.enumerator(
-            at: root, includingPropertiesForKeys: [.fileSizeKey, .isRegularFileKey], options: [.skipsHiddenFiles])
+        guard
+            let enumerator = fileManager.enumerator(
+                at: root, includingPropertiesForKeys: [.fileSizeKey, .isRegularFileKey],
+                options: [.skipsHiddenFiles])
         else { return }
         var total = 0
         for case let item as URL in enumerator {
